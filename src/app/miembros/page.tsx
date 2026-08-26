@@ -7,6 +7,7 @@ import { Member } from '@/lib/types'
 import { getMembers, subscribeToTable } from '@/lib/data'
 import { demoMembers } from '@/lib/demo-data'
 import { cn } from '@/lib/utils'
+import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 
 const RANK_COLORS: Record<string, string> = {
   Bronze: '#cd7f32',
@@ -103,22 +104,19 @@ export default function MiembrosPage() {
                 <p className="text-white/50 text-sm mb-4 capitalize">{member.role_in_clan}</p>
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-elite-dark/50 rounded-lg p-3">
-                    <p className="text-white/50 text-xs">K/D</p>
-                    <p className="font-bold gradient-text text-lg">{member.kd_ratio ?? '—'}</p>
-                  </div>
-                  <div className="bg-elite-dark/50 rounded-lg p-3">
-                    <p className="text-white/50 text-xs">Nivel</p>
-                    <p className="font-bold text-lg">{member.level}</p>
-                  </div>
-                  <div className="bg-elite-dark/50 rounded-lg p-3">
-                    <p className="text-white/50 text-xs flex items-center gap-1"><Flame className="w-3 h-3" /> HS</p>
-                    <p className="font-bold text-lg">{member.headshots == null ? '—' : member.headshots.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-elite-dark/50 rounded-lg p-3">
-                    <p className="text-white/50 text-xs flex items-center gap-1"><Trophy className="w-3 h-3" /> Wins</p>
-                    <p className="font-bold text-lg">{member.wins == null ? '—' : member.wins.toLocaleString()}</p>
-                  </div>
+                  {(['kd', 'wins', 'headshots', 'booyahs', 'kills', 'winrate'] as const).map((k) => {
+                    const s = STAT_CATEGORIES.find((x) => x.key === k)!
+                    return (
+                      <div key={k} className="bg-elite-dark/50 rounded-lg p-3">
+                        <p className="text-white/50 text-xs flex items-center gap-1">
+                          {k === 'headshots' && <Flame className="w-3 h-3" />}
+                          {k === 'wins' && <Trophy className="w-3 h-3" />}
+                          {s.label}
+                        </p>
+                        <p className="font-bold text-lg">{formatStat(s.get(member), s)}</p>
+                      </div>
+                    )
+                  })}
                 </div>
               </motion.div>
             )

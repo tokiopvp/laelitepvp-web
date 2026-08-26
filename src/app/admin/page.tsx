@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Users, Trophy, Gem, FileText, Settings, Shield, LogOut, Lock, UserPlus } from 'lucide-react'
+import { Users, Trophy, Gem, FileText, Settings, Shield, LogOut, Lock, UserPlus, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth/AuthProvider'
 
@@ -13,6 +13,7 @@ const adminCards = [
   { href: '/admin/pedidos', label: 'Pedidos', icon: FileText, desc: 'Estado de ventas' },
   { href: '/admin/postulaciones', label: 'Postulaciones', icon: UserPlus, desc: 'Solicitudes de ingreso' },
   { href: '/admin/noticias', label: 'Noticias', icon: FileText, desc: 'Publicar anuncios' },
+  { href: '/admin/pagos', label: 'Pagos & Soporte', icon: CreditCard, desc: 'Métodos y WhatsApp' },
 ]
 
 export default function AdminPage() {

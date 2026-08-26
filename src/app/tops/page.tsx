@@ -2,28 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Flame, Trophy, Target, Star, Zap, Crown, Medal } from 'lucide-react'
+import { Crown, Medal } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { getMembers, subscribeToTable } from '@/lib/data'
 import { demoMembers } from '@/lib/demo-data'
 import { cn } from '@/lib/utils'
-
-type Category = 'kd' | 'headshots' | 'wins' | 'booyahs' | 'level'
-
-const categories: { key: Category; label: string; icon: any; value: (m: Member) => number; suffix?: string }[] = [
-  { key: 'kd', label: 'K/D Ratio', icon: Zap, value: (m) => m.kd_ratio, suffix: '' },
-  { key: 'headshots', label: 'Headshots', icon: Target, value: (m) => m.headshots },
-  { key: 'wins', label: 'Victorias', icon: Trophy, value: (m) => m.wins },
-  { key: 'booyahs', label: 'Booyahs', icon: Flame, value: (m) => m.booyahs },
-  { key: 'level', label: 'Nivel', icon: Star, value: (m) => m.level },
-]
+import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 
 const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#00d4ff', '#7c3aed']
 
 export default function TopsPage() {
   const [members, setMembers] = useState<Member[]>(demoMembers)
-  const [activeCat, setActiveCat] = useState<Category>('kd')
-  const cat = categories.find((c) => c.key === activeCat)!
+  const [activeCat, setActiveCat] = useState<string>(STAT_CATEGORIES[0].key)
+  const cat = STAT_CATEGORIES.find((c) => c.key === activeCat) ?? STAT_CATEGORIES[0]
 
   useEffect(() => {
     let active = true
@@ -38,11 +29,11 @@ export default function TopsPage() {
     }
   }, [])
 
-  const safeVal = (m: Member) => {
-    const v = cat.value(m) as number | null
+  const valOf = (m: Member) => {
+    const v = cat.get(m)
     return v == null ? -Infinity : v
   }
-  const ranked = [...members].sort((a, b) => safeVal(b) - safeVal(a)).slice(0, 10)
+  const ranked = [...members].sort((a, b) => valOf(b) - valOf(a)).slice(0, 15)
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -65,7 +56,7 @@ export default function TopsPage() {
         </motion.div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-10">
-          {categories.map((c) => {
+          {STAT_CATEGORIES.map((c) => {
             const Icon = c.icon
             return (
               <button
@@ -112,7 +103,7 @@ export default function TopsPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-display font-bold text-2xl gradient-text">
-                    {cat.value(member) == null ? '—' : (cat.value(member) as number).toLocaleString()}{cat.suffix}
+                    {formatStat(cat.get(member), cat)}
                   </p>
                   <p className="text-white/40 text-xs">{cat.label}</p>
                 </div>

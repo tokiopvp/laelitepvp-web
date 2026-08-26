@@ -165,6 +165,16 @@ def extract(db_path):
         wins = best("br_temp_solo_wins", "br_temp_duo_wins", "br_temp_escuadra_wins")
         headshots = m.get("de_temp_headshots") or m.get("de_total_headshots")
         booyahs = m.get("de_temp_wins") or wins
+        kills = m.get("de_total_kills") or best("br_temp_solo_kills", "br_temp_duo_kills", "br_temp_escuadra_kills")
+        winrate = best("br_temp_solo_winrate", "br_temp_duo_winrate", "br_temp_escuadra_winrate")
+        kpp = best("br_temp_solo_kpp", "br_temp_duo_kpp", "br_temp_escuadra_kpp")
+        partidas = best("br_total_solo_partidas", "br_total_duo_partidas", "br_total_escuadra_partidas")
+        dano = best("br_temp_solo_dano_partida", "br_temp_duo_dano_partida", "br_temp_escuadra_dano_partida")
+        hs_tasa = m.get("de_temp_headshot_tasa") or best("br_temp_solo_headshot_tasa", "br_temp_duo_headshot_tasa", "br_temp_escuadra_headshot_tasa")
+        top10 = best("br_temp_solo_top10_tasa", "br_temp_duo_top10_tasa", "br_temp_escuadra_top10_tasa")
+        max_kills = best("br_temp_solo_max_kills", "br_temp_duo_max_kills", "br_temp_escuadra_max_kills")
+        revividas = best("br_temp_solo_revividas", "br_temp_duo_revividas", "br_temp_escuadra_revividas")
+        stats_json = dict(m)  # TODAS las metricas del bot, a prueba de futuro
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
         members.append({
@@ -177,6 +187,16 @@ def extract(db_path):
             "headshots": int(headshots) if headshots is not None else None,
             "wins": int(wins) if wins is not None else None,
             "booyahs": int(booyahs) if booyahs is not None else None,
+            "kills": int(kills) if kills is not None else None,
+            "winrate": round(float(winrate), 2) if winrate is not None else None,
+            "kpp": round(float(kpp), 2) if kpp is not None else None,
+            "partidas": int(partidas) if partidas is not None else None,
+            "dano_partida": round(float(dano), 2) if dano is not None else None,
+            "headshot_tasa": round(float(hs_tasa), 2) if hs_tasa is not None else None,
+            "top10_tasa": round(float(top10), 2) if top10 is not None else None,
+            "max_kills": int(max_kills) if max_kills is not None else None,
+            "revividas": int(revividas) if revividas is not None else None,
+            "stats_json": stats_json,
             "is_active": is_active,
             "last_sync": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),

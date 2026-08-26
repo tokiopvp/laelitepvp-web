@@ -5,7 +5,7 @@ import {
   demoProducts,
   demoNews,
 } from './demo-data'
-import type { Member, Tournament, Product, News } from './types'
+import type { Member, Tournament, Product, News, PaymentMethod, Setting } from './types'
 
 function client() {
   try {
@@ -152,4 +152,60 @@ export async function notifyDiscord(payload: Record<string, unknown>): Promise<v
   } catch {
     // silencioso
   }
+}
+
+// ---- Metodos de pago (administrables) ----
+export async function getPaymentMethods(country?: string): Promise<PaymentMethod[]> {
+  const sb = client()
+  if (!sb) return []
+  let q = sb.from('payment_methods').select('*').eq('enabled', true).order('position')
+  if (country) q = q.or(`country.eq.ALL,country.eq.${country}`)
+  const { data, error } = await q
+  if (error || !data) return []
+  return data as PaymentMethod[]
+}
+
+export async function getAllPaymentMethods(): Promise<PaymentMethod[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb.from('payment_methods').select('*').order('position')
+  if (error || !data) return []
+  return data as PaymentMethod[]
+}
+
+export async function createPaymentMethod(input: Partial<PaymentMethod>): Promise<{ error: string | null }> {
+  const sb = client()
+  if (!sb) return { error: 'Sin conexión' }
+  const { error } = await sb.from('payment_methods').insert(input)
+  return { error: error?.message ?? null }
+}
+
+export async function updatePaymentMethod(id: string, input: Partial<PaymentMethod>): Promise<{ error: string | null }> {
+  const sb = client()
+  if (!sb) return { error: 'Sin conexión' }
+  const { error } = await sb.from('payment_methods').update(input).eq('id', id)
+  return { error: error?.message ?? null }
+}
+
+export async function deletePaymentMethod(id: string): Promise<{ error: string | null }> {
+  const sb = client()
+  if (!sb) return { error: 'Sin conexión' }
+  const { error } = await sb.from('payment_methods').delete().eq('id', id)
+  return { error: error?.message ?? null }
+}
+
+// ---- Ajustes generales (WhatsApp, etc.) ----
+export async function getSetting(key: string): Promise<string | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb.from('settings').select('value').eq('key', key).maybeSingle()
+  if (error || !data) return null
+  return data.value as string | null
+}
+
+export async function setSetting(key: string, value: string): Promise<{ error: string | null }> {
+  const sb = client()
+  if (!sb) return { error: 'Sin conexión' }
+  const { error } = await sb.from('settings').upsert({ key, value, updated_at: new Date().toISOString() })
+  return { error: error?.message ?? null }
 }

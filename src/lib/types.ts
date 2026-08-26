@@ -18,12 +18,39 @@ export interface Member {
   headshots: number
   wins: number
   booyahs: number
+  kills?: number | null
+  winrate?: number | null
+  kpp?: number | null
+  partidas?: number | null
+  dano_partida?: number | null
+  headshot_tasa?: number | null
+  top10_tasa?: number | null
+  max_kills?: number | null
+  revividas?: number | null
+  stats_json?: Record<string, number> | null
   avatar_url: string | null
   outfit_image_url: string | null
   is_active: boolean
   joined_at: string
   last_sync: string | null
   created_at: string
+  updated_at: string
+}
+
+export interface PaymentMethod {
+  id: string
+  name: string
+  icon: string | null
+  country: string
+  enabled: boolean
+  position: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Setting {
+  key: string
+  value: string | null
   updated_at: string
 }
 
