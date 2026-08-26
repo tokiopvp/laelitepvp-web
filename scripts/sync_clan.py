@@ -163,7 +163,7 @@ def extract(db_path):
             "kd_ratio": round(float(kd), 2) if kd is not None else None,
             "headshots": int(headshots) if headshots is not None else None,
             "wins": int(wins) if wins is not None else None,
-            "booyahs": int(kills) if kills is not None else None,
+            "booyahs": None,
             "is_active": is_active,
             "last_sync": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
