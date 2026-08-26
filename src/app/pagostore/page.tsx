@@ -27,6 +27,7 @@ export default function PagoStorePage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [success, setSuccess] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', ffid: '', discord: '', method: PAYMENT_METHODS[0] })
+  const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
@@ -39,7 +40,11 @@ export default function PagoStorePage() {
     logActivity('store_view')
   }, [])
 
-  const filtered = products.filter((p) => p.category === activeCat)
+  const filtered = products.filter(
+    (p) =>
+      p.category === activeCat &&
+      (search.trim() === '' || p.name.toLowerCase().includes(search.trim().toLowerCase()))
+  )
 
   const cartCount = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart])
   const cartTotal = useMemo(
@@ -159,6 +164,15 @@ export default function PagoStorePage() {
           })}
         </div>
 
+        <div className="flex justify-center mb-8">
+          <input
+            className="input max-w-md w-full"
+            placeholder="🔍 Buscar producto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((product, i) => (
             <motion.div
@@ -217,9 +231,16 @@ export default function PagoStorePage() {
         </div>
 
         <div className="mt-12 card-glow p-6 text-center">
-          <p className="text-white/60 text-sm">
+          <p className="text-white/60 text-sm mb-4">
             🔒 Pago 100% seguro • Entrega en 5-15 min • Soporte Discord 24/7
           </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {PAYMENT_METHODS.map((m) => (
+              <span key={m} className="px-3 py-1 rounded-full bg-elite-card border border-elite-border text-white/70 text-xs">
+                {m}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 

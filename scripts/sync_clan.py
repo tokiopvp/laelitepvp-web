@@ -148,10 +148,23 @@ def extract(db_path):
             continue
         seen.add(key)
         m = metrics.get(uid, {}) if uid else {}
-        kd = m.get("br_temp_escuadra_kd") or m.get("br_temp_duo_kd")
-        wins = m.get("br_temp_escuadra_wins") or m.get("br_temp_duo_wins")
-        kills = m.get("br_temp_escuadra_kills") or m.get("br_temp_duo_kills")
+
+        # Usar TODOS los tops relevantes del jugador (todos los modos BR + DE).
+        def best(*keys):
+            vals = []
+            for k in keys:
+                v = m.get(k)
+                if v is not None:
+                    try:
+                        vals.append(float(v))
+                    except (TypeError, ValueError):
+                        pass
+            return max(vals) if vals else None
+
+        kd = best("br_temp_solo_kd", "br_temp_duo_kd", "br_temp_escuadra_kd")
+        wins = best("br_temp_solo_wins", "br_temp_duo_wins", "br_temp_escuadra_wins")
         headshots = m.get("de_temp_headshots") or m.get("de_total_headshots")
+        booyahs = m.get("de_temp_wins") or wins
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
         members.append({
@@ -159,11 +172,11 @@ def extract(db_path):
             "nickname": r["nick"],
             "free_fire_id": uid,
             "role_in_clan": "member",
-            "level": int(mi.get("nivel") or 1),
+            "level": int(mi["nivel"]) if mi.get("nivel") else None,
             "kd_ratio": round(float(kd), 2) if kd is not None else None,
             "headshots": int(headshots) if headshots is not None else None,
             "wins": int(wins) if wins is not None else None,
-            "booyahs": None,
+            "booyahs": int(booyahs) if booyahs is not None else None,
             "is_active": is_active,
             "last_sync": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
