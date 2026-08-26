@@ -26,11 +26,16 @@ export default function TopsPage() {
   const cat = categories.find((c) => c.key === activeCat)!
 
   useEffect(() => {
-    getMembers().then(setMembers)
-    const unsub = subscribeToTable('members', () => {
-      getMembers().then(setMembers)
-    })
-    return unsub
+    let active = true
+    const load = () => getMembers().then((m) => { if (active) setMembers(m) })
+    load()
+    const unsub = subscribeToTable('members', load)
+    const id = setInterval(load, 20000)
+    return () => {
+      active = false
+      clearInterval(id)
+      unsub()
+    }
   }, [])
 
   const safeVal = (m: Member) => {

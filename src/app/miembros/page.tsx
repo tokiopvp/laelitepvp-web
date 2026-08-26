@@ -30,14 +30,20 @@ export default function MiembrosPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    getMembers().then((m) => {
+    let active = true
+    const load = () => getMembers().then((m) => {
+      if (!active) return
       setMembers(m)
       setLoading(false)
     })
-    const unsub = subscribeToTable('members', () => {
-      getMembers().then(setMembers)
-    })
-    return unsub
+    load()
+    const unsub = subscribeToTable('members', load)
+    const id = setInterval(load, 20000)
+    return () => {
+      active = false
+      clearInterval(id)
+      unsub()
+    }
   }, [])
 
   return (

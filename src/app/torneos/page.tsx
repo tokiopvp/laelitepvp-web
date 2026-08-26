@@ -19,11 +19,16 @@ export default function TorneosPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>(demoTournaments)
 
   useEffect(() => {
-    getTournaments().then(setTournaments)
-    const unsub = subscribeToTable('tournaments', () => {
-      getTournaments().then(setTournaments)
-    })
-    return unsub
+    let active = true
+    const load = () => getTournaments().then((t) => { if (active) setTournaments(t) })
+    load()
+    const unsub = subscribeToTable('tournaments', load)
+    const id = setInterval(load, 20000)
+    return () => {
+      active = false
+      clearInterval(id)
+      unsub()
+    }
   }, [])
 
   return (
