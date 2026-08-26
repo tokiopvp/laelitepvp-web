@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-rajdhani: 'Rajdhani', system-ui, sans-serif;
+  }
+
+  * {
+    @apply border-elite-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-elite-dark text-white font-sans antialiased;
+    background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 100%);
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-elite-dark;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-elite-primary/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-elite-primary;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-gradient-to-r from-elite-primary to-elite-secondary text-white font-semibold rounded-lg
+           hover:from-elite-primary/90 hover:to-elite-secondary/90 transition-all duration-300
+           shadow-lg shadow-elite-primary/25 hover:shadow-elite-primary/40
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-elite-card border border-elite-border text-white font-semibold rounded-lg
+           hover:bg-elite-border transition-all duration-300
+           active:scale-[0.98];
+  }
+
+  .card {
+    @apply bg-elite-card/80 backdrop-blur-xl border border-elite-border rounded-2xl
+           hover:border-elite-primary/50 transition-all duration-300;
+  }
+
+  .card-glow {
+    @apply card relative overflow-hidden;
+  }
+
+  .card-glow::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-br from-elite-primary/10 via-transparent to-elite-secondary/10
+           opacity-0 transition-opacity duration-500;
+  }
+
+  .card-glow:hover::before {
+    @apply opacity-100;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-elite-primary via-elite-secondary to-elite-gold bg-clip-text text-transparent;
+  }
+
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-title {
+    @apply text-3xl sm:text-4xl font-display font-bold gradient-text mb-2;
+  }
+
+  .section-subtitle {
+    @apply text-elite-primary/80 text-lg mb-10;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+}
