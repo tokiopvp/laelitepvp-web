@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
-import { getProducts, createOrder, logActivity } from '@/lib/data'
+import { getProducts, createOrder, logActivity, notifyDiscord } from '@/lib/data'
 import { demoProducts } from '@/lib/demo-data'
 import { formatUSD, cn } from '@/lib/utils'
 
@@ -94,6 +94,14 @@ export default function PagoStorePage() {
       }
     }
     await logActivity('purchase', {
+      customer: form.name.trim(),
+      ffid: form.ffid.trim(),
+      method: form.method,
+      total: +cartTotal.toFixed(2),
+      orders,
+    })
+    await notifyDiscord({
+      type: 'purchase',
       customer: form.name.trim(),
       ffid: form.ffid.trim(),
       method: form.method,
@@ -316,7 +324,7 @@ export default function PagoStorePage() {
               <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-elite-gold" />
               <h3 className="font-display font-bold text-2xl gradient-text mb-2">¡Pedido recibido!</h3>
               <p className="text-white/70 mb-4">
-                Guardamos tu pedido. Te escribimos por Discord para confirmar el pago y entregar tus diamantes.
+                Guardamos tu pedido y te avisamos por Discord para confirmar el pago y entregar tus diamantes.
               </p>
               <p className="text-sm text-white/50 mb-6">N°: <span className="text-elite-primary">{success}</span></p>
               <button onClick={() => setSuccess(null)} className="btn-primary w-full justify-center">Listo</button>

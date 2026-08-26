@@ -140,3 +140,16 @@ export async function getActivityLogs(limit = 50): Promise<any[]> {
   if (error || !data) return []
   return data
 }
+
+// Notifica una venta/actividad a Discord via Cloud Function (webhook oculto)
+export async function notifyDiscord(payload: Record<string, unknown>): Promise<void> {
+  try {
+    await fetch('/api/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+  } catch {
+    // silencioso
+  }
+}
