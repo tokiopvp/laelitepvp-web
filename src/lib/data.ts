@@ -118,11 +118,15 @@ export async function logActivity(
 ): Promise<void> {
   const sb = client()
   if (!sb) return
-  await sb.from('activity_logs').insert({
-    action,
-    entity_type: 'store',
-    metadata: meta ?? {},
-  })
+  try {
+    await sb.from('activity_logs').insert({
+      action,
+      entity_type: 'store',
+      metadata: meta ?? {},
+    })
+  } catch {
+    // Silencioso: si no hay politica aun, no debe romper la UI
+  }
 }
 
 export async function getActivityLogs(limit = 50): Promise<any[]> {
