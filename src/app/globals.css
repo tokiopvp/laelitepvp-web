@@ -99,3 +99,6 @@
   .animate-delay-400 { animation-delay: 400ms; }
   .animate-delay-500 { animation-delay: 500ms; }
 }
+.input {
+  @apply w-full px-4 py-2.5 bg-elite-dark/60 border border-elite-border rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-elite-primary/50;
+}
