@@ -10,7 +10,7 @@
       <StartBoundary>2026-08-26T00:00:00</StartBoundary>
       <Repetition>
         <Interval>PT1M</Interval>
-        <Duration>PT0S</Duration>
+        <Duration>P1D</Duration>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
     </TimeTrigger>
@@ -22,7 +22,7 @@
     <Principal id="Author">
       <UserId>TOKIO CORPORATION</UserId>
       <LogonType>InteractiveToken</LogonType>
-      <RunLevel>HighestAvailable</RunLevel>
+      <RunLevel>LeastPrivilege</RunLevel>
     </Principal>
   </Principals>
   <Settings>
@@ -41,7 +41,7 @@
     <AllowStartOnDemand>true</AllowStartOnDemand>
     <Enabled>true</Enabled>
     <Hidden>false</Hidden>
-    <RunOnlyIfLoggedOn>false</RunOnlyIfLoggedOn>
+    <RunOnlyIfLoggedOn>true</RunOnlyIfLoggedOn>
     <WakeToRun>false</WakeToRun>
     <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
     <Priority>7</Priority>
