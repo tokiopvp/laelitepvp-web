@@ -82,8 +82,11 @@ export default function TorneosPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-white/50 flex items-center gap-1"><Trophy className="w-3 h-3" /> Posición</span>
-                  <span className="font-bold" style={{ color: t.placement === 1 ? '#ffd700' : '#fff' }}>
-                    {t.placement === 1 ? '🏆 CAMPEÓN' : `#${t.placement}`}
+                  <span
+                    className="font-bold"
+                    style={{ color: t.placement === 1 ? '#ffd700' : t.placement ? '#fff' : '#00d4ff' }}
+                  >
+                    {t.placement === 1 ? '🏆 CAMPEÓN' : t.placement ? `#${t.placement}` : '🔴 EN CURSO'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">

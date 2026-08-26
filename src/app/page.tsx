@@ -140,11 +140,7 @@ export default function Home() {
             >
               <div className="relative aspect-square max-w-md mx-auto">
                 {/* Main Card */}
-                <motion.div
-                  className="card-glow absolute inset-0 p-1"
-                  animate={{ rotate: [0, 1, -1, 0] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                >
+                <div className="card-glow absolute inset-0 p-1">
                   <div className="relative h-full bg-elite-card/90 backdrop-blur-2xl border border-elite-border rounded-2xl p-6 overflow-hidden">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-3">
@@ -201,12 +197,12 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                </motion.div>
+                </div>
 
-                {/* Floating Cards */}
+                {/* Floating corner badges (outside the card) */}
                 <motion.div
-                  className="absolute -top-4 -right-4 w-48 card-glow p-4"
-                  animate={{ y: [0, -15, 0] }}
+                  className="absolute -top-6 -right-6 w-44 card-glow p-4 z-10"
+                  animate={{ y: [0, -12, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <div className="text-center">
@@ -217,8 +213,8 @@ export default function Home() {
                 </motion.div>
 
                 <motion.div
-                  className="absolute bottom-4 -left-6 w-44 card-glow p-3"
-                  animate={{ x: [0, 15, 0] }}
+                  className="absolute -bottom-6 -left-6 w-40 card-glow p-3 z-10"
+                  animate={{ x: [0, 12, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
                 >
                   <div className="flex items-center gap-3">
@@ -233,7 +229,7 @@ export default function Home() {
                 </motion.div>
 
                 <motion.div
-                  className="absolute top-1/2 right-1/2 w-40 card-glow p-3 -translate-y-1/2"
+                  className="absolute -bottom-6 -right-6 w-40 card-glow p-3 z-10"
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
                 >
