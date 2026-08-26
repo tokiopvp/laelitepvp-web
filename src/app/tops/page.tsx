@@ -33,7 +33,11 @@ export default function TopsPage() {
     return unsub
   }, [])
 
-  const ranked = [...members].sort((a, b) => cat.value(b) - cat.value(a)).slice(0, 10)
+  const safeVal = (m: Member) => {
+    const v = cat.value(m) as number | null
+    return v == null ? -Infinity : v
+  }
+  const ranked = [...members].sort((a, b) => safeVal(b) - safeVal(a)).slice(0, 10)
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -103,7 +107,7 @@ export default function TopsPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-display font-bold text-2xl gradient-text">
-                    {cat.value(member).toLocaleString()}{cat.suffix}
+                    {cat.value(member) == null ? '—' : (cat.value(member) as number).toLocaleString()}{cat.suffix}
                   </p>
                   <p className="text-white/40 text-xs">{cat.label}</p>
                 </div>

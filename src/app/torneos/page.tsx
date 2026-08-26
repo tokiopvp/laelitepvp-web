@@ -69,7 +69,7 @@ export default function TorneosPage() {
                   {t.game_mode}
                 </div>
                 <div className="text-white/50 text-sm flex items-center gap-1">
-                  <Users className="w-3 h-3" /> {t.participants_count}
+                  <Users className="w-3 h-3" /> {t.participants_count ?? 0}
                 </div>
               </div>
 

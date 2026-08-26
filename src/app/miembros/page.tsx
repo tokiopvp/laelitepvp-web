@@ -89,7 +89,7 @@ export default function MiembrosPage() {
                     className="px-3 py-1 rounded-full text-xs font-bold"
                     style={{ backgroundColor: `${RANK_COLORS[member.rank || 'Bronze']}20`, color: RANK_COLORS[member.rank || 'Bronze'] }}
                   >
-                    {member.rank}
+                    {member.rank || '—'}
                   </div>
                 </div>
 
@@ -99,7 +99,7 @@ export default function MiembrosPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="bg-elite-dark/50 rounded-lg p-3">
                     <p className="text-white/50 text-xs">K/D</p>
-                    <p className="font-bold gradient-text text-lg">{member.kd_ratio}</p>
+                    <p className="font-bold gradient-text text-lg">{member.kd_ratio ?? '—'}</p>
                   </div>
                   <div className="bg-elite-dark/50 rounded-lg p-3">
                     <p className="text-white/50 text-xs">Nivel</p>
@@ -107,11 +107,11 @@ export default function MiembrosPage() {
                   </div>
                   <div className="bg-elite-dark/50 rounded-lg p-3">
                     <p className="text-white/50 text-xs flex items-center gap-1"><Flame className="w-3 h-3" /> HS</p>
-                    <p className="font-bold text-lg">{member.headshots.toLocaleString()}</p>
+                    <p className="font-bold text-lg">{member.headshots == null ? '—' : member.headshots.toLocaleString()}</p>
                   </div>
                   <div className="bg-elite-dark/50 rounded-lg p-3">
                     <p className="text-white/50 text-xs flex items-center gap-1"><Trophy className="w-3 h-3" /> Wins</p>
-                    <p className="font-bold text-lg">{member.wins.toLocaleString()}</p>
+                    <p className="font-bold text-lg">{member.wins == null ? '—' : member.wins.toLocaleString()}</p>
                   </div>
                 </div>
               </motion.div>

@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
-import { getProducts } from '@/lib/data'
+import { getProducts, createOrder, logActivity } from '@/lib/data'
 import { demoProducts } from '@/lib/demo-data'
 import { formatUSD, cn } from '@/lib/utils'
 
@@ -15,18 +15,102 @@ const categoryConfig: Record<ProductCategory, { label: string; icon: any; color:
   pass: { label: 'Pases', icon: Ticket, color: '#ff6b6b' },
 }
 
+const PAYMENT_METHODS = ['Transferencia / PagoMóvil', 'Binance', 'PayPal', 'Zelle', 'Nequi']
+
+type CartItem = { product: Product; qty: number }
+type Cart = Record<string, CartItem>
+
 export default function PagoStorePage() {
   const [products, setProducts] = useState<Product[]>(demoProducts)
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
+  const [cart, setCart] = useState<Cart>({})
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: '', ffid: '', discord: '', method: PAYMENT_METHODS[0] })
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     getProducts().then(setProducts)
   }, [])
 
+  // Registrar que el usuario entró a la tienda (una vez por carga)
+  useEffect(() => {
+    logActivity('store_view')
+  }, [])
+
   const filtered = products.filter((p) => p.category === activeCat)
 
+  const cartCount = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart])
+  const cartTotal = useMemo(
+    () => Object.values(cart).reduce((s, i) => s + i.qty * i.product.price_usd, 0),
+    [cart]
+  )
+
+  const addToCart = (p: Product) => {
+    setCart((prev) => ({
+      ...prev,
+      [p.id]: { product: p, qty: (prev[p.id]?.qty ?? 0) + 1 },
+    }))
+    logActivity('add_cart', { product: p.name })
+    setDrawerOpen(true)
+  }
+
+  const setQty = (id: string, qty: number) => {
+    setCart((prev) => {
+      const next = { ...prev }
+      if (qty <= 0) delete next[id]
+      else next[id] = { ...next[id], qty }
+      return next
+    })
+  }
+
+  const finalize = async () => {
+    setFormError('')
+    if (!form.name.trim()) return setFormError('Ingresa tu nombre.')
+    if (!form.ffid.trim()) return setFormError('Ingresa tu ID de Free Fire.')
+    const items = Object.values(cart)
+    if (items.length === 0) return setFormError('El carrito está vacío.')
+
+    setSubmitting(true)
+    let ok = 0
+    const orders: string[] = []
+    for (const it of items) {
+      const order_number = `ELITE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+      const { error } = await createOrder({
+        order_number,
+        customer_name: form.name.trim(),
+        free_fire_id: form.ffid.trim(),
+        customer_discord: form.discord.trim() || null,
+        product_id: it.product.id,
+        quantity: it.qty,
+        total_usd: +(it.qty * it.product.price_usd).toFixed(2),
+        payment_method: form.method,
+        notes: `${it.qty}x ${it.product.name}`,
+      })
+      if (!error) {
+        ok++
+        orders.push(order_number)
+      }
+    }
+    await logActivity('purchase', {
+      customer: form.name.trim(),
+      ffid: form.ffid.trim(),
+      method: form.method,
+      total: +cartTotal.toFixed(2),
+      orders,
+    })
+    setSubmitting(false)
+    if (ok > 0) {
+      setSuccess(orders.join(', '))
+      setCart({})
+    } else {
+      setFormError('No se pudo enviar el pedido. Inténtalo de nuevo o contáctanos por Discord.')
+    }
+  }
+
   return (
-    <div className="min-h-screen pt-24 pb-16">
+    <div className="min-h-screen pt-24 pb-24">
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <motion.div
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-elite-primary/10 rounded-full blur-3xl"
@@ -42,7 +126,7 @@ export default function PagoStorePage() {
             <span className="text-sm font-medium text-elite-primary">PAGOSTORE PREMIUM</span>
           </div>
           <h1 className="font-display font-bold text-4xl sm:text-5xl gradient-text mb-2">Tienda de Diamantes</h1>
-          <p className="text-white/60">Entrega instantánea • Mejor precio • Soporte 24/7</p>
+          <p className="text-white/60">Entrega automática por el bot • Mejor precio • Soporte 24/7</p>
         </motion.div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-10">
@@ -90,12 +174,10 @@ export default function PagoStorePage() {
 
               <div className="flex items-center justify-center h-32 mb-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {categoryConfig[product.category].icon && 
-                    (() => {
-                      const Icon = categoryConfig[product.category].icon
-                      return <Icon className="w-10 h-10 text-elite-primary" />
-                    })()
-                  }
+                  {(() => {
+                    const Icon = categoryConfig[product.category].icon
+                    return <Icon className="w-10 h-10 text-elite-primary" />
+                  })()}
                 </div>
               </div>
 
@@ -117,10 +199,10 @@ export default function PagoStorePage() {
                 )}
               </div>
 
-              <button className="btn-primary w-full justify-center group/btn">
+              <button onClick={() => addToCart(product)} className="btn-primary w-full justify-center group/btn">
                 <ShoppingCart className="w-4 h-4" />
-                Comprar
-                <Zap className="w-4 h-4 group-hover/btn:scale-125 transition-transform" />
+                Agregar
+                <Plus className="w-4 h-4 group-hover/btn:scale-125 transition-transform" />
               </button>
             </motion.div>
           ))}
@@ -132,6 +214,116 @@ export default function PagoStorePage() {
           </p>
         </div>
       </div>
+
+      {/* Botón flotante del carrito */}
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-elite-primary to-elite-secondary shadow-lg shadow-elite-primary/40 flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label="Carrito"
+      >
+        <ShoppingCart className="w-6 h-6 text-white" />
+        {cartCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-elite-gold text-black text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
+            {cartCount}
+          </span>
+        )}
+      </button>
+
+      {/* Drawer del carrito / checkout */}
+      <AnimatePresence>
+        {drawerOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black/60 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDrawerOpen(false)}
+            />
+            <motion.aside
+              className="fixed top-0 right-0 h-full w-full max-w-md z-50 bg-elite-dark border-l border-elite-border p-6 overflow-y-auto"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display font-bold text-2xl gradient-text flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5" /> Tu Carrito
+                </h2>
+                <button onClick={() => setDrawerOpen(false)} className="text-white/60 hover:text-white">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {Object.keys(cart).length === 0 ? (
+                <p className="text-white/40 text-center mt-20">Tu carrito está vacío.</p>
+              ) : (
+                <>
+                  <div className="space-y-3 mb-6">
+                    {Object.values(cart).map(({ product, qty }) => (
+                      <div key={product.id} className="card-glow p-3 flex items-center gap-3">
+                        <div className="flex-1">
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-elite-primary text-sm">{formatUSD(product.price_usd)} c/u</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setQty(product.id, qty - 1)} className="w-7 h-7 rounded bg-elite-card border border-elite-border flex items-center justify-center"><Minus className="w-3 h-3" /></button>
+                          <span className="w-6 text-center">{qty}</span>
+                          <button onClick={() => setQty(product.id, qty + 1)} className="w-7 h-7 rounded bg-elite-card border border-elite-border flex items-center justify-center"><Plus className="w-3 h-3" /></button>
+                        </div>
+                        <button onClick={() => setQty(product.id, 0)} className="text-red-400 hover:text-red-300"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="text-right font-display font-bold text-xl mb-4">
+                    Total: <span className="gradient-text">{formatUSD(cartTotal)}</span>
+                  </div>
+
+                  <div className="space-y-3 mb-4">
+                    <input className="input" placeholder="Tu nombre *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    <input className="input" placeholder="ID de Free Fire *" value={form.ffid} onChange={(e) => setForm({ ...form, ffid: e.target.value })} />
+                    <input className="input" placeholder="Discord (opcional)" value={form.discord} onChange={(e) => setForm({ ...form, discord: e.target.value })} />
+                    <select className="input" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
+                      {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+
+                  {formError && <p className="text-red-400 text-sm mb-3">{formError}</p>}
+
+                  <button onClick={finalize} disabled={submitting} className="btn-primary w-full justify-center">
+                    {submitting ? 'Enviando…' : 'Finalizar compra'} <Zap className="w-4 h-4" />
+                  </button>
+                  <p className="text-white/40 text-xs mt-3 text-center">
+                    Al finalizar recibirás un número de pedido. Te contactamos por Discord para coordinar el pago y entrega.
+                  </p>
+                </>
+              )}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de éxito */}
+      <AnimatePresence>
+        {success && (
+          <motion.div
+            className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <motion.div className="card-premium p-8 max-w-md text-center">
+              <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-elite-gold" />
+              <h3 className="font-display font-bold text-2xl gradient-text mb-2">¡Pedido recibido!</h3>
+              <p className="text-white/70 mb-4">
+                Guardamos tu pedido. Te escribimos por Discord para confirmar el pago y entregar tus diamantes.
+              </p>
+              <p className="text-sm text-white/50 mb-6">N°: <span className="text-elite-primary">{success}</span></p>
+              <button onClick={() => setSuccess(null)} className="btn-primary w-full justify-center">Listo</button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

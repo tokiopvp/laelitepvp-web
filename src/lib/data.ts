@@ -85,3 +85,54 @@ export function subscribeToTable(table: string, onChange: () => void): () => voi
     sb.removeChannel(channel)
   }
 }
+
+// ---- Store: crear pedido y registrar actividad (usa anon key + policies) ----
+export interface NewOrder {
+  order_number: string
+  customer_name: string
+  free_fire_id?: string | null
+  customer_discord?: string | null
+  customer_email?: string | null
+  product_id?: string | null
+  quantity?: number
+  total_usd: number
+  status?: string
+  payment_method?: string | null
+  notes?: string | null
+}
+
+export async function createOrder(order: NewOrder): Promise<{ error: string | null }> {
+  const sb = client()
+  if (!sb) return { error: 'Sin conexión a la base de datos' }
+  const { error } = await sb.from('orders').insert({
+    ...order,
+    status: order.status ?? 'pending',
+    quantity: order.quantity ?? 1,
+  })
+  return { error: error?.message ?? null }
+}
+
+export async function logActivity(
+  action: string,
+  meta?: Record<string, unknown>
+): Promise<void> {
+  const sb = client()
+  if (!sb) return
+  await sb.from('activity_logs').insert({
+    action,
+    entity_type: 'store',
+    metadata: meta ?? {},
+  })
+}
+
+export async function getActivityLogs(limit = 50): Promise<any[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('activity_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error || !data) return []
+  return data
+}
