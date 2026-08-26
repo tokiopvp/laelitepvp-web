@@ -31,7 +31,7 @@ export default function PagoStorePage() {
   const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
-  const [currency, setCurrency] = useState<'USD' | 'VES'>('USD')
+  const [country, setCountry] = useState<string>('ALL')
   const [vesRate, setVesRate] = useState<number | null>(null)
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [whatsapp, setWhatsapp] = useState<string | null>(null)
@@ -40,6 +40,8 @@ export default function PagoStorePage() {
     getProducts().then(setProducts)
     getPaymentMethods().then(setMethods)
     getSetting('whatsapp_number').then(setWhatsapp)
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('store_country') : null
+    if (saved) setCountry(saved)
   }, [])
 
   // Registrar que el usuario entro a la tienda (una vez por carga)
@@ -47,9 +49,27 @@ export default function PagoStorePage() {
     logActivity('store_view')
   }, [])
 
+  const COUNTRY_LABEL: Record<string, string> = { ALL: 'Internacional', VE: 'Venezuela', CO: 'Colombia' }
+  const countries = Array.from(new Set(methods.map((m) => m.country))).sort((a, b) =>
+    a === 'ALL' ? -1 : b === 'ALL' ? 1 : a.localeCompare(b)
+  )
+  const currency = country === 'VE' ? 'VES' : 'USD'
+  const methodsForCountry = methods.filter((m) => m.country === country || m.country === 'ALL')
+  const methodNames = methodsForCountry.length ? methodsForCountry.map((m) => m.name) : FALLBACK_METHODS
+
+  // Mantener el metodo de pago seleccionado dentro de los disponibles para el pais
+  useEffect(() => {
+    if (methodNames.length && !methodNames.includes(form.method)) {
+      setForm((f) => ({ ...f, method: methodNames[0] }))
+    }
+  }, [methodNames, form.method])
+
   // Tipo de cambio VES en vivo (Binance P2P)
   useEffect(() => {
-    if (currency !== 'VES') return
+    if (currency !== 'VES') {
+      setVesRate(null)
+      return
+    }
     let alive = true
     fetch('/api/ves-rate')
       .then((r) => r.json())
@@ -58,18 +78,12 @@ export default function PagoStorePage() {
     return () => { alive = false }
   }, [currency])
 
-  const methodNames = methods.length ? methods.map((m) => m.name) : FALLBACK_METHODS
   const fmt = (usd: number) => {
     if (currency === 'VES' && vesRate) {
       return `Bs.S ${(usd * vesRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })}`
     }
     return formatUSD(usd)
   }
-
-  // Registrar que el usuario entró a la tienda (una vez por carga)
-  useEffect(() => {
-    logActivity('store_view')
-  }, [])
 
   const filtered = products.filter(
     (p) =>
@@ -174,21 +188,30 @@ export default function PagoStorePage() {
         </motion.div>
 
         <div className="flex flex-wrap justify-center items-center gap-3 mb-6">
-          <div className="inline-flex rounded-xl border border-elite-border overflow-hidden">
-            {(['USD', 'VES'] as const).map((c) => (
-              <button
-                key={c}
-                onClick={() => setCurrency(c)}
-                className={currency === c ? 'px-4 py-2 text-sm font-bold bg-gradient-to-r from-elite-primary to-elite-secondary text-white' : 'px-4 py-2 text-sm text-white/70 hover:text-white'}
-              >
-                {c === 'USD' ? 'USD $' : 'VES Bs.S'}
-              </button>
-            ))}
+          <div className="inline-flex items-center gap-2 rounded-xl border border-elite-border px-3 py-2 bg-elite-card">
+            <span className="text-white/50 text-sm">País:</span>
+            <select
+              value={country}
+              onChange={(e) => {
+                setCountry(e.target.value)
+                if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
+              }}
+              className="bg-transparent text-sm font-bold text-white focus:outline-none"
+            >
+              {countries.map((c) => (
+                <option key={c} value={c} className="bg-elite-dark">
+                  {COUNTRY_LABEL[c] ?? c}
+                </option>
+              ))}
+            </select>
           </div>
           {currency === 'VES' && (
             <span className="text-white/50 text-xs">
               {vesRate ? `1 USDT ≈ Bs.S ${vesRate.toLocaleString('es-VE')} (Binance P2P)` : 'cargando tasa…'}
             </span>
+          )}
+          {currency === 'USD' && country !== 'ALL' && (
+            <span className="text-white/50 text-xs">Precios en USD</span>
           )}
         </div>
 

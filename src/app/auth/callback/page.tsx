@@ -12,12 +12,24 @@ function CallbackInner() {
     const sb = supabaseBrowser()
     const code = params.get('code')
     if (!sb || !code) {
-      router.replace('/admin')
+      router.replace('/')
       return
     }
-    sb.auth.exchangeCodeForSession(code).then(() => {
-      router.replace('/admin')
-    })
+    ;(async () => {
+      const { error } = await sb.auth.exchangeCodeForSession(code)
+      if (error) {
+        router.replace('/')
+        return
+      }
+      const { data: u } = await sb.auth.getUser()
+      const uid = u.user?.id
+      let role: string | null = null
+      if (uid) {
+        const { data } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle()
+        role = (data?.role as string) ?? null
+      }
+      router.replace(role && role !== 'member' ? '/admin' : '/mi')
+    })()
   }, [params, router])
 
   return (

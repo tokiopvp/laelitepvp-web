@@ -37,6 +37,31 @@ export interface Member {
   updated_at: string
 }
 
+export interface Profile {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+  role: Role
+  bio: string | null
+  discord_id: string | null
+  free_fire_id: string | null
+  member_id: string | null
+  points: number
+  last_checkin: string | null
+  is_member: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface PointEvent {
+  id: string
+  profile_id: string
+  type: 'checkin' | 'link'
+  amount: number
+  created_at: string
+}
+
 export interface PaymentMethod {
   id: string
   name: string

@@ -5,7 +5,7 @@ import {
   demoProducts,
   demoNews,
 } from './demo-data'
-import type { Member, Tournament, Product, News, PaymentMethod, Setting } from './types'
+import type { Member, Tournament, Product, News, PaymentMethod, Setting, Profile, PointEvent } from './types'
 
 function client() {
   try {
@@ -208,4 +208,64 @@ export async function setSetting(key: string, value: string): Promise<{ error: s
   if (!sb) return { error: 'Sin conexión' }
   const { error } = await sb.from('settings').upsert({ key, value, updated_at: new Date().toISOString() })
   return { error: error?.message ?? null }
+}
+
+// ---- Perfil de miembro + puntos virtuales (Elite Coin) ----
+export async function getMyProfile(): Promise<Profile | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data: u } = await sb.auth.getUser()
+  const uid = u.user?.id
+  if (!uid) return null
+  const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle()
+  if (error || !data) return null
+  return data as Profile
+}
+
+// Otorga puntos de check-in (10/dia) via RPC seguro. Devuelve saldo nuevo o null.
+export async function dailyCheckin(): Promise<number | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data: u } = await sb.auth.getUser()
+  const uid = u.user?.id
+  if (!uid) return null
+  const { data, error } = await sb.rpc('award_points', { p_profile_id: uid, p_type: 'checkin' })
+  if (error) return null
+  return data as number
+}
+
+// Vincula la cuenta a un miembro del clan por Free Fire ID (RPC seguro).
+export async function linkMember(ffid: string): Promise<boolean> {
+  const sb = client()
+  if (!sb) return false
+  const { data, error } = await sb.rpc('link_member', { p_ffid: ffid })
+  if (error) return false
+  return !!data
+}
+
+export async function getPointEvents(): Promise<PointEvent[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data: u } = await sb.auth.getUser()
+  const uid = u.user?.id
+  if (!uid) return []
+  const { data, error } = await sb
+    .from('point_events')
+    .select('*')
+    .eq('profile_id', uid)
+    .order('created_at', { ascending: false })
+  if (error || !data) return []
+  return data as PointEvent[]
+}
+
+export async function getLeaderboard(limit = 50): Promise<Profile[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('profiles')
+    .select('id, display_name, points, member_id, avatar_url')
+    .order('points', { ascending: false })
+    .limit(limit)
+  if (error || !data) return []
+  return data as Profile[]
 }

@@ -12,6 +12,7 @@ const links = [
   { href: '/miembros', label: 'Miembros' },
   { href: '/tops', label: 'Tops' },
   { href: '/torneos', label: 'Torneos' },
+  { href: '/comunidad', label: 'Comunidad' },
   { href: '/pagostore', label: 'PagoStore' },
   { href: '/noticias', label: 'Noticias' },
 ]
@@ -19,7 +20,7 @@ const links = [
 export default function SiteNav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
-  const { isAuthed } = useAuth()
+  const { isAuthed, role } = useAuth()
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href)
@@ -69,13 +70,18 @@ export default function SiteNav() {
               Unirse
             </Link>
             {isAuthed && (
-              <Link href="/admin" className="text-white/70 hover:text-elite-primary text-sm font-medium transition-colors">
-                Panel
+              <Link
+                href={role && role !== 'member' ? '/admin' : '/mi'}
+                className="text-white/70 hover:text-elite-primary text-sm font-medium transition-colors"
+              >
+                {role && role !== 'member' ? 'Panel' : 'Mi cuenta'}
               </Link>
             )}
-            <Link href="/admin" className="text-white/40 hover:text-white text-sm transition-colors">
-              Staff
-            </Link>
+            {!isAuthed && (
+              <Link href="/admin" className="text-white/40 hover:text-white text-sm transition-colors">
+                Staff
+              </Link>
+            )}
           </div>
 
           <button
@@ -116,13 +122,24 @@ export default function SiteNav() {
               >
                 Unirse al Clan
               </Link>
-              <Link
-                href="/admin"
-                onClick={() => setOpen(false)}
-                className="text-center text-white/50 py-3"
-              >
-                Acceso Staff
-              </Link>
+              {isAuthed && (
+                <Link
+                  href={role && role !== 'member' ? '/admin' : '/mi'}
+                  onClick={() => setOpen(false)}
+                  className="text-center text-white/70 py-3"
+                >
+                  {role && role !== 'member' ? 'Panel' : 'Mi cuenta'}
+                </Link>
+              )}
+              {!isAuthed && (
+                <Link
+                  href="/admin"
+                  onClick={() => setOpen(false)}
+                  className="text-center text-white/50 py-3"
+                >
+                  Acceso Staff
+                </Link>
+              )}
             </div>
           </motion.div>
         )}
