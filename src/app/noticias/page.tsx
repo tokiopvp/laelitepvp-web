@@ -1,13 +1,19 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Newspaper, ArrowRight } from 'lucide-react'
-import { demoNews } from '@/lib/demo-data'
+import { News } from '@/lib/types'
+import { getNews } from '@/lib/data'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
 export default function NoticiasPage() {
-  const news = demoNews
+  const [news, setNews] = useState<News[]>([])
+
+  useEffect(() => {
+    getNews().then(setNews)
+  }, [])
 
   return (
     <div className="min-h-screen pt-24 pb-16">

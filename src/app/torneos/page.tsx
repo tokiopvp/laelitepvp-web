@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Crown, Users, Calendar, Target } from 'lucide-react'
-import { demoTournaments } from '@/lib/demo-data'
+import { Tournament } from '@/lib/types'
+import { getTournaments } from '@/lib/data'
 import { formatDate } from '@/lib/utils'
 
 const modeColors: Record<string, string> = {
@@ -13,7 +15,11 @@ const modeColors: Record<string, string> = {
 }
 
 export default function TorneosPage() {
-  const tournaments = demoTournaments
+  const [tournaments, setTournaments] = useState<Tournament[]>([])
+
+  useEffect(() => {
+    getTournaments().then(setTournaments)
+  }, [])
 
   return (
     <div className="min-h-screen pt-24 pb-16">

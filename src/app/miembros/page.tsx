@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Flame, Trophy, Users, Star, Skull } from 'lucide-react'
 import { Member } from '@/lib/types'
-import { demoMembers } from '@/lib/demo-data'
+import { getMembers } from '@/lib/data'
 import { cn } from '@/lib/utils'
 
 const RANK_COLORS: Record<string, string> = {
@@ -24,7 +25,15 @@ const ROLE_ICONS: Record<string, any> = {
 }
 
 export default function MiembrosPage() {
-  const members = demoMembers
+  const [members, setMembers] = useState<Member[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getMembers().then((m) => {
+      setMembers(m)
+      setLoading(false)
+    })
+  }, [])
 
   return (
     <div className="min-h-screen pt-24 pb-16">

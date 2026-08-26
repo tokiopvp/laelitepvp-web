@@ -1,15 +1,18 @@
 import { notFound } from 'next/navigation'
-import { demoNews } from '@/lib/demo-data'
+import { getNewsBySlug } from '@/lib/data'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 import { Newspaper, ArrowLeft } from 'lucide-react'
 
 export function generateStaticParams() {
-  return demoNews.map((n) => ({ slug: n.slug }))
+  return [
+    { slug: 'elite-cup-s12' },
+    { slug: 'nuevos-ingresos' },
+  ]
 }
 
-export default function NewsDetailPage({ params }: { params: { slug: string } }) {
-  const article = demoNews.find((n) => n.slug === params.slug)
+export default async function NewsDetailPage({ params }: { params: { slug: string } }) {
+  const article = await getNewsBySlug(params.slug)
 
   if (!article) return notFound()
 

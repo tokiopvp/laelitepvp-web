@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Trophy, Target, Star, Zap, Crown, Medal } from 'lucide-react'
-import { demoMembers } from '@/lib/demo-data'
 import { Member } from '@/lib/types'
+import { getMembers } from '@/lib/data'
 import { cn } from '@/lib/utils'
 
 type Category = 'kd' | 'headshots' | 'wins' | 'booyahs' | 'level'
@@ -20,10 +20,15 @@ const categories: { key: Category; label: string; icon: any; value: (m: Member) 
 const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#00d4ff', '#7c3aed']
 
 export default function TopsPage() {
+  const [members, setMembers] = useState<Member[]>([])
   const [activeCat, setActiveCat] = useState<Category>('kd')
   const cat = categories.find((c) => c.key === activeCat)!
 
-  const ranked = [...demoMembers].sort((a, b) => cat.value(b) - cat.value(a)).slice(0, 10)
+  useEffect(() => {
+    getMembers().then(setMembers)
+  }, [])
+
+  const ranked = [...members].sort((a, b) => cat.value(b) - cat.value(a)).slice(0, 10)
 
   return (
     <div className="min-h-screen pt-24 pb-16">

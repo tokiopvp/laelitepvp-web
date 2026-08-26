@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket } from 'lucide-react'
-import { demoProducts } from '@/lib/demo-data'
 import { Product, ProductCategory } from '@/lib/types'
+import { getProducts } from '@/lib/data'
 import { formatUSD, cn } from '@/lib/utils'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
@@ -15,8 +15,14 @@ const categoryConfig: Record<ProductCategory, { label: string; icon: any; color:
 }
 
 export default function PagoStorePage() {
+  const [products, setProducts] = useState<Product[]>([])
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
-  const products = demoProducts.filter((p) => p.category === activeCat)
+
+  useEffect(() => {
+    getProducts().then(setProducts)
+  }, [])
+
+  const filtered = products.filter((p) => p.category === activeCat)
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -61,7 +67,7 @@ export default function PagoStorePage() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product, i) => (
+          {filtered.map((product, i) => (
             <motion.div
               key={product.id}
               className="card-glow p-6 group relative overflow-hidden"
