@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Flame, Trophy, Users, Star, Skull } from 'lucide-react'
 import { Member } from '@/lib/types'
-import { getMembers } from '@/lib/data'
+import { getMembers, subscribeToTable } from '@/lib/data'
 import { cn } from '@/lib/utils'
 
 const RANK_COLORS: Record<string, string> = {
@@ -33,6 +33,10 @@ export default function MiembrosPage() {
       setMembers(m)
       setLoading(false)
     })
+    const unsub = subscribeToTable('members', () => {
+      getMembers().then(setMembers)
+    })
+    return unsub
   }, [])
 
   return (

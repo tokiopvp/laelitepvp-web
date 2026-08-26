@@ -73,3 +73,15 @@ export async function getNewsBySlug(slug: string): Promise<News | null> {
   if (error || !data) return demoNews.find((n) => n.slug === slug) ?? null
   return data as News
 }
+
+export function subscribeToTable(table: string, onChange: () => void): () => void {
+  const sb = client()
+  if (!sb) return () => {}
+  const channel = sb
+    .channel(`${table}-changes`)
+    .on('postgres_changes', { event: '*', schema: 'public', table }, () => onChange())
+    .subscribe()
+  return () => {
+    sb.removeChannel(channel)
+  }
+}

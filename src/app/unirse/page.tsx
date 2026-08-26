@@ -2,12 +2,15 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, UserPlus, CheckCircle } from 'lucide-react'
+import { Send, UserPlus, CheckCircle, AlertCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { supabaseBrowser } from '@/lib/supabase/client'
 
 export default function UnirsePage() {
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     nickname: '',
     free_fire_id: '',
@@ -17,8 +20,29 @@ export default function UnirsePage() {
     discord: '',
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    setError(null)
+    const sb = supabaseBrowser()
+    if (!sb) {
+      setError('No se pudo conectar con la base de datos.')
+      setLoading(false)
+      return
+    }
+    const { error: err } = await sb.from('applications').insert({
+      nickname: form.nickname,
+      free_fire_id: form.free_fire_id,
+      rank: form.rank || null,
+      age: form.age ? parseInt(form.age, 10) : null,
+      discord: form.discord || null,
+      experience: form.experience || null,
+    })
+    setLoading(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
     setSubmitted(true)
   }
 
@@ -101,9 +125,15 @@ export default function UnirsePage() {
               onChange={(e) => setForm({ ...form, experience: e.target.value })}
             />
           </div>
-          <Button type="submit" className="w-full justify-center group">
+          {error && (
+            <div className="flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+              <AlertCircle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+          <Button type="submit" className="w-full justify-center group" disabled={loading}>
             <Send className="w-4 h-4" />
-            Enviar Solicitud
+            {loading ? 'Enviando...' : 'Enviar Solicitud'}
           </Button>
         </motion.form>
       </div>

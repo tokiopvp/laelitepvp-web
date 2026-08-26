@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Crown, Users, Calendar, Target } from 'lucide-react'
 import { Tournament } from '@/lib/types'
-import { getTournaments } from '@/lib/data'
+import { getTournaments, subscribeToTable } from '@/lib/data'
 import { formatDate } from '@/lib/utils'
 
 const modeColors: Record<string, string> = {
@@ -19,6 +19,10 @@ export default function TorneosPage() {
 
   useEffect(() => {
     getTournaments().then(setTournaments)
+    const unsub = subscribeToTable('tournaments', () => {
+      getTournaments().then(setTournaments)
+    })
+    return unsub
   }, [])
 
   return (

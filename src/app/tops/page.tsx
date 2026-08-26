@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Trophy, Target, Star, Zap, Crown, Medal } from 'lucide-react'
 import { Member } from '@/lib/types'
-import { getMembers } from '@/lib/data'
+import { getMembers, subscribeToTable } from '@/lib/data'
 import { cn } from '@/lib/utils'
 
 type Category = 'kd' | 'headshots' | 'wins' | 'booyahs' | 'level'
@@ -26,6 +26,10 @@ export default function TopsPage() {
 
   useEffect(() => {
     getMembers().then(setMembers)
+    const unsub = subscribeToTable('members', () => {
+      getMembers().then(setMembers)
+    })
+    return unsub
   }, [])
 
   const ranked = [...members].sort((a, b) => cat.value(b) - cat.value(a)).slice(0, 10)
