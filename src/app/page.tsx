@@ -49,21 +49,6 @@ const leaderboard = [
 export default function Home() {
   return (
     <div className="min-h-screen relative overflow-x-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-elite-primary/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-elite-secondary/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,212,255,0.03)_0%,_transparent_70%)]" />
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-5" />
-      </div>
 
       {/* Hero Section */}
       <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20">
@@ -93,10 +78,10 @@ export default function Home() {
                 />
               </motion.div>
 
-              <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6">
-                <span className="block">La Elite</span>
-                <span className="block gradient-text">PvP</span>
-              </h1>
+               <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6">
+                 <span className="block">La Elite</span>
+                 <span className="block gradient-text-shimmer">PvP</span>
+               </h1>
               <p className="text-xl sm:text-2xl text-white/70 mb-8 max-w-xl leading-relaxed">
                 El clan más letal de Free Fire. Dominamos ranked, arrasamos torneos y vendemos diamantes
                 al mejor precio. ¿Te atreves a entrar?

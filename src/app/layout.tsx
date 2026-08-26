@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
+import AnimatedBackground from '@/components/layout/AnimatedBackground'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,6 +20,7 @@ const rajdhani = Rajdhani({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://laelitepvp.com'),
   title: 'La Elite PvP | Clan Competitivo Free Fire',
   description: 'Clan competitivo de Free Fire. Tops, rankings, miembros oficiales, torneos ganados y PagoStore Premium para diamantes.',
   keywords: ['Free Fire', 'Clan', 'La Elite PvP', 'Competitivo', 'Torneos', 'Diamantes', 'PagoStore'],
@@ -75,6 +77,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="min-h-screen flex flex-col">
+        <AnimatedBackground />
         <AuthProvider>
           <SiteNav />
           <main className="flex-1">{children}</main>
