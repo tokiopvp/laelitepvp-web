@@ -5,11 +5,12 @@ import { motion } from 'framer-motion'
 import { Newspaper, ArrowRight } from 'lucide-react'
 import { News } from '@/lib/types'
 import { getNews } from '@/lib/data'
+import { demoNews } from '@/lib/demo-data'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
 export default function NoticiasPage() {
-  const [news, setNews] = useState<News[]>([])
+  const [news, setNews] = useState<News[]>(demoNews)
 
   useEffect(() => {
     getNews().then(setNews)
@@ -18,7 +19,7 @@ export default function NoticiasPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="section-container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-secondary/10 border border-elite-secondary/30 mb-4">
             <Newspaper className="w-4 h-4 text-elite-secondary" />
             <span className="text-sm font-medium text-elite-secondary">NOTICIAS DEL CLAN</span>
@@ -32,7 +33,7 @@ export default function NoticiasPage() {
             <motion.article
               key={n.id}
               className="card-glow p-6 group"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               whileHover={{ y: -5 }}

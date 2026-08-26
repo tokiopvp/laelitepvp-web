@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Crown, Flame, Trophy, Users, Star, Skull } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { getMembers, subscribeToTable } from '@/lib/data'
+import { demoMembers } from '@/lib/demo-data'
 import { cn } from '@/lib/utils'
 
 const RANK_COLORS: Record<string, string> = {
@@ -25,8 +26,8 @@ const ROLE_ICONS: Record<string, any> = {
 }
 
 export default function MiembrosPage() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+  const [members, setMembers] = useState<Member[]>(demoMembers)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     getMembers().then((m) => {
@@ -51,7 +52,7 @@ export default function MiembrosPage() {
 
       <div className="section-container">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
@@ -70,7 +71,7 @@ export default function MiembrosPage() {
               <motion.div
                 key={member.id}
                 className="card-glow p-6 group"
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -8 }}

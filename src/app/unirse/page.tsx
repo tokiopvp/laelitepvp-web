@@ -51,7 +51,7 @@ export default function UnirsePage() {
       <div className="min-h-screen pt-24 pb-16 flex items-center justify-center">
         <motion.div
           className="card-glow p-10 text-center max-w-md"
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
         >
           <CheckCircle className="w-16 h-16 text-elite-primary mx-auto mb-4" />
@@ -66,7 +66,7 @@ export default function UnirsePage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="section-container max-w-2xl">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-primary/10 border border-elite-primary/30 mb-4">
             <UserPlus className="w-4 h-4 text-elite-primary" />
             <span className="text-sm font-medium text-elite-primary">ÚNETE AL CLAN</span>
@@ -78,7 +78,7 @@ export default function UnirsePage() {
         <motion.form
           onSubmit={handleSubmit}
           className="card-glow p-8 space-y-5"
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ y: 30 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <Input

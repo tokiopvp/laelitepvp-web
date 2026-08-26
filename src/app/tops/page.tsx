@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Flame, Trophy, Target, Star, Zap, Crown, Medal } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { getMembers, subscribeToTable } from '@/lib/data'
+import { demoMembers } from '@/lib/demo-data'
 import { cn } from '@/lib/utils'
 
 type Category = 'kd' | 'headshots' | 'wins' | 'booyahs' | 'level'
@@ -20,7 +21,7 @@ const categories: { key: Category; label: string; icon: any; value: (m: Member) 
 const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#00d4ff', '#7c3aed']
 
 export default function TopsPage() {
-  const [members, setMembers] = useState<Member[]>([])
+  const [members, setMembers] = useState<Member[]>(demoMembers)
   const [activeCat, setActiveCat] = useState<Category>('kd')
   const cat = categories.find((c) => c.key === activeCat)!
 
@@ -45,7 +46,7 @@ export default function TopsPage() {
       </div>
 
       <div className="section-container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-gold/10 border border-elite-gold/30 mb-4">
             <Crown className="w-4 h-4 text-elite-gold" />
             <span className="text-sm font-medium text-elite-gold">TOPS EN VIVO</span>
@@ -81,9 +82,9 @@ export default function TopsPage() {
               <motion.div
                 key={member.id}
                 layout
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+                exit={{ x: 20 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 className="card-glow flex items-center gap-4 p-4"
               >

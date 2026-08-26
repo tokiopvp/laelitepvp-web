@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Rajdhani } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
+import SiteNav from '@/components/layout/SiteNav'
+import SiteFooter from '@/components/layout/SiteFooter'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -72,8 +74,12 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
+      <body className="min-h-screen flex flex-col">
+        <AuthProvider>
+          <SiteNav />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </AuthProvider>
       </body>
     </html>
   )

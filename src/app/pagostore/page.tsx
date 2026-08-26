@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
 import { getProducts } from '@/lib/data'
+import { demoProducts } from '@/lib/demo-data'
 import { formatUSD, cn } from '@/lib/utils'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
@@ -15,7 +16,7 @@ const categoryConfig: Record<ProductCategory, { label: string; icon: any; color:
 }
 
 export default function PagoStorePage() {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[]>(demoProducts)
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function PagoStorePage() {
       </div>
 
       <div className="section-container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-primary/10 border border-elite-primary/30 mb-4">
             <ShoppingCart className="w-4 h-4 text-elite-primary" />
             <span className="text-sm font-medium text-elite-primary">PAGOSTORE PREMIUM</span>
@@ -71,7 +72,7 @@ export default function PagoStorePage() {
             <motion.div
               key={product.id}
               className="card-glow p-6 group relative overflow-hidden"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               whileHover={{ y: -5 }}

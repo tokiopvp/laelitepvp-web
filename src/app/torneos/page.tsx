@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Trophy, Crown, Users, Calendar, Target } from 'lucide-react'
 import { Tournament } from '@/lib/types'
 import { getTournaments, subscribeToTable } from '@/lib/data'
+import { demoTournaments } from '@/lib/demo-data'
 import { formatDate } from '@/lib/utils'
 
 const modeColors: Record<string, string> = {
@@ -15,7 +16,7 @@ const modeColors: Record<string, string> = {
 }
 
 export default function TorneosPage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>([])
+  const [tournaments, setTournaments] = useState<Tournament[]>(demoTournaments)
 
   useEffect(() => {
     getTournaments().then(setTournaments)
@@ -36,7 +37,7 @@ export default function TorneosPage() {
       </div>
 
       <div className="section-container">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-gold/10 border border-elite-gold/30 mb-4">
             <Trophy className="w-4 h-4 text-elite-gold" />
             <span className="text-sm font-medium text-elite-gold">{tournaments.filter(t => t.placement === 1).length} CAMPEONATOS GANADOS</span>
@@ -50,7 +51,7 @@ export default function TorneosPage() {
             <motion.div
               key={t.id}
               className="card-glow p-6 group relative overflow-hidden"
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               whileHover={{ y: -5 }}
