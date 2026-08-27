@@ -150,7 +150,20 @@ def extract(db_path):
     seen = set()
     for r in rows:
         uid = r["uid"]
-        key = uid if uid else f"nick:{r['nick']}"
+        # SOLO se publican los CONFIRMADOS: los que tienen uid porque el bot
+        # abrio su perfil y leyo el nick estatico de la cabecera.
+        #
+        # Las filas sin uid vienen de la lista del clan, donde el nombre esta
+        # sobre un banner en movimiento y el OCR lo saca roto y distinto en
+        # cada pasada. Publicarlas llenaba la web de miembros fantasma
+        # ("ID CLAN 2065357169", "R4NCIPE", "TASMANTA P") y de duplicados
+        # deformados de gente que ya estaba.
+        #
+        # No se borran de la base: siguen ahi, invisibles, hasta que el barrido
+        # les abra el perfil. Asi no se pierde a nadie por sospecha.
+        if not uid:
+            continue
+        key = uid
         if key in seen:
             continue
         seen.add(key)
