@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 import { TopListSkeleton } from '@/components/Skeletons'
 
-const rankColors = ['#e8b33c', '#c0c0c0', '#cd7f32', '#ff5a1f', '#ff9500']
+const rankColors = ['#e8b33c', '#c0c0c0', '#cd7f32', '#e11d3c', '#ff4d68']
 
 export default function TopsPage() {
   const { members, loading } = useMembers()

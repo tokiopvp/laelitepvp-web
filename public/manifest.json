@@ -4,8 +4,8 @@
   "description": "Clan competitivo de Free Fire. Tops, rankings, miembros, torneos y PagoStore Premium.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0d0b09",
-  "theme_color": "#ff5a1f",
+  "background_color": "#08080a",
+  "theme_color": "#e11d3c",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -32,7 +32,7 @@ export default function WeaponParallax() {
         style={{
           left: glowX,
           top: '30%',
-          background: 'radial-gradient(circle, #ff5a1f 0%, #ff9500 55%, transparent 72%)',
+          background: 'radial-gradient(circle, #e11d3c 0%, #ff4d68 55%, transparent 72%)',
         }}
       />
 
@@ -44,7 +44,7 @@ export default function WeaponParallax() {
         <svg width="520" height="220" viewBox="0 0 520 220" fill="none">
           <defs>
             <linearGradient id="gun" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#ff5a1f" />
+              <stop offset="0%" stopColor="#e11d3c" />
               <stop offset="100%" stopColor="#e8b33c" />
             </linearGradient>
             <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
@@ -55,7 +55,7 @@ export default function WeaponParallax() {
               </feMerge>
             </filter>
           </defs>
-          <g stroke="url(#gun)" strokeWidth="3" filter="url(#glow)" strokeLinejoin="round" fill="rgba(255,90,31,0.06)">
+          <g stroke="url(#gun)" strokeWidth="3" filter="url(#glow)" strokeLinejoin="round" fill="rgba(225,29,60,0.06)">
             {/* cañón */}
             <rect x="330" y="86" width="160" height="16" rx="4" />
             {/* boca */}

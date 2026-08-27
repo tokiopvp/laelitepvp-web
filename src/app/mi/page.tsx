@@ -170,8 +170,8 @@ export default function MiPage() {
               className="h-28 sm:h-32"
               style={{
                 background: linkedMember
-                  ? `linear-gradient(90deg, ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}55, #ff950033, #ff5a1f44)`
-                  : 'linear-gradient(90deg, #ff5a1f44, #ff950044)',
+                  ? `linear-gradient(90deg, ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}55, #ff4d6833, #e11d3c44)`
+                  : 'linear-gradient(90deg, #e11d3c44, #ff4d6844)',
               }}
             />
           )}
@@ -191,7 +191,7 @@ export default function MiPage() {
               <div
                 className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
                 style={{
-                  background: 'linear-gradient(135deg, #ff5a1f, #ff9500)',
+                  background: 'linear-gradient(135deg, #e11d3c, #ff4d68)',
                   boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09',
                 }}
               >

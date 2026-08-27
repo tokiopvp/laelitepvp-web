@@ -10,7 +10,7 @@ import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais
 import type { PaymentMethod } from '@/lib/types'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
-  diamonds: { label: 'Diamantes', icon: Gem, color: '#ff5a1f' },
+  diamonds: { label: 'Diamantes', icon: Gem, color: '#e11d3c' },
   membership: { label: 'Membresías', icon: Crown, color: '#e8b33c' },
   bundle: { label: 'Bundles', icon: Package, color: '#ffd700' },
   pass: { label: 'Pases', icon: Ticket, color: '#ff6b6b' },

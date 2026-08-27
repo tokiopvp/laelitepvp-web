@@ -4,17 +4,17 @@ import { useEffect, useRef, useState } from 'react'
 import { detectarGama, type Capacidades } from '@/lib/device'
 
 /**
- * Fondo del sitio: ceniza con brasas subiendo.
+ * Fondo del sitio: negro con chispas carmesi subiendo.
  *
  * Antes esto rotaba 8 JPG que eran las capturas de depuracion del emulador
  * (menus del juego, la lista del clan, la pantalla de armas). Se veian como lo
  * que eran. Ahora el fondo se dibuja: no pesa nada, no se pixela, y las brasas
  * suben en vez de caer, que es lo que hace el fuego.
  *
- * El numero de brasas lo decide la gama del dispositivo; en gama baja no se
+ * El numero de chispas lo decide la gama del dispositivo; en gama baja no se
  * dibuja ninguna y queda solo el degradado, que es igual de digno.
  */
-function Brasas({ cantidad }: { cantidad: number }) {
+function Chispas({ cantidad }: { cantidad: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -37,25 +37,25 @@ function Brasas({ cantidad }: { cantidad: number }) {
     }
     resize()
 
-    type Brasa = { x: number; y: number; r: number; vy: number; deriva: number; fase: number; calor: number }
-    const nueva = (alto: number): Brasa => ({
+    type Chispa = { x: number; y: number; r: number; vy: number; deriva: number; fase: number; calor: number }
+    const nueva = (alto: number): Chispa => ({
       x: Math.random() * w,
       y: alto,
       r: Math.random() * 1.8 + 0.6,
       vy: Math.random() * 0.35 + 0.12,
       deriva: (Math.random() - 0.5) * 0.25,
       fase: Math.random() * Math.PI * 2,
-      // 0 = ascua apagada (oro), 1 = brasa viva (naranja)
+      // 0 = chispa apagada (carmesi hondo), 1 = viva (rosa sangre)
       calor: Math.random(),
     })
-    const brasas: Brasa[] = Array.from({ length: cantidad }, () => nueva(Math.random() * h))
+    const chispas: Chispa[] = Array.from({ length: cantidad }, () => nueva(Math.random() * h))
 
     const dibujar = () => {
       ctx.clearRect(0, 0, w, h)
-      for (const b of brasas) {
+      for (const b of chispas) {
         b.y -= b.vy
         b.fase += 0.01
-        // Vaiven lateral: una brasa no sube en linea recta.
+        // Vaiven lateral: una chispa no sube en linea recta.
         b.x += b.deriva + Math.sin(b.fase) * 0.2
 
         if (b.y < -10) Object.assign(b, nueva(h + 10))
@@ -65,9 +65,10 @@ function Brasas({ cantidad }: { cantidad: number }) {
         // Se apagan a medida que suben.
         const vida = Math.max(0, Math.min(1, b.y / h))
         const alfa = vida * 0.55 + 0.08
-        const rojo = 255
-        const verde = Math.round(90 + b.calor * 100)
-        const azul = Math.round(20 + b.calor * 40)
+        // Carmesi #e11d3c -> rosa sangre #ff4d68 segun el calor.
+        const rojo = Math.round(225 + b.calor * 30)
+        const verde = Math.round(29 + b.calor * 48)
+        const azul = Math.round(60 + b.calor * 44)
 
         ctx.beginPath()
         ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
@@ -100,13 +101,13 @@ export default function AnimatedBackground() {
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-elite-dark" aria-hidden>
-      {/* Ceniza: el ground, con la brasa asomando por abajo como un rescoldo. */}
+      {/* Negro, con el rescoldo carmesi asomando por abajo. */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 80% at 50% 110%, rgba(255,90,31,0.16) 0%, transparent 55%),' +
-            'radial-gradient(100% 70% at 50% -10%, rgba(34,26,20,0.9) 0%, transparent 60%)',
+            'radial-gradient(120% 80% at 50% 110%, rgba(225,29,60,0.16) 0%, transparent 55%),' +
+            'radial-gradient(100% 70% at 50% -10%, rgba(26,20,32,0.9) 0%, transparent 60%)',
         }}
       />
 
@@ -128,13 +129,13 @@ export default function AnimatedBackground() {
         }`}
       />
 
-      {!quieto && <Brasas cantidad={cap.particulas} />}
+      {!quieto && <Chispas cantidad={cap.particulas} />}
 
       {/* Rejilla en perspectiva: el suelo de la arena. */}
       <div className={`absolute inset-x-0 bottom-0 h-[40vh] bg-grid ${quieto ? '' : 'animate-grid'}`} />
 
       {/* Viñeta para que el texto siempre tenga contraste encima. */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(13,11,9,0.88)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(8,8,10,0.9)_100%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-elite-dark/70 via-transparent to-elite-dark" />
     </div>
   )

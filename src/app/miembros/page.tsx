@@ -42,7 +42,7 @@ interface BadgeDef {
 // Insignias disponibles, cada una sacada de un dato real del barrido.
 const BADGES: BadgeDef[] = [
   { key: 'kd', label: 'Asesino', icon: Swords, color: '#ff4d4d', test: (m) => (m.kd_ratio || 0) >= 4 },
-  { key: 'hs', label: 'Francotirador', icon: Crosshair, color: '#ff9500', test: (m) => (m.headshot_tasa || 0) >= 25 },
+  { key: 'hs', label: 'Francotirador', icon: Crosshair, color: '#ff4d68', test: (m) => (m.headshot_tasa || 0) >= 25 },
   { key: 'wr', label: 'Estratega', icon: Brain, color: '#e8b33c', test: (m) => (m.winrate || 0) >= 15 },
   { key: 'kills', label: 'Destructor', icon: Skull, color: '#ffd700', test: (m) => (m.kills || 0) >= 800 },
   { key: 'maxk', label: 'Multikill', icon: Zap, color: '#ff9d00', test: (m) => (m.max_kills || 0) >= 12 },

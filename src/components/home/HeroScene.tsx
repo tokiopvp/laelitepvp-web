@@ -37,7 +37,7 @@ export default function HeroScene({
         {/* Anillos rotatorios de fondo */}
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[125%] aspect-square rounded-full pointer-events-none"
-          style={{ border: '2px solid rgba(255,90,31,0.22)', z: -70 }}
+          style={{ border: '2px solid rgba(225,29,60,0.22)', z: -70 }}
           animate={{ rotate: 360 }}
           transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
         />
@@ -80,7 +80,7 @@ export default function HeroScene({
                       className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
                       style={
                         i === 0
-                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff9500)', color: '#17130f' }
+                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff4d68)', color: '#17130f' }
                           : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }
                       }
                     >

@@ -8,8 +8,8 @@ import { formatDate } from '@/lib/utils'
 import { TournamentListSkeleton } from '@/components/Skeletons'
 
 const modeColors: Record<string, string> = {
-  Solo: '#ff5a1f',
-  Duo: '#ff9500',
+  Solo: '#e11d3c',
+  Duo: '#ff4d68',
   Squad: '#ffd700',
   'Clash Squad': '#ff6b6b',
 }
@@ -123,7 +123,7 @@ export default function TorneosPage() {
                       className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
                       style={
                         lider
-                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff9500)', color: '#17130f' }
+                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff4d68)', color: '#17130f' }
                           : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.55)' }
                       }
                     >
@@ -145,7 +145,7 @@ export default function TorneosPage() {
                     )}
                     <span
                       className="font-mono tabular-nums text-sm shrink-0 w-16 text-right"
-                      style={{ color: c.avance > 0 ? '#ff5a1f' : 'rgba(255,255,255,0.3)' }}
+                      style={{ color: c.avance > 0 ? '#e11d3c' : 'rgba(255,255,255,0.3)' }}
                     >
                       {c.avance > 0 ? `+${c.avance}` : '—'}
                     </span>
@@ -197,7 +197,7 @@ export default function TorneosPage() {
                   <span className="text-white/50 flex items-center gap-1"><Trophy className="w-3 h-3" /> Posición</span>
                   <span
                     className="font-bold"
-                    style={{ color: t.placement === 1 ? '#e8b33c' : t.placement ? '#fff' : '#ff5a1f' }}
+                    style={{ color: t.placement === 1 ? '#e8b33c' : t.placement ? '#fff' : '#e11d3c' }}
                   >
                     {t.placement === 1 ? '🏆 CAMPEÓN' : t.placement ? `#${t.placement}` : '🔴 EN CURSO'}
                   </span>
