@@ -70,42 +70,71 @@ export default function TopArmas({ members }: { members: Member[] }) {
           Todavía no hay lecturas de armas para esta combinación.
         </div>
       ) : (
-        <div className="card overflow-hidden">
-          {filas.map((f, i) => (
-            <motion.div
-              key={f.arma}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: Math.min(i * 0.03, 0.4) }}
-              className="relative flex items-center gap-3 px-4 py-3 border-b border-white/[0.06] last:border-0"
-            >
-              {/* Barra proporcional al mejor: se compara de un vistazo. */}
-              <div
-                className="absolute inset-y-0 left-0 pointer-events-none"
-                style={{
-                  width: `${Math.max(3, (f.valor / maximo) * 100)}%`,
-                  background:
-                    'linear-gradient(90deg, rgba(225,29,60,0.16), rgba(225,29,60,0.02))',
-                }}
-              />
-              <span className="relative w-6 shrink-0 text-xs font-mono tabular-nums text-white/35">
-                {i + 1}
-              </span>
-              <span className="relative font-display font-semibold w-28 shrink-0 truncate">
-                {nombreArma(f.arma)}
-              </span>
-              <span className="relative flex-1 min-w-0 text-sm text-white/65 truncate">
-                {f.nickname}
-              </span>
-              <span
-                className="relative font-mono tabular-nums text-sm shrink-0"
-                style={{ color: i === 0 ? '#e8b33c' : undefined }}
+        /* MODO VENTANA: una tarjeta por arma. La lista en filas obligaba a
+           leer de izquierda a derecha para comparar; en rejilla el arma y su
+           dueño se ven de golpe, y el podio se distingue por el marco. */
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {filas.map((f, i) => {
+            const podio = i < 3
+            const acento = i === 0 ? '#e8b33c' : i < 3 ? '#e11d3c' : 'rgba(255,255,255,0.28)'
+            return (
+              <motion.div
+                key={f.arma}
+                layout
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: Math.min(i * 0.035, 0.45), duration: 0.35 }}
+                whileHover={{ y: -4 }}
+                className="card relative overflow-hidden p-4 group"
               >
-                {metrica === 'headshot' ? f.valor.toFixed(1) : Math.round(f.valor).toLocaleString('es')}
-                {meta.sufijo}
-              </span>
-            </motion.div>
-          ))}
+                {/* Relleno proporcional al lider: el fondo ES el grafico. */}
+                <motion.div
+                  className="absolute inset-x-0 bottom-0 pointer-events-none"
+                  initial={{ height: 0 }}
+                  animate={{ height: `${Math.max(6, (f.valor / maximo) * 100)}%` }}
+                  transition={{ delay: 0.15 + Math.min(i * 0.03, 0.4), duration: 0.7, ease: 'easeOut' }}
+                  style={{
+                    background:
+                      i === 0
+                        ? 'linear-gradient(0deg, rgba(232,179,60,0.20), transparent)'
+                        : 'linear-gradient(0deg, rgba(225,29,60,0.16), transparent)',
+                  }}
+                />
+
+                <div className="relative flex items-start justify-between mb-3">
+                  <span
+                    className="font-mono tabular-nums text-[11px] px-1.5 py-0.5 rounded"
+                    style={{ color: acento, background: `${acento}18` }}
+                  >
+                    #{i + 1}
+                  </span>
+                  {podio && (
+                    <span className="text-[10px] uppercase tracking-wider" style={{ color: acento }}>
+                      {i === 0 ? 'Rey' : 'Podio'}
+                    </span>
+                  )}
+                </div>
+
+                <p className="relative font-display font-bold text-lg leading-tight truncate mb-1">
+                  {nombreArma(f.arma)}
+                </p>
+                <p className="relative text-xs text-white/50 truncate mb-3">{f.nickname}</p>
+
+                <p
+                  className="relative font-mono tabular-nums text-2xl font-semibold leading-none"
+                  style={{ color: i === 0 ? '#e8b33c' : undefined }}
+                >
+                  {metrica === 'headshot'
+                    ? f.valor.toFixed(1)
+                    : Math.round(f.valor).toLocaleString('es')}
+                  <span className="text-sm text-white/40">{meta.sufijo}</span>
+                </p>
+                <p className="relative text-[10px] uppercase tracking-wider text-white/30 mt-1">
+                  {meta.label}
+                </p>
+              </motion.div>
+            )
+          })}
         </div>
       )}
     </section>

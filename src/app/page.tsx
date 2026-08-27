@@ -13,6 +13,7 @@ import type { Member } from '@/lib/types'
 import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
 import HeroScene from '@/components/home/HeroScene'
+import HonorHoy from '@/components/home/HonorHoy'
 
 const features = [
   {
@@ -181,6 +182,8 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      <HonorHoy />
 
       {/* Stats Bar */}
       <section className="py-16 border-y border-elite-border">
