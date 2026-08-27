@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Trophy, Crown, Users, Calendar, Target } from 'lucide-react'
-import { Tournament } from '@/lib/types'
-import { getTournaments, subscribeToTable } from '@/lib/data'
+import { Trophy, Crown, Users, Calendar, Target, Radio, CheckCircle2 } from 'lucide-react'
+import { Tournament, Member } from '@/lib/types'
+import { getTournaments, getMembers, subscribeToTable } from '@/lib/data'
 import { demoTournaments } from '@/lib/demo-data'
 import { formatDate } from '@/lib/utils'
 
@@ -15,21 +15,65 @@ const modeColors: Record<string, string> = {
   'Clash Squad': '#ff6b6b',
 }
 
+const rankColors: Record<string, string> = {
+  Bronze: '#cd7f32',
+  Silver: '#c0c0c0',
+  Gold: '#ffd700',
+  Platinum: '#00d4ff',
+  Diamond: '#7c3aed',
+  Master: '#ff6b6b',
+  Grandmaster: '#ff2d6f',
+}
+
+function hasData(m: Member): boolean {
+  return Boolean(m.stats_json && Object.keys(m.stats_json).length > 0) || Boolean(m.last_sync)
+}
+
+function Avatar({ m }: { m: Member }) {
+  const color = rankColors[m.rank || 'Diamond'] || '#00d4ff'
+  const src = m.outfit_image_url || m.avatar_url
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={m.nickname}
+        className="w-10 h-10 rounded-full object-cover border-2"
+        style={{ borderColor: color }}
+      />
+    )
+  }
+  return (
+    <div
+      className="w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-sm border-2"
+      style={{ borderColor: color, color, background: `${color}15` }}
+    >
+      {m.nickname?.charAt(0)?.toUpperCase() || '?'}
+    </div>
+  )
+}
+
 export default function TorneosPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>(demoTournaments)
+  const [members, setMembers] = useState<Member[]>([])
 
   useEffect(() => {
     let active = true
-    const load = () => getTournaments().then((t) => { if (active) setTournaments(t) })
-    load()
-    const unsub = subscribeToTable('tournaments', load)
-    const id = setInterval(load, 20000)
+    const loadT = () => getTournaments().then((t) => { if (active) setTournaments(t) })
+    const loadM = () => getMembers().then((m) => { if (active) setMembers(m) })
+    loadT(); loadM()
+    const unsubT = subscribeToTable('tournaments', loadT)
+    const unsubM = subscribeToTable('members', loadM)
+    const id = setInterval(() => { loadT(); loadM() }, 20000)
     return () => {
       active = false
       clearInterval(id)
-      unsub()
+      unsubT(); unsubM()
     }
   }, [])
+
+  const withData = members.filter(hasData).length
+  const total = members.length
+  const pct = total ? Math.round((withData / total) * 100) : 0
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -49,6 +93,70 @@ export default function TorneosPage() {
           </div>
           <h1 className="font-display font-bold text-4xl sm:text-5xl gradient-text mb-2">Torneos</h1>
           <p className="text-white/60">Nuestra sala de trofeos. Cada victoria cuenta una historia.</p>
+        </motion.div>
+
+        {/* Participación en vivo del clan */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card-glow p-6 mb-12"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
+            <div className="flex items-center gap-2">
+              <Radio className="w-5 h-5 text-elite-primary animate-pulse" />
+              <h2 className="font-display font-bold text-xl">Participación en vivo del clan</h2>
+            </div>
+            <span className="text-sm text-white/60">
+              <span className="text-elite-primary font-bold">{withData}</span> / {total} con data cargada
+            </span>
+          </div>
+
+          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden mb-6">
+            <motion.div
+              className="h-full bg-gradient-to-r from-elite-primary to-elite-secondary"
+              animate={{ width: `${pct}%` }}
+              transition={{ duration: 0.8 }}
+            />
+          </div>
+
+          <p className="text-white/50 text-sm mb-4">
+            Estos son los integrantes que ya aparecen en el escaneo con estadísticas registradas.
+            Se actualiza solo en tiempo real.
+          </p>
+
+          {members.length === 0 ? (
+            <p className="text-white/40 text-sm">Cargando participantes…</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {members.map((m) => {
+                const ok = hasData(m)
+                return (
+                  <div
+                    key={m.id}
+                    className="relative flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-center"
+                  >
+                    {ok && (
+                      <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-elite-primary" />
+                    )}
+                    <Avatar m={m} />
+                    <p className="text-xs font-semibold truncate w-full" title={m.nickname}>
+                      {m.nickname}
+                    </p>
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{
+                        color: rankColors[m.rank || 'Diamond'] || '#00d4ff',
+                        background: `${rankColors[m.rank || 'Diamond'] || '#00d4ff'}15`,
+                      }}
+                    >
+                      {m.rank || '—'}
+                    </span>
+                    <span className="text-[10px] text-white/50">K/D {m.kd_ratio || 0}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
