@@ -11,6 +11,7 @@ import {
 import { getMembers, getTournaments } from '@/lib/data'
 import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
+import HeroScene from '@/components/home/HeroScene'
 
 const features = [
   {
@@ -80,6 +81,20 @@ export default function Home() {
       {/* Hero Section */}
       <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20 overflow-hidden">
         <WeaponParallax />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200%] h-[55%]"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(0,212,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.18) 1px, transparent 1px)',
+              backgroundSize: '44px 44px',
+              transform: 'perspective(420px) rotateX(72deg)',
+              transformOrigin: 'bottom',
+              WebkitMaskImage: 'linear-gradient(to top, #000 10%, transparent 80%)',
+              maskImage: 'linear-gradient(to top, #000 10%, transparent 80%)',
+            }}
+          />
+        </div>
         <div className="section-container relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div
@@ -144,119 +159,8 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Hero Visual */}
-            <motion.div
-              initial={{ x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
-              className="relative"
-            >
-              <div className="relative aspect-square max-w-md mx-auto">
-                {/* Main Card */}
-                <div className="card-glow absolute inset-0 p-1">
-                  <div className="relative h-full bg-elite-card/90 backdrop-blur-2xl border border-elite-border rounded-2xl p-6 overflow-hidden">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center">
-                          <Crown className="w-7 h-7 text-white" />
-                        </div>
-                        <div>
-                          <p className="font-display font-bold text-xl gradient-text">La Elite PvP</p>
-                          <p className="text-sm text-white/50">Clan Oficial • Verificado</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 bg-elite-primary/10 px-3 py-1 rounded-full">
-                        <motion.div className="w-2 h-2 bg-elite-primary rounded-full animate-pulse" />
-                        <span className="text-xs font-medium text-elite-primary">LIVE</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      {stats.map((stat, i) => (
-                        <motion.div
-                          key={stat.label}
-                          className="bg-elite-dark/50 border border-elite-border rounded-xl p-4"
-                          initial={{ y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 + i * 0.1 }}
-                        >
-                          <stat.icon className="w-6 h-6 mb-2" style={{ color: stat.color }} />
-                          <p className="font-display font-bold text-2xl gradient-text">{stat.value}</p>
-                          <p className="text-xs text-white/60">{stat.label}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    <div className="space-y-3">
-                      {leaderboard.length === 0 && (
-                        <p className="text-white/40 text-sm text-center py-2">Cargando top…</p>
-                      )}
-                      {leaderboard.map((row, i) => (
-                        <motion.div
-                          key={row.name}
-                          className="flex items-center justify-between bg-elite-dark/30 rounded-lg p-3 hover:bg-elite-primary/10 transition-colors"
-                          initial={{ x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.6 + i * 0.08 }}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center text-xs font-bold">
-                              {i + 1}
-                            </div>
-                            <span className="font-medium">{row.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-white/60 text-sm">
-                            <Flame className="w-4 h-4" />
-                            <span>{row.kd} K/D</span>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Floating corner badges (outside the card) */}
-                <motion.div
-                  className="absolute -top-6 -right-6 w-44 card-glow p-4 z-10"
-                  animate={{ y: [0, -12, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  <div className="text-center">
-                    <Trophy className="w-10 h-10 mx-auto mb-2 text-elite-gold" />
-                    <p className="font-display font-bold text-xl gradient-text">TOP 1</p>
-                    <p className="text-sm text-white/60">Regional League S12</p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute -bottom-6 -left-6 w-40 card-glow p-3 z-10"
-                  animate={{ x: [0, 12, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-elite-gold to-yellow-500 flex items-center justify-center">
-                      <Flame className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-bold gradient-text">Fire Pass</p>
-                      <p className="text-xs text-white/50">Elite Coin • Gana jugando</p>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  className="absolute -bottom-6 -right-6 w-40 card-glow p-3 z-10"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                >
-                  <div className="text-center">
-                    <ShoppingCart className="w-8 h-8 mx-auto mb-1 text-elite-primary" />
-                    <p className="font-bold text-sm gradient-text">PagoStore</p>
-                    <p className="text-xs text-white/50">Diamantes Instantáneos</p>
-                  </div>
-                </motion.div>
-              </div>
-            </motion.div>
+            {/* Hero Visual 3D */}
+            <HeroScene stats={stats} leaderboard={leaderboard} />
           </div>
 
           {/* Scroll Indicator */}

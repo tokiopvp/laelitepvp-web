@@ -171,3 +171,90 @@ $$;
 
 GRANT EXECUTE ON FUNCTION award_points(uuid, text) TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION link_member(text) TO authenticated, anon;
+
+-- ============================================================
+-- 10) Retos / Objetivos (Fase 2) - puntos por cumplir stats del clan
+-- ============================================================
+CREATE TABLE IF NOT EXISTS challenges (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  description text,
+  metric text NOT NULL,
+  target numeric NOT NULL,
+  points integer NOT NULL,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS challenge_completions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  challenge_id uuid NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (profile_id, challenge_id)
+);
+
+INSERT INTO challenges (title, description, metric, target, points)
+SELECT * FROM (VALUES
+  ('Francotirador', 'Consigue 50 headshots en el clan', 'headshots', 50, 30),
+  ('Maestro del K/D', 'Alcanza un K/D de 3.0', 'kd_ratio', 3.0, 40),
+  ('Cazador', 'Acumula 100 kills', 'kills', 100, 50),
+  ('Campeon', 'Gana 10 partidas', 'wins', 10, 30),
+  ('Superviviente', 'Logra 5 Booyahs', 'booyahs', 5, 25)
+) AS v(title, description, metric, target, points)
+WHERE NOT EXISTS (SELECT 1 FROM challenges);
+
+ALTER TABLE challenges ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "challenges public read" ON challenges;
+CREATE POLICY "challenges public read" ON challenges FOR SELECT USING (true);
+
+ALTER TABLE challenge_completions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "challenge_completions self read" ON challenge_completions;
+CREATE POLICY "challenge_completions self read" ON challenge_completions
+  FOR SELECT USING (auth.uid() = profile_id OR (auth.jwt() ->> 'role') IN ('owner','admin','moderator','editor'));
+
+-- Verifica retos del usuario contra sus stats reales y otorga puntos solo por los nuevos cumplidos.
+CREATE OR REPLACE FUNCTION check_challenges(p_profile_id uuid)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_member_id uuid;
+  v_member jsonb;
+  v_awarded integer := 0;
+  r record;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() <> p_profile_id THEN
+    RAISE EXCEPTION 'No autorizado';
+  END IF;
+  SELECT member_id INTO v_member_id FROM profiles WHERE id = p_profile_id;
+  IF v_member_id IS NULL THEN
+    RETURN 0;
+  END IF;
+  SELECT to_jsonb(m.*) INTO v_member FROM members m WHERE m.id = v_member_id;
+  FOR r IN
+    SELECT c.* FROM challenges c
+    WHERE c.active = true
+      AND NOT EXISTS (
+        SELECT 1 FROM challenge_completions cc
+        WHERE cc.profile_id = p_profile_id AND cc.challenge_id = c.id
+      )
+  LOOP
+    IF (v_member ->> r.metric) IS NOT NULL
+       AND ((v_member ->> r.metric)::numeric >= r.target) THEN
+      INSERT INTO point_events (profile_id, type, amount)
+        VALUES (p_profile_id, 'challenge', r.points);
+      UPDATE profiles SET points = COALESCE(points, 0) + r.points, updated_at = now()
+        WHERE id = p_profile_id;
+      INSERT INTO challenge_completions (profile_id, challenge_id)
+        VALUES (p_profile_id, r.id);
+      v_awarded := v_awarded + r.points;
+    END IF;
+  END LOOP;
+  RETURN v_awarded;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION check_challenges(uuid) TO authenticated, anon;

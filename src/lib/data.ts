@@ -269,3 +269,55 @@ export async function getLeaderboard(limit = 50): Promise<Profile[]> {
   if (error || !data) return []
   return data as Profile[]
 }
+
+// ---- Retos / Objetivos (Fase 2) ----
+export interface Challenge {
+  id: string
+  title: string
+  description: string | null
+  metric: string
+  target: number
+  points: number
+  active: boolean
+  created_at: string
+}
+
+export async function getChallenges(): Promise<Challenge[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('challenges')
+    .select('*')
+    .eq('active', true)
+    .order('points', { ascending: false })
+  if (error || !data) return []
+  return data as Challenge[]
+}
+
+// Evalua los retos del usuario contra sus stats y otorga puntos por los nuevos cumplidos.
+export async function checkChallenges(): Promise<number | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data: u } = await sb.auth.getUser()
+  const uid = u.user?.id
+  if (!uid) return null
+  const { data, error } = await sb.rpc('check_challenges', { p_profile_id: uid })
+  if (error) return null
+  return data as number
+}
+
+export async function getMyChallengeCompletions(): Promise<Set<string>> {
+  const sb = client()
+  const set = new Set<string>()
+  if (!sb) return set
+  const { data: u } = await sb.auth.getUser()
+  const uid = u.user?.id
+  if (!uid) return set
+  const { data, error } = await sb
+    .from('challenge_completions')
+    .select('challenge_id')
+    .eq('profile_id', uid)
+  if (error || !data) return set
+  data.forEach((r: { challenge_id: string }) => set.add(r.challenge_id))
+  return set
+}

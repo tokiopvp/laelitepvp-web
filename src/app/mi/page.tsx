@@ -3,10 +3,27 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Coins, CalendarCheck, Link2, Trophy, LogIn, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Coins, CalendarCheck, Link2, Trophy, LogIn, Loader2, CheckCircle2, XCircle, Target, Flag } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMembers } from '@/lib/data'
+import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMembers, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
 import type { Profile, PointEvent, Member } from '@/lib/types'
+import type { Challenge } from '@/lib/data'
+
+const METRIC_LABEL: Record<string, string> = {
+  kd_ratio: 'K/D',
+  headshots: 'Headshots',
+  wins: 'Victorias',
+  booyahs: 'Booyahs',
+  kills: 'Kills',
+  winrate: 'Win Rate %',
+  partidas: 'Partidas',
+  max_kills: 'Max Kills',
+  revividas: 'Revividas',
+  dano_partida: 'Daño / partida',
+  headshot_tasa: 'Tasa HS %',
+  top10_tasa: 'Tasa Top 10 %',
+  kpp: 'Kills / partida',
+}
 
 const RANK_COLORS: Record<string, string> = {
   Bronze: '#cd7f32',
@@ -28,6 +45,10 @@ export default function MiPage() {
   const [linkMsg, setLinkMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [checking, setChecking] = useState(false)
   const [load, setLoad] = useState(true)
+  const [challenges, setChallenges] = useState<Challenge[]>([])
+  const [completions, setCompletions] = useState<Set<string>>(new Set())
+  const [checkingCh, setCheckingCh] = useState(false)
+  const [chMsg, setChMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (loading) return
@@ -40,16 +61,39 @@ export default function MiPage() {
       const p = await getMyProfile()
       if (!alive) return
       setProfile(p)
-      const [ev, mem] = await Promise.all([getPointEvents(), getMembers()])
+      const [ev, mem, ch, comp] = await Promise.all([
+        getPointEvents(),
+        getMembers(),
+        getChallenges(),
+        getMyChallengeCompletions(),
+      ])
       if (!alive) return
       setEvents(ev)
       setMembers(mem)
+      setChallenges(ch)
+      setCompletions(comp)
       setLoad(false)
     })()
     return () => {
       alive = false
     }
   }, [isAuthed, loading])
+
+  // Verifica retos automaticamente al entrar (si esta vinculado, la RPC premia los cumplidos).
+  const runChallenges = async () => {
+    const awarded = await checkChallenges()
+    if (awarded && awarded > 0) {
+      setProfile(await getMyProfile())
+      setCompletions(await getMyChallengeCompletions())
+      setChMsg(`¡Reto completado! +${awarded} Elite Coin`)
+    } else {
+      setChMsg(null)
+    }
+  }
+  useEffect(() => {
+    if (isAuthed && profile?.is_member) runChallenges()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthed, profile?.is_member])
 
   const linkedMember: Member | undefined = profile?.member_id
     ? members.find((m) => m.id === profile.member_id)
@@ -68,6 +112,8 @@ export default function MiPage() {
       setLinkMsg({ ok: true, text: '¡Vinculado! Ganaste +20 puntos de bienvenida.' })
       setProfile(await getMyProfile())
       setEvents(await getPointEvents())
+      setCompletions(await getMyChallengeCompletions())
+      runChallenges()
     } else {
       setLinkMsg({ ok: false, text: 'No encontramos ese ID en el clan. Revisa tu Free Fire ID.' })
     }
@@ -115,30 +161,43 @@ export default function MiPage() {
           <p className="text-white/50">Bienvenido, {profile?.display_name || user?.email}</p>
         </motion.div>
 
-        {/* Banner estilo perfil de juego */}
+        {/* Banner estilo perfil de juego (automatico: usa la imagen que escanea el bot) */}
         <div className="relative rounded-2xl overflow-hidden border border-elite-border card-glow mb-6">
+          {linkedMember?.outfit_image_url ? (
+            <div className="h-28 sm:h-32 bg-cover bg-center" style={{ backgroundImage: `url(${linkedMember.outfit_image_url})` }} />
+          ) : (
+            <div
+              className="h-28 sm:h-32"
+              style={{
+                background: linkedMember
+                  ? `linear-gradient(90deg, ${RANK_COLORS[linkedMember.rank || 'Bronze']}55, #7c3aed33, #00d4ff44)`
+                  : 'linear-gradient(90deg, #00d4ff44, #7c3aed44)',
+              }}
+            />
+          )}
           <div
-            className="h-28 sm:h-32"
-            style={{
-              background: linkedMember
-                ? `linear-gradient(90deg, ${RANK_COLORS[linkedMember.rank || 'Bronze']}55, #7c3aed33, #00d4ff44)`
-                : 'linear-gradient(90deg, #00d4ff44, #7c3aed44)',
-            }}
-          />
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+            className="absolute inset-0 opacity-30"
+            style={{ background: 'linear-gradient(180deg, transparent 40%, #0a0a0f 100%), radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: 'auto, 22px 22px' }}
           />
           <div className="relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end gap-4 px-6 pb-6">
-            <div
-              className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
-              style={{
-                background: 'linear-gradient(135deg, #00d4ff, #7c3aed)',
-                boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f',
-              }}
-            >
-              {(linkedMember?.nickname || profile?.display_name || '?').slice(0, 2).toUpperCase()}
-            </div>
+            {linkedMember?.avatar_url || linkedMember?.outfit_image_url ? (
+              <img
+                src={linkedMember.avatar_url || linkedMember.outfit_image_url || ''}
+                alt=""
+                className="w-24 h-24 rounded-2xl object-cover shadow-lg"
+                style={{ boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f' }}
+              />
+            ) : (
+              <div
+                className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #00d4ff, #7c3aed)',
+                  boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f',
+                }}
+              >
+                {(linkedMember?.nickname || profile?.display_name || '?').slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div className="text-center sm:text-left">
               <h2 className="font-display font-bold text-2xl">{linkedMember?.nickname || profile?.display_name || 'Jugador'}</h2>
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-white/60">
@@ -244,6 +303,64 @@ export default function MiPage() {
             </div>
           </div>
         )}
+
+        {/* Retos / Objetivos (Fase 2) */}
+        <div className="card-glow p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-bold text-xl flex items-center gap-2">
+              <Target className="w-5 h-5 text-elite-primary" /> Retos y Objetivos
+            </h2>
+            <button
+              onClick={async () => {
+                setCheckingCh(true)
+                const awarded = await checkChallenges()
+                setProfile(await getMyProfile())
+                setCompletions(await getMyChallengeCompletions())
+                setCheckingCh(false)
+                setChMsg(awarded && awarded > 0 ? `¡Reto completado! +${awarded} Elite Coin` : 'No hay retos nuevos por ahora')
+              }}
+              disabled={checkingCh || !profile?.is_member}
+              className="btn-secondary text-sm justify-center disabled:opacity-50"
+            >
+              {checkingCh ? <Loader2 className="w-4 h-4 animate-spin" /> : <Flag className="w-4 h-4" />}
+              Verificar retos
+            </button>
+          </div>
+          {!profile?.is_member && (
+            <p className="text-white/50 text-sm mb-3">Vincula tu cuenta con tu Free Fire ID para participar en los retos.</p>
+          )}
+          {chMsg && <p className="text-sm text-elite-gold mb-3 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" />{chMsg}</p>}
+          <div className="space-y-3">
+            {challenges.length === 0 && <p className="text-white/40 text-sm">No hay retos disponibles.</p>}
+            {challenges.map((c) => {
+              const current = linkedMember ? (linkedMember as any)[c.metric] ?? 0 : 0
+              const target = c.target
+              const done = completions.has(c.id) || (typeof current === 'number' && current >= target)
+              const pct = Math.min(100, target ? (current / target) * 100 : 0)
+              return (
+                <div key={c.id} className="bg-elite-card border border-elite-border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="font-medium">{c.title}</p>
+                      <p className="text-white/50 text-xs">{c.description}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${done ? 'bg-elite-gold/20 text-elite-gold' : 'bg-elite-primary/10 text-elite-primary'}`}>
+                        {done ? 'Completado' : `+${c.points}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="h-2 rounded-full bg-elite-dark overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-elite-primary to-elite-secondary" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-white/40 text-xs mt-1">
+                    {METRIC_LABEL[c.metric] || c.metric}: {current} / {target}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
         {/* Historial */}
         <div className="card-glow p-6">
