@@ -22,7 +22,19 @@ async function tasaDe(fiat) {
     'https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search',
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      // Binance rechaza las peticiones sin cabeceras de navegador: desde una
+      // consola con User-Agent funciona y desde el borde de Cloudflare, sin
+      // el, devolvia vacio para las seis monedas.
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'es,en;q=0.9',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+          '(KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+        Origin: 'https://p2p.binance.com',
+        Referer: 'https://p2p.binance.com/',
+      },
       body: JSON.stringify({
         asset: 'USDT',
         fiat,

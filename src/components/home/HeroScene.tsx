@@ -2,17 +2,16 @@
 
 import { useEffect } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Trophy, Users, Flame, Crown } from 'lucide-react'
+import { Trophy, Flame, Crown } from 'lucide-react'
 import LiveBadge from '@/components/LiveBadge'
 
-const CHIP_POS = ['-top-8 -left-8', '-top-8 -right-8', '-bottom-8 -left-8', '-bottom-8 -right-8']
-const CHIP_ICON = [Users, Trophy, Crown, Flame]
-
+// El heroe es una tesis: lo primero que se ve es el marcador EN VIVO del clan,
+// que es lo mas caracteristico de este proyecto. Las cuatro cifras generales
+// viven en la barra de abajo y no se repiten aqui: antes estaban en los dos
+// sitios y ademas los chips se montaban sobre la tarjeta en pantallas medianas.
 export default function HeroScene({
-  stats,
   leaderboard,
 }: {
-  stats: { value: string; label: string; icon: any; color: string }[]
   leaderboard: { name: string; kd: string }[]
 }) {
   const mx = useMotionValue(0)
@@ -74,15 +73,25 @@ export default function HeroScene({
                   key={row.name}
                   className="flex items-center justify-between bg-elite-dark/30 rounded-lg p-3 hover:bg-elite-primary/10 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center text-xs font-bold">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* El oro solo para lo ganado: el primer puesto. Del 2 al 5
+                        van en ceniza, para que el podio se lea de un vistazo. */}
+                    <div
+                      className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
+                      style={
+                        i === 0
+                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff9500)', color: '#17130f' }
+                          : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }
+                      }
+                    >
                       {i + 1}
                     </div>
-                    <span className="font-medium">{row.name}</span>
+                    <span className="font-medium truncate">{row.name}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-white/60 text-sm">
-                    <Flame className="w-4 h-4" />
-                    <span>{row.kd} K/D</span>
+                  <div className="flex items-center gap-2 text-white/60 text-sm shrink-0">
+                    <Flame className="w-4 h-4" style={{ color: i === 0 ? '#e8b33c' : undefined }} />
+                    <span className="tabular-nums font-mono">{row.kd}</span>
+                    <span className="text-white/35 text-xs">K/D</span>
                   </div>
                 </div>
               ))}
@@ -95,27 +104,6 @@ export default function HeroScene({
           </div>
         </motion.div>
 
-        {/* Chips de stats orbitando en 3D */}
-        {stats.map((s, i) => {
-          const Icon = CHIP_ICON[i % 4]
-          return (
-            <motion.div
-              key={s.label}
-              className={`absolute ${CHIP_POS[i % 4]} card-glow px-3 py-2 z-30`}
-              style={{ z: 90 }}
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4 + i, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <div className="flex items-center gap-2">
-                <Icon className="w-5 h-5" style={{ color: s.color }} />
-                <div>
-                  <p className="font-display font-bold text-sm gradient-text">{s.value}</p>
-                  <p className="text-[10px] text-white/50 leading-none">{s.label}</p>
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
       </motion.div>
     </div>
   )

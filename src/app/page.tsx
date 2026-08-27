@@ -167,7 +167,7 @@ export default function Home() {
             </motion.div>
 
             {/* Hero Visual 3D */}
-            <HeroScene stats={stats} leaderboard={leaderboard} />
+            <HeroScene leaderboard={leaderboard} />
           </div>
 
           {/* Scroll Indicator */}
@@ -195,8 +195,12 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
+                {/* El color lo lleva el icono; la cifra se lee limpia. Cuatro
+                    numeros en degradado a la vez era gastar el acento en todo,
+                    y ademas cuesta leerlos. Tabulares para que las cuatro
+                    columnas queden alineadas. */}
                 <stat.icon className="w-10 h-10 mx-auto mb-3" style={{ color: stat.color }} />
-                <p className="font-display font-bold text-4xl sm:text-5xl gradient-text">{stat.value}</p>
+                <p className="font-display font-bold text-4xl sm:text-5xl tabular-nums">{stat.value}</p>
                 <p className="text-white/60 mt-1">{stat.label}</p>
               </motion.div>
             ))}
