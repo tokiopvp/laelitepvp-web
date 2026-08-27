@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { Trophy, Crown, Users, Calendar, Target, Radio, CheckCircle2 } from 'lucide-react'
 import { Tournament, Member } from '@/lib/types'
-import { useTournaments, useMembers } from '@/lib/hooks'
+import { useTournaments, useMembers, useCompetidores } from '@/lib/hooks'
 import { formatDate } from '@/lib/utils'
 import { TournamentListSkeleton } from '@/components/Skeletons'
 
@@ -54,6 +54,8 @@ function Avatar({ m }: { m: Member }) {
 export default function TorneosPage() {
   const { tournaments, loading: loadingT } = useTournaments()
   const { members, loading: loadingM } = useMembers()
+  const { competidores, loading: loadingC } = useCompetidores()
+  const conAvance = competidores.filter((c) => c.avance > 0).length
 
   const withData = members.filter(hasData).length
   const total = members.length
@@ -79,7 +81,9 @@ export default function TorneosPage() {
           <p className="text-white/60">Nuestra sala de trofeos. Cada victoria cuenta una historia.</p>
         </motion.div>
 
-        {/* Participación en vivo del clan */}
+        {/* Competencia en vivo: SOLO quienes compiten, con su avance.
+            Antes salian los 49 miembros del clan y su K/D historico, que no
+            tiene nada que ver con la carrera que esta corriendo ahora. */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -88,59 +92,68 @@ export default function TorneosPage() {
           <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
             <div className="flex items-center gap-2">
               <Radio className="w-5 h-5 text-elite-primary animate-pulse" />
-              <h2 className="font-display font-bold text-xl">Participación en vivo del clan</h2>
+              <h2 className="font-display font-bold text-xl">Competencia en vivo</h2>
             </div>
             <span className="text-sm text-white/60">
-              <span className="text-elite-primary font-bold">{withData}</span> / {total} con data cargada
+              <span className="text-elite-primary font-bold tabular-nums">{conAvance}</span>
+              {' '}de {competidores.length} ya sumaron
             </span>
           </div>
 
-          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden mb-6">
-            <motion.div
-              className="h-full bg-gradient-to-r from-elite-primary to-elite-secondary"
-              animate={{ width: `${pct}%` }}
-              transition={{ duration: 0.8 }}
-            />
-          </div>
-
-          <p className="text-white/50 text-sm mb-4">
-            Estos son los integrantes que ya aparecen en el escaneo con estadísticas registradas.
-            Se actualiza solo en tiempo real.
+          <p className="text-white/50 text-sm mb-5">
+            Solo cuenta lo que suban desde que abrió la competencia. Se actualiza solo.
           </p>
 
-          {members.length === 0 ? (
-            <p className="text-white/40 text-sm">Cargando participantes…</p>
+          {loadingC ? (
+            <p className="text-white/40 text-sm">Cargando competencia…</p>
+          ) : competidores.length === 0 ? (
+            <p className="text-white/40 text-sm">
+              No hay competencia abierta ahora mismo.
+            </p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              {members.map((m) => {
-                const ok = hasData(m)
+            <div className="space-y-2">
+              {competidores.map((c, i) => {
+                const lider = i === 0 && c.avance > 0
                 return (
                   <div
-                    key={m.id}
-                    className="relative flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 text-center"
+                    key={c.member_id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
                   >
-                    {ok && (
-                      <CheckCircle2 className="absolute top-2 right-2 w-4 h-4 text-elite-primary" />
-                    )}
-                    <Avatar m={m} />
-                    <p className="text-xs font-semibold truncate w-full" title={m.nickname}>
-                      {m.nickname}
-                    </p>
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{
-                        color: (m.rank ? rankColors[m.rank] : null) || '#6b6156',
-                        background: `${(m.rank ? rankColors[m.rank] : null) || '#6b6156'}15`,
-                      }}
+                    <div
+                      className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
+                      style={
+                        lider
+                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff9500)', color: '#17130f' }
+                          : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.55)' }
+                      }
                     >
-                      {m.rank || '—'}
+                      {i + 1}
+                    </div>
+                    <p className="flex-1 min-w-0 text-sm font-semibold truncate" title={c.nickname}>
+                      {c.nickname}
+                    </p>
+                    {c.rank && (
+                      <span
+                        className="hidden sm:inline text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0"
+                        style={{
+                          color: rankColors[c.rank] || '#6b6156',
+                          background: `${rankColors[c.rank] || '#6b6156'}15`,
+                        }}
+                      >
+                        {c.rank}
+                      </span>
+                    )}
+                    <span
+                      className="font-mono tabular-nums text-sm shrink-0 w-16 text-right"
+                      style={{ color: c.avance > 0 ? '#ff5a1f' : 'rgba(255,255,255,0.3)' }}
+                    >
+                      {c.avance > 0 ? `+${c.avance}` : '—'}
                     </span>
-                    <span className="text-[10px] text-white/50">K/D {m.kd_ratio || 0}</span>
                   </div>
                 )
-          })}
-          </div>
-        )}
+              })}
+            </div>
+          )}
         </motion.div>
 
         {loadingT && tournaments.length === 0 ? (

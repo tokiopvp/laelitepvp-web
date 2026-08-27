@@ -373,3 +373,49 @@ export async function getMyChallengeCompletions(): Promise<Set<string>> {
   data.forEach((r: { challenge_id: string }) => set.add(r.challenge_id))
   return set
 }
+
+// ---- Competencia en vivo (participantes y su avance) ----
+export interface Competidor {
+  member_id: string
+  nickname: string
+  avance: number
+  rank: string | null
+  avatar_url: string | null
+}
+
+/**
+ * Los que ESTAN compitiendo y cuanto llevan sumado, no el clan entero.
+ *
+ * `tournament_participants.kills` guarda el AVANCE desde que abrio la
+ * competencia (actual - base), que lo calcula el sync del bot. La pagina
+ * mostraba los 49 miembros del clan, que no es lo que pasa en la carrera.
+ */
+export async function getCompetidores(): Promise<Competidor[]> {
+  const sb = client()
+  if (!sb) return []
+  // El torneo mas reciente es la competencia viva.
+  const { data: torneo } = await sb
+    .from('tournaments')
+    .select('id')
+    .order('date_played', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (!torneo?.id) return []
+
+  const { data, error } = await sb
+    .from('tournament_participants')
+    .select('member_id, kills, members(nickname, rank, avatar_url)')
+    .eq('tournament_id', torneo.id)
+    .order('kills', { ascending: false })
+  if (error || !data) return []
+
+  return (data as any[])
+    .filter((r) => r.members)
+    .map((r) => ({
+      member_id: r.member_id,
+      nickname: r.members.nickname,
+      avance: r.kills ?? 0,
+      rank: r.members.rank ?? null,
+      avatar_url: r.members.avatar_url ?? null,
+    }))
+}

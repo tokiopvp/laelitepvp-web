@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { Member, Tournament } from './types'
+import type { Competidor } from './data'
 import {
   getMembers,
   getTournaments,
   getUltimaSync,
+  getCompetidores,
   subscribeToTable,
 } from './data'
 
@@ -87,4 +89,22 @@ export function useFrescura() {
   // El bot sincroniza cada minuto. Pasados 10, algo se rompio: durante 20 horas
   // el sitio mostro datos congelados diciendo LIVE, y nadie pudo notarlo.
   return { texto, atrasado: segundos > 600, segundos }
+}
+
+export function useCompetidores() {
+  const [competidores, setCompetidores] = useState<Competidor[]>([])
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    let active = true
+    const load = () => getCompetidores().then((c) => {
+      if (!active) return
+      setCompetidores(c)
+      setLoading(false)
+    })
+    load()
+    const unsub = subscribeToTable('tournament_participants', load)
+    const id = setInterval(load, LATIDO_MS)
+    return () => { active = false; clearInterval(id); unsub() }
+  }, [])
+  return { competidores, loading }
 }

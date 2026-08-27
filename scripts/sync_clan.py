@@ -240,19 +240,37 @@ def extract(db_path):
             "updated_at": datetime.now(timezone.utc).isoformat(),
         })
         # standings
+        # AVANCE en la competencia, no el valor absoluto.
+        #
+        # Antes se mandaba `kills` = el valor BASE congelado al abrir, o sea
+        # las kills historicas del jugador. En la web parecia el marcador de la
+        # competencia y no lo era: nadie podia ver quien iba ganando.
+        # La competencia mide actual - base, que es lo que se manda ahora.
         cur.execute("SELECT uid, valor FROM competencia_base WHERE competencia_id=?", (c["id"],))
-        base = cur.fetchall()
-        for b in base:
-            buid = b["uid"]
-            if buid in seen:  # solo si es miembro conocido
-                participants.append({
-                    "id": pid_for(tid, buid),
-                    "tournament_id": tid,
-                    "member_id": mid_for(buid),
-                    "kills": int(b["valor"]) if b["valor"] is not None else 0,
-                    "placement": None,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                })
+        base = {r["uid"]: r["valor"] for r in cur.fetchall()}
+        clave = c["categoria"]
+        cur.execute(
+            """SELECT m.uid, m.valor FROM metricas m
+               JOIN (SELECT uid u, MAX(tomada_en) t FROM metricas
+                     WHERE clave=? GROUP BY uid) x
+                 ON x.u=m.uid AND x.t=m.tomada_en
+               WHERE m.clave=?""", (clave, clave))
+        actual = {r["uid"]: r["valor"] for r in cur.fetchall()}
+        for buid, valor_base in base.items():
+            if buid not in seen:          # solo si es miembro conocido
+                continue
+            hoy_val = actual.get(buid)
+            avance = 0
+            if hoy_val is not None and valor_base is not None:
+                avance = max(0, int(hoy_val - valor_base))
+            participants.append({
+                "id": pid_for(tid, buid),
+                "tournament_id": tid,
+                "member_id": mid_for(buid),
+                "kills": avance,
+                "placement": None,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
         if tournaments:
             tournaments[-1]["participants_count"] = len(base)
 

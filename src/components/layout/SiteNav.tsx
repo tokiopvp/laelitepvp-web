@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, Menu, X } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 
 const links = [
@@ -32,7 +32,8 @@ export default function SiteNav() {
           <Link href="/" className="flex items-center gap-3" aria-label="La Elite PvP">
             <div className="relative">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center">
-                <Crown className="w-6 h-6 text-white" />
+                {/* El emblema del clan, no la corona generica de lucide. */}
+                <img src="/icon-192.png" alt="" width={28} height={28} className="w-7 h-7" />
               </div>
               <motion.div
                 className="absolute -top-1 -right-1 w-3 h-3 bg-elite-gold rounded-full"
