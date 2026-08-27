@@ -1,19 +1,59 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Trophy, Flame, Crown } from 'lucide-react'
 import LiveBadge from '@/components/LiveBadge'
+import type { Member } from '@/lib/types'
+import { honorHoy } from '@/lib/armas'
+import CompetenciaViva from '@/components/home/CompetenciaViva'
 
 // El heroe es una tesis: lo primero que se ve es el marcador EN VIVO del clan,
 // que es lo mas caracteristico de este proyecto. Las cuatro cifras generales
 // viven en la barra de abajo y no se repiten aqui: antes estaban en los dos
 // sitios y ademas los chips se montaban sobre la tarjeta en pantallas medianas.
-export default function HeroScene({
-  leaderboard,
-}: {
-  leaderboard: { name: string; kd: string }[]
-}) {
+// Los tops que van rotando en el marcador. Las KILLS primero: es la cifra que
+// el jugador presume, mucho mas que el K/D.
+const TOPS: {
+  id: string
+  titulo: string
+  valor: (m: Member) => number
+  formato: (v: number) => string
+}[] = [
+  { id: 'kills', titulo: 'Top eliminaciones', valor: (m) => m.kills ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'kd', titulo: 'Top K/D', valor: (m) => m.kd_ratio ?? 0,
+    formato: (v) => v.toFixed(2) },
+  { id: 'hs', titulo: 'Top headshots', valor: (m) => m.headshots ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'honor', titulo: 'Honor de hoy', valor: honorHoy,
+    formato: (v) => `+${v.toLocaleString('es')}` },
+  { id: 'wins', titulo: 'Top victorias', valor: (m) => m.wins ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+]
+
+export default function HeroScene({ members }: { members: Member[] }) {
+  // El marcador cambia de top cada 6 s. Un panel que siempre enseña lo mismo
+  // deja de mirarse; rotando, el visitante se queda a ver que sale.
+  const [iTop, setITop] = useState(0)
+  useEffect(() => {
+    if (typeof window !== 'undefined'
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 6000)
+    return () => clearInterval(id)
+  }, [])
+
+  const top = TOPS[iTop]
+  const filas = useMemo(
+    () =>
+      members
+        .map((m) => ({ nombre: m.nickname, v: top.valor(m) }))
+        .filter((f) => f.v > 0)
+        .sort((a, b) => b.v - a.v)
+        .slice(0, 5),
+    [members, top]
+  )
+
   const mx = useMotionValue(0)
   const my = useMotionValue(0)
   const rx = useSpring(useTransform(my, [-0.5, 0.5], [8, -8]), { stiffness: 60, damping: 15 })
@@ -65,12 +105,27 @@ export default function HeroScene({
               <LiveBadge />
             </div>
 
-            <p className="text-xs uppercase tracking-widest text-white/40 mb-3">Top General • K/D</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs uppercase tracking-widest text-white/40">{top.titulo}</p>
+              {/* Puntitos: se ve que hay mas tops y cual toca. */}
+              <div className="flex gap-1" aria-hidden>
+                {TOPS.map((t, i) => (
+                  <span
+                    key={t.id}
+                    className="h-1 rounded-full transition-all duration-500"
+                    style={{
+                      width: i === iTop ? 14 : 5,
+                      background: i === iTop ? '#e11d3c' : 'rgba(255,255,255,0.2)',
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
             <div className="space-y-2">
-              {leaderboard.length === 0 && <p className="text-white/40 text-sm">Cargando top…</p>}
-              {leaderboard.map((row, i) => (
+              {filas.length === 0 && <p className="text-white/40 text-sm">Cargando top…</p>}
+              {filas.map((row, i) => (
                 <div
-                  key={row.name}
+                  key={row.nombre}
                   className="flex items-center justify-between bg-elite-dark/30 rounded-lg p-3 hover:bg-elite-primary/10 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -86,16 +141,17 @@ export default function HeroScene({
                     >
                       {i + 1}
                     </div>
-                    <span className="font-medium truncate">{row.name}</span>
+                    <span className="font-medium truncate">{row.nombre}</span>
                   </div>
                   <div className="flex items-center gap-2 text-white/60 text-sm shrink-0">
                     <Flame className="w-4 h-4" style={{ color: i === 0 ? '#e8b33c' : undefined }} />
-                    <span className="tabular-nums font-mono">{row.kd}</span>
-                    <span className="text-white/35 text-xs">K/D</span>
+                    <span className="tabular-nums font-mono">{top.formato(row.v)}</span>
                   </div>
                 </div>
               ))}
             </div>
+
+            <CompetenciaViva />
 
             <div className="mt-4 flex items-center justify-center gap-2 text-white/40 text-xs">
               <Trophy className="w-4 h-4 text-elite-gold" />

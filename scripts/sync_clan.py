@@ -143,6 +143,54 @@ def extract(db_path):
     cur.execute("SELECT uid, nivel, region FROM miembros")
     mbr = {r["uid"]: dict(r) for r in cur.fetchall()}
 
+    # HONOR DE HOY. El juego solo muestra el acumulado de la SEMANA, asi que
+    # "lo que hizo hoy" hay que sacarlo de la historia: el ultimo valor menos
+    # el mas bajo registrado desde la medianoche. Es el dato que de verdad
+    # empuja a jugar, y no estaba en ningun sitio.
+    # Primero, el ultimo honor de cada uno, para saber que es plausible.
+    cur.execute(
+        """SELECT m.uid, m.valor FROM metricas m
+           JOIN (SELECT uid u, MAX(tomada_en) t FROM metricas
+                 WHERE clave='clan_honor_semana' GROUP BY uid) x
+             ON x.u=m.uid AND x.t=m.tomada_en
+           WHERE m.clave='clan_honor_semana'""")
+    honor_ultimo = {r["uid"]: float(r["valor"] or 0) for r in cur.fetchall()}
+
+    # COTA DE CORDURA. El OCR lee la columna de honor de una tabla apretada y
+    # a veces pega digitos de dos celdas: aparecio un 3074 en un clan donde
+    # nadie pasa de 85. Ese unico valor ya habia desactivado la salvaguarda de
+    # la competencia (que comparaba contra el maximo) y encabezaba el tablero
+    # de honor con una subida de +2999 que nunca ocurrio.
+    #
+    # Se toma la MEDIANA de los valores no nulos y se descarta lo que la supere
+    # por mas de diez veces: la mediana no se mueve por un dato disparatado,
+    # que es justo lo que el promedio o el maximo no aguantan.
+    _vals = sorted(v for v in honor_ultimo.values() if v > 0)
+    _mediana = _vals[len(_vals) // 2] if _vals else 0
+    TOPE = max(500.0, _mediana * 10) if _mediana else float("inf")
+    _raros = [u for u, v in honor_ultimo.items() if v > TOPE]
+    if _raros:
+        log.warning("honor: %d lectura(s) fuera de rango (>%.0f) descartadas: %s",
+                    len(_raros), TOPE,
+                    [f"{u}={honor_ultimo[u]:.0f}" for u in _raros[:3]])
+
+    cur.execute(
+        """SELECT uid,
+                  MAX(valor) AS alto,
+                  MIN(valor) AS bajo
+             FROM metricas
+            WHERE clave='clan_honor_semana'
+              AND date(tomada_en) = date('now')
+            GROUP BY uid""")
+    honor_hoy = {}
+    for r in cur.fetchall():
+        alto, bajo = float(r["alto"] or 0), float(r["bajo"] or 0)
+        # Si cualquiera de los dos extremos es disparatado, no se inventa una
+        # subida: se deja en 0 hasta que haya lecturas sanas.
+        if alto > TOPE or bajo > TOPE:
+            continue
+        honor_hoy[r["uid"]] = max(0, int(alto - bajo))
+
     # roster -> members
     cur.execute("SELECT nick, uid, actividad_semana, estado, visto_hace_horas, presente, entro_en FROM roster")
     rows = cur.fetchall()
@@ -197,6 +245,12 @@ def extract(db_path):
         idx = m.get("rango_br")
         rank = RANK_INDEX.get(int(idx)) if idx is not None else None
         stats_json = dict(m)  # TODAS las metricas del bot, a prueba de futuro
+        # Va dentro de stats_json y no en una columna nueva: la web lo lee
+        # igual y no hay que migrar el esquema por un entero.
+        stats_json["clan_honor_hoy"] = honor_hoy.get(uid, 0) if uid else 0
+        # El semanal disparatado tampoco debe llegar a la web.
+        if uid and honor_ultimo.get(uid, 0) > TOPE:
+            stats_json.pop("clan_honor_semana", None)
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
         members.append({

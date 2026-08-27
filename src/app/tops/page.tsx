@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Crown, Medal } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
+import TopArmas from '@/components/tops/TopArmas'
+import TopHonor from '@/components/tops/TopHonor'
 import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 import { TopListSkeleton } from '@/components/Skeletons'
@@ -105,6 +107,8 @@ export default function TopsPage() {
           </div>
         )}
       </div>
+      <TopHonor members={members} />
+      <TopArmas members={members} />
     </div>
   )
 }

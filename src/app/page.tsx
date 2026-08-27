@@ -9,6 +9,7 @@ import {
   Sparkles, Shield, Sword, Star, Target,
 } from 'lucide-react'
 import { getMembers, getTournaments } from '@/lib/data'
+import type { Member } from '@/lib/types'
 import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
 import HeroScene from '@/components/home/HeroScene'
@@ -43,7 +44,7 @@ export default function Home() {
     { value: '—', label: 'Mejor K/D', icon: Crown, color: '#ff4d68' },
     { value: '—', label: 'Kills Totales', icon: Flame, color: '#e8b33c' },
   ])
-  const [leaderboard, setLeaderboard] = useState<{ name: string; kd: string }[]>([])
+  const [todos, setTodos] = useState<Member[]>([])
 
   useEffect(() => {
     let alive = true
@@ -70,12 +71,11 @@ export default function Home() {
         { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#ff4d68' },
         { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#e8b33c' },
       ])
-      const top = members
-        .filter((m) => (m.kd_ratio || 0) > 0)
-        .sort((a, b) => (b.kd_ratio as number) - (a.kd_ratio as number))
-        .slice(0, 5)
-        .map((m) => ({ name: m.nickname, kd: (m.kd_ratio as number).toFixed(1) }))
-      setLeaderboard(top)
+      // Se pasan los miembros enteros: el marcador del hero rota entre varios
+      // tops (kills, K/D, headshots, honor de hoy) en vez de enseñar siempre
+      // el mismo. Las kills van primero porque es la cifra que el jugador
+      // presume, no el K/D.
+      setTodos(members)
     })()
     return () => {
       alive = false
@@ -167,7 +167,7 @@ export default function Home() {
             </motion.div>
 
             {/* Hero Visual 3D */}
-            <HeroScene leaderboard={leaderboard} />
+            <HeroScene members={todos} />
           </div>
 
           {/* Scroll Indicator */}
