@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Trophy, Flame, Crown, ChevronLeft, ChevronRight } from 'lucide-react'
 import LiveBadge from '@/components/LiveBadge'
 import type { Member } from '@/lib/types'
@@ -51,14 +51,25 @@ export default function HeroScene({ members }: { members: Member[] }) {
   // o esta navegando a mano con las flechas.
   const [pausa, setPausa] = useState(false)
 
+  // Muchos equipos de juego traen las animaciones de Windows desactivadas, y
+  // eso llega al navegador como prefers-reduced-motion. Antes eso paraba la
+  // rotacion y el marcador se quedaba clavado en el primer top.
+  //
+  // El marcador SIEMPRE rota: es la decision del sitio. Lo que se respeta es
+  // el MOVIMIENTO: con esa preferencia el contenido cambia sin deslizamiento
+  // ni desvanecido, de golpe. Rotar contenido no es lo mismo que animarlo.
+  const [sinMovimiento, setSinMovimiento] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const leer = () => setSinMovimiento(mq.matches)
+    leer()
+    mq.addEventListener('change', leer)
+    return () => mq.removeEventListener('change', leer)
+  }, [])
+
   useEffect(() => {
     if (pausa) return
-    // Quien pide menos movimiento no recibe rotacion automatica, pero SI puede
-    // llegar a todos los tops con las flechas: la accesibilidad no puede
-    // significar "te quedas sin ver nueve de diez tablas".
-    if (typeof window !== 'undefined'
-        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 4500)
+    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 5000)
     return () => clearInterval(id)
   }, [pausa])
 
@@ -167,6 +178,15 @@ export default function HeroScene({ members }: { members: Member[] }) {
             </div>
             <div className="space-y-2">
               {filas.length === 0 && <p className="text-white/40 text-sm">Cargando top…</p>}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={top.id}
+                  initial={sinMovimiento ? false : { opacity: 0, x: 26 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={sinMovimiento ? { opacity: 1 } : { opacity: 0, x: -26 }}
+                  transition={{ duration: sinMovimiento ? 0 : 0.34, ease: 'easeOut' }}
+                  className="space-y-2"
+                >
               {filas.map((row, i) => (
                 <div
                   key={row.nombre}
@@ -193,6 +213,8 @@ export default function HeroScene({ members }: { members: Member[] }) {
                   </div>
                 </div>
               ))}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             <CompetenciaViva />
