@@ -39,7 +39,7 @@ const features = [
 export default function Home() {
   const [stats, setStats] = useState([
     { value: '—', label: 'Miembros Activos', icon: Users, color: '#ff5a1f' },
-    { value: '—', label: 'Torneos Ganados', icon: Trophy, color: '#e8b33c' },
+    { value: '—', label: 'Torneos', icon: Trophy, color: '#e8b33c' },
     { value: '—', label: 'Mejor K/D', icon: Crown, color: '#ff9500' },
     { value: '—', label: 'Kills Totales', icon: Flame, color: '#e5484d' },
   ])
