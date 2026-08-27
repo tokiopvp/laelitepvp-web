@@ -71,5 +71,12 @@ export function formatearLocal(usd: number, pais: Pais, tasa: number | null): st
     return `$${usd.toFixed(2)}`
   }
   const local = redondearLimpio(usd * tasa)
-  return `${pais.simbolo} ${local.toLocaleString(pais.locale, { maximumFractionDigits: 2 })}`
+  // Decimales consistentes: sin esto salian 'S/ 15.6' y 'S/ 146' en la misma
+  // grilla, que en dinero se lee como un error. Por debajo de mil se muestran
+  // los dos decimales; por encima estorban (Bs 16.556,00 no le sirve a nadie).
+  const decimales = local >= 1000 ? 0 : 2
+  return `${pais.simbolo} ${local.toLocaleString(pais.locale, {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  })}`
 }
