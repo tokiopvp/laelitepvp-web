@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS point_events (
 );
 CREATE INDEX IF NOT EXISTS idx_point_events_profile ON point_events(profile_id, created_at);
 
-CREATE POLICY IF NOT EXISTS "point_events self read" ON point_events
+CREATE POLICY "point_events self read" ON point_events
   FOR SELECT USING (
     auth.uid() = profile_id OR
     (auth.jwt() ->> 'role') IN ('owner','admin','moderator','editor')
