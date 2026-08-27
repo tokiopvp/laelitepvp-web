@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
-import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting } from '@/lib/data'
+import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting, getRates } from '@/lib/data'
 import { formatUSD, cn } from '@/lib/utils'
 import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais } from '@/lib/paises'
 import type { PaymentMethod } from '@/lib/types'
@@ -81,9 +81,8 @@ export default function PagoStorePage() {
   // asi cambiar de pais es instantaneo, sin otra vuelta a la red.
   useEffect(() => {
     let alive = true
-    fetch('/api/rates')
-      .then((r) => r.json())
-      .then((j) => { if (alive) setRates(j.rates ?? {}) })
+    getRates()
+      .then((r) => { if (alive) setRates(r) })
       .catch(() => { if (alive) setRates({}) })
     return () => { alive = false }
   }, [])

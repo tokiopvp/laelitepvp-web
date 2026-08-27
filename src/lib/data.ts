@@ -78,6 +78,30 @@ export async function getUltimaSync(): Promise<Date | null> {
   return new Date(data.last_sync as string)
 }
 
+/**
+ * Tasas USDT -> moneda local, puestas por el sync del bot.
+ *
+ * NO se piden a Binance desde el navegador ni desde una Cloudflare Function:
+ * Binance bloquea las IPs del borde y devolvia vacio para las seis monedas.
+ * La maquina que corre el bot si las alcanza, asi que las deja aqui cada
+ * minuto y la tienda las lee de la base como cualquier otro dato.
+ */
+export async function getRates(): Promise<Record<string, number>> {
+  const sb = client()
+  if (!sb) return {}
+  const { data, error } = await sb
+    .from('settings')
+    .select('value')
+    .eq('key', 'rates_json')
+    .maybeSingle()
+  if (error || !data?.value) return {}
+  try {
+    return JSON.parse(data.value as string) as Record<string, number>
+  } catch {
+    return {}
+  }
+}
+
 export async function getNews(): Promise<News[]> {
   const sb = client()
   if (!sb) return []

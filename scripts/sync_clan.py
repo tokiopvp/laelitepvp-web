@@ -297,6 +297,62 @@ def extract_products(config_path=DEFAULT_BOT_CONFIG):
         })
     return products
 
+
+# ------------------------------------------------- tasas de cambio (Binance P2P)
+# Binance BLOQUEA las IPs del borde de Cloudflare: la Function /api/rates
+# devolvia vacio para las seis monedas aunque la misma peticion funcione desde
+# aqui. Esta maquina si alcanza Binance, y ya corre cada minuto, asi que las
+# tasas las trae el sync y la web las lee de Supabase. De paso queda una sola
+# fuente de precios, que es como debio ser desde el principio.
+FIATS = ["VES", "COP", "MXN", "PEN", "CLP", "ARS"]
+MARGEN = 1.03
+
+
+def _tasa_binance(fiat):
+    payload = json.dumps({
+        "asset": "USDT", "fiat": fiat, "tradeType": "SELL",
+        "page": 1, "rows": 5, "payTypes": [], "publisherType": None,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search",
+        data=payload, method="POST",
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as r:
+            d = json.loads(r.read().decode("utf-8"))
+    except Exception as e:
+        log.warning("tasa %s fallo: %s", fiat, e)
+        return None
+    precios = []
+    for a in (d.get("data") or []):
+        try:
+            precios.append(float(a["adv"]["price"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not precios:
+        return None
+    # El mejor precio para el cliente es el mas barato; encima va el margen.
+    return round(min(precios) * MARGEN, 4)
+
+
+def sync_tasas():
+    """Deja las tasas en settings.rates_json para que las lea la tienda."""
+    tasas = {}
+    for f in FIATS:
+        t = _tasa_binance(f)
+        if t:
+            tasas[f] = t
+    if not tasas:
+        log.warning("tasas: ninguna disponible, no piso las anteriores")
+        return 0
+    supabase("settings", "POST", [
+        {"key": "rates_json", "value": json.dumps(tasas),
+         "updated_at": datetime.now(timezone.utc).isoformat()},
+    ], params="?on_conflict=key")
+    log.info("tasas: %s", ", ".join(f"{k}={v}" for k, v in tasas.items()))
+    return len(tasas)
+
 # ---------------------------------------------------------------- run
 def run_once():
     try:
@@ -321,6 +377,13 @@ def run_once():
         log.info("Store: %d productos sincronizados", n_prod)
     else:
         log.info("Store: sin cambios (config no disponible)")
+
+    # Tasas de cambio para la tienda (ver nota arriba: Binance bloquea a
+    # Cloudflare, asi que las trae esta maquina).
+    try:
+        sync_tasas()
+    except Exception as e:
+        log.error("sync de tasas fallo: %s", e)
 
     log.info("Supabase OK -> members:%d torneos:%d participantes:%d productos:%d", n_m, n_t, n_p, n_prod)
     return n_m + n_t + n_p + n_prod
