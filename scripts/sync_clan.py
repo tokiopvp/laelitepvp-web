@@ -43,7 +43,9 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [sync] %(levelname)s %(message)s",
     handlers=[
-        logging.StreamHandler(sys.stdout),
+        # Bajo pythonw.exe (sin consola) sys.stdout es None: en ese caso el
+        # StreamHandler falla en cada emit. Solo lo agregamos si hay consola.
+        *([logging.StreamHandler(sys.stdout)] if sys.stdout else []),
         logging.FileHandler(os.path.join(BASE, "sync.log"), encoding="utf-8"),
     ],
 )
@@ -119,6 +121,11 @@ def tid_for(comp_id):
 def pid_for(tid, uid):
     return str(uuid5(NS, f"laelitepvp.com:part:{tid}:{uid}"))
 
+# Indice del tier (1-8) que guarda el bot en la metrica `rango_br`.
+RANK_INDEX = {1: 'Bronze', 2: 'Silver', 3: 'Gold', 4: 'Platinum',
+              5: 'Diamond', 6: 'Master', 7: 'Grandmaster', 8: 'Heroic'}
+
+
 def extract(db_path):
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"No existe {db_path}")
@@ -174,6 +181,8 @@ def extract(db_path):
         top10 = best("br_temp_solo_top10_tasa", "br_temp_duo_top10_tasa", "br_temp_escuadra_top10_tasa")
         max_kills = best("br_temp_solo_max_kills", "br_temp_duo_max_kills", "br_temp_escuadra_max_kills")
         revividas = best("br_temp_solo_revividas", "br_temp_duo_revividas", "br_temp_escuadra_revividas")
+        idx = m.get("rango_br")
+        rank = RANK_INDEX.get(int(idx)) if idx is not None else None
         stats_json = dict(m)  # TODAS las metricas del bot, a prueba de futuro
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
@@ -183,6 +192,7 @@ def extract(db_path):
             "free_fire_id": uid,
             "role_in_clan": "member",
             "level": int(mi["nivel"]) if mi.get("nivel") else None,
+            "rank": rank,
             "kd_ratio": round(float(kd), 2) if kd is not None else None,
             "headshots": int(headshots) if headshots is not None else None,
             "wins": int(wins) if wins is not None else None,

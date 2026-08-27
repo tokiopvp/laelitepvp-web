@@ -4,8 +4,9 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, sans-serif;
-    --font-rajdhani: 'Rajdhani', system-ui, sans-serif;
+    --font-body: 'Barlow', system-ui, sans-serif;
+    --font-display: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
 
   * {
@@ -18,7 +19,14 @@
 
   body {
     @apply bg-elite-dark text-white font-sans antialiased;
-    background: radial-gradient(ellipse at top, #1a1a2e 0%, #0a0a0f 100%);
+    /* Ceniza calida, no el azul-morado de antes: el ground tira a carbon. */
+    background: radial-gradient(ellipse at top, #221a14 0%, #0d0b09 100%);
+  }
+
+  /* Toda cifra que se alinee en columna. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
   ::-webkit-scrollbar {
@@ -71,8 +79,16 @@
     @apply opacity-100;
   }
 
+  /* Brasa -> ambar -> oro: la rampa del fuego, sin el salto al morado. */
   .gradient-text {
     @apply bg-gradient-to-r from-elite-primary via-elite-secondary to-elite-gold bg-clip-text text-transparent;
+  }
+
+  /* Marca de dato en vivo. Es el UNICO sitio donde sobrevive el cian. */
+  .chip-live {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
+    background: rgba(0, 212, 255, 0.1);
+    color: #00d4ff;
   }
 
   .section-container {
@@ -103,14 +119,14 @@
 /* ===== Fondo dinamico premium ===== */
 .bg-aurora {
   background:
-    radial-gradient(1200px 600px at 15% 0%, rgba(0, 212, 255, 0.10), transparent 60%),
-    radial-gradient(1000px 500px at 85% 20%, rgba(124, 58, 237, 0.10), transparent 60%);
+    radial-gradient(1200px 600px at 15% 0%, rgba(255, 90, 31, 0.12), transparent 60%),
+    radial-gradient(1000px 500px at 85% 20%, rgba(255, 149, 0, 0.09), transparent 60%);
 }
 
 .bg-grid {
   background-image:
-    linear-gradient(rgba(0, 212, 255, 0.10) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 255, 0.10) 1px, transparent 1px);
+    linear-gradient(rgba(255, 90, 31, 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 90, 31, 0.10) 1px, transparent 1px);
   background-size: 44px 44px;
   transform: perspective(420px) rotateX(62deg);
   transform-origin: bottom center;
@@ -142,7 +158,7 @@
 
 /* Texto con brillo degradado animado */
 .gradient-text-shimmer {
-  background: linear-gradient(100deg, #00d4ff 0%, #7c3aed 25%, #ffd700 50%, #7c3aed 75%, #00d4ff 100%);
+  background: linear-gradient(100deg, #ff5a1f 0%, #ff9500 25%, #e8b33c 50%, #ff9500 75%, #ff5a1f 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -157,7 +173,7 @@
 .card-premium {
   position: relative;
   border-radius: 1rem;
-  background: rgba(18, 18, 26, 0.72);
+  background: rgba(23, 19, 15, 0.72);
   backdrop-filter: blur(14px);
   overflow: hidden;
 }
@@ -167,7 +183,7 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(130deg, rgba(0, 212, 255, 0.7), rgba(124, 58, 237, 0.4), rgba(255, 215, 0, 0.5));
+  background: linear-gradient(130deg, rgba(255, 90, 31, 0.75), rgba(255, 149, 0, 0.35), rgba(232, 179, 60, 0.55));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;

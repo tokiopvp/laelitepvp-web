@@ -38,10 +38,10 @@ const features = [
 
 export default function Home() {
   const [stats, setStats] = useState([
-    { value: '—', label: 'Miembros Activos', icon: Users, color: '#00d4ff' },
-    { value: '—', label: 'Torneos Ganados', icon: Trophy, color: '#ffd700' },
-    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#c77dff' },
-    { value: '—', label: 'Kills Totales', icon: Flame, color: '#ff6b6b' },
+    { value: '—', label: 'Miembros Activos', icon: Users, color: '#ff5a1f' },
+    { value: '—', label: 'Torneos Ganados', icon: Trophy, color: '#e8b33c' },
+    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#ff9500' },
+    { value: '—', label: 'Kills Totales', icon: Flame, color: '#e5484d' },
   ])
   const [leaderboard, setLeaderboard] = useState<{ name: string; kd: string }[]>([])
 
@@ -54,14 +54,21 @@ export default function Home() {
       ])
       if (!alive) return
       const totalMembers = members.length
+      // El bot crea los torneos con placement=null (los marca EN CURSO) y
+      // nunca los cierra, asi que 'ganados' era siempre 0: un cero que no
+      // significaba nada mas que un campo sin llenar, en la portada.
+      // Contamos participaciones, que si es un dato real hoy.
       const torneosGanados = tournaments.filter((t) => t.placement === 1).length
+      const torneosTotales = tournaments.length
       const topKd = members.reduce((a, m) => ((m.kd_ratio || 0) > a ? (m.kd_ratio as number) : a), 0)
       const totalKills = members.reduce((a, m) => a + (m.kills ?? 0), 0)
       setStats([
-        { value: String(totalMembers), label: 'Miembros Activos', icon: Users, color: '#00d4ff' },
-        { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#ffd700' },
-        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#c77dff' },
-        { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#ff6b6b' },
+        { value: String(totalMembers), label: 'Miembros Activos', icon: Users, color: '#ff5a1f' },
+        torneosGanados > 0
+          ? { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#e8b33c' }
+          : { value: String(torneosTotales), label: 'Torneos Jugados', icon: Trophy, color: '#e8b33c' },
+        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#ff9500' },
+        { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#e5484d' },
       ])
       const top = members
         .filter((m) => (m.kd_ratio || 0) > 0)
@@ -86,7 +93,7 @@ export default function Home() {
             className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200%] h-[55%]"
             style={{
               backgroundImage:
-                'linear-gradient(rgba(0,212,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.18) 1px, transparent 1px)',
+                'linear-gradient(rgba(255,90,31,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,90,31,0.18) 1px, transparent 1px)',
               backgroundSize: '44px 44px',
               transform: 'perspective(420px) rotateX(72deg)',
               transformOrigin: 'bottom',

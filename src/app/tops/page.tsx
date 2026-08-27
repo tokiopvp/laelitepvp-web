@@ -1,33 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Crown, Medal } from 'lucide-react'
 import { Member } from '@/lib/types'
-import { getMembers, subscribeToTable } from '@/lib/data'
-import { demoMembers } from '@/lib/demo-data'
+import { useMembers } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
+import { TopListSkeleton } from '@/components/Skeletons'
 
-const rankColors = ['#ffd700', '#c0c0c0', '#cd7f32', '#00d4ff', '#7c3aed']
+const rankColors = ['#e8b33c', '#c0c0c0', '#cd7f32', '#ff5a1f', '#ff9500']
 
 export default function TopsPage() {
-  const [members, setMembers] = useState<Member[]>(demoMembers)
+  const { members, loading } = useMembers()
   const [activeCat, setActiveCat] = useState<string>(STAT_CATEGORIES[0].key)
   const cat = STAT_CATEGORIES.find((c) => c.key === activeCat) ?? STAT_CATEGORIES[0]
-
-  useEffect(() => {
-    let active = true
-    const load = () => getMembers().then((m) => { if (active) setMembers(m) })
-    load()
-    const unsub = subscribeToTable('members', load)
-    const id = setInterval(load, 20000)
-    return () => {
-      active = false
-      clearInterval(id)
-      unsub()
-    }
-  }, [])
 
   const valOf = (m: Member) => {
     const v = cat.get(m)
@@ -76,7 +63,12 @@ export default function TopsPage() {
           })}
         </div>
 
-        <div className="max-w-3xl mx-auto space-y-3">
+        {loading && members.length === 0 ? (
+          <div className="max-w-3xl mx-auto">
+            <TopListSkeleton />
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto space-y-3">
           <AnimatePresence mode="popLayout">
             {ranked.map((member, i) => (
               <motion.div
@@ -110,7 +102,8 @@ export default function TopsPage() {
               </motion.div>
             ))}
           </AnimatePresence>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

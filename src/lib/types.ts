@@ -1,5 +1,5 @@
 export type Role = 'owner' | 'admin' | 'moderator' | 'editor' | 'member'
-export type Rank = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Master' | 'Grandmaster'
+export type Rank = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond' | 'Master' | 'Grandmaster' | 'Heroic'
 export type TopCategory = 'kd' | 'headshots' | 'wins' | 'booyahs' | 'level' | 'rank'
 export type GameMode = 'Solo' | 'Duo' | 'Squad' | 'Clash Squad'
 export type ProductCategory = 'diamonds' | 'membership' | 'bundle' | 'pass'

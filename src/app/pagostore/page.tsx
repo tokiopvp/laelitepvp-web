@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
 import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting } from '@/lib/data'
-import { demoProducts } from '@/lib/demo-data'
 import { formatUSD, cn } from '@/lib/utils'
+import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais } from '@/lib/paises'
 import type { PaymentMethod } from '@/lib/types'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
-  diamonds: { label: 'Diamantes', icon: Gem, color: '#00d4ff' },
-  membership: { label: 'Membresías', icon: Crown, color: '#7c3aed' },
+  diamonds: { label: 'Diamantes', icon: Gem, color: '#ff5a1f' },
+  membership: { label: 'Membresías', icon: Crown, color: '#e8b33c' },
   bundle: { label: 'Bundles', icon: Package, color: '#ffd700' },
   pass: { label: 'Pases', icon: Ticket, color: '#ff6b6b' },
 }
@@ -22,7 +22,11 @@ type CartItem = { product: Product; qty: number }
 type Cart = Record<string, CartItem>
 
 export default function PagoStorePage() {
-  const [products, setProducts] = useState<Product[]>(demoProducts)
+  // Arranca VACIO. Antes arrancaba con demoProducts, asi que cada carga
+  // mostraba PRECIOS DE DEMOSTRACION antes de reemplazarlos por los reales:
+  // un cliente rapido alcanzaba a leer una cifra que no existe.
+  const [products, setProducts] = useState<Product[]>([])
+  const [cargandoProductos, setCargandoProductos] = useState(true)
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
   const [cart, setCart] = useState<Cart>({})
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -32,16 +36,20 @@ export default function PagoStorePage() {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [country, setCountry] = useState<string>('ALL')
-  const [vesRate, setVesRate] = useState<number | null>(null)
+  const [rates, setRates] = useState<Record<string, number>>({})
   const [methods, setMethods] = useState<PaymentMethod[]>([])
   const [whatsapp, setWhatsapp] = useState<string | null>(null)
 
   useEffect(() => {
-    getProducts().then(setProducts)
+    getProducts()
+      .then(setProducts)
+      .finally(() => setCargandoProductos(false))
     getPaymentMethods().then(setMethods)
     getSetting('whatsapp_number').then(setWhatsapp)
     const saved = typeof window !== 'undefined' ? localStorage.getItem('store_country') : null
-    if (saved) setCountry(saved)
+    // Sin eleccion previa, conjeturamos por zona horaria para que el
+    // visitante vea SU moneda ya en el primer render.
+    setCountry(saved || adivinarPais())
   }, [])
 
   // Registrar que el usuario entro a la tienda (una vez por carga)
@@ -49,11 +57,15 @@ export default function PagoStorePage() {
     logActivity('store_view')
   }, [])
 
-  const COUNTRY_LABEL: Record<string, string> = { ALL: 'Internacional', VE: 'Venezuela', CO: 'Colombia' }
-  const countries = Array.from(new Set(methods.map((m) => m.country))).sort((a, b) =>
-    a === 'ALL' ? -1 : b === 'ALL' ? 1 : a.localeCompare(b)
+  // Antes el desplegable se armaba con los paises que tuvieran metodo de pago
+  // cargado (tres), y solo Venezuela veia precio local. Ahora salen los ocho
+  // donde vendes y todos ven su moneda.
+  const pais = paisPorCodigo(country)
+  const countries = [PAIS_INTERNACIONAL.code, ...PAISES.map((x) => x.code)]
+  const COUNTRY_LABEL: Record<string, string> = Object.fromEntries(
+    [PAIS_INTERNACIONAL, ...PAISES].map((x) => [x.code, x.nombre])
   )
-  const currency = country === 'VE' ? 'VES' : 'USD'
+  const currency = pais.moneda
   const methodsForCountry = methods.filter((m) => m.country === country || m.country === 'ALL')
   const methodNames = methodsForCountry.length ? methodsForCountry.map((m) => m.name) : FALLBACK_METHODS
 
@@ -64,26 +76,22 @@ export default function PagoStorePage() {
     }
   }, [methodNames, form.method])
 
-  // Tipo de cambio VES en vivo (Binance P2P)
+  // Tasas en vivo de TODAS las monedas (Binance P2P, via Cloudflare Function).
+  // Se piden una sola vez y valen para cualquier pais que elija el visitante:
+  // asi cambiar de pais es instantaneo, sin otra vuelta a la red.
   useEffect(() => {
-    if (currency !== 'VES') {
-      setVesRate(null)
-      return
-    }
     let alive = true
-    fetch('/api/ves-rate')
+    fetch('/api/rates')
       .then((r) => r.json())
-      .then((j) => { if (alive) setVesRate(j.rate ?? null) })
-      .catch(() => { if (alive) setVesRate(null) })
+      .then((j) => { if (alive) setRates(j.rates ?? {}) })
+      .catch(() => { if (alive) setRates({}) })
     return () => { alive = false }
-  }, [currency])
+  }, [])
 
-  const fmt = (usd: number) => {
-    if (currency === 'VES' && vesRate) {
-      return `Bs.S ${(usd * vesRate).toLocaleString('es-VE', { maximumFractionDigits: 2 })}`
-    }
-    return formatUSD(usd)
-  }
+  const tasa = currency === 'USD' ? null : (rates[currency] ?? null)
+  // Si la moneda del pais no tiene tasa, se muestra en USD. Nunca se inventa
+  // una conversion: un precio local mal calculado se cobra mal.
+  const fmt = (usd: number) => formatearLocal(usd, pais, tasa)
 
   const filtered = products.filter(
     (p) =>
@@ -136,7 +144,9 @@ export default function PagoStorePage() {
         quantity: it.qty,
         total_usd: +(it.qty * it.product.price_usd).toFixed(2),
         payment_method: form.method,
-        notes: `${it.qty}x ${it.product.name}`,
+        // Se deja constancia del pais y del precio LOCAL que vio el cliente:
+        // la tasa se mueve, y a la hora de cobrar hay que respetar lo pactado.
+        notes: `${it.qty}x ${it.product.name} · ${pais.nombre} · ${fmt(it.qty * it.product.price_usd)}`,
       })
       if (!error) {
         ok++
@@ -156,6 +166,12 @@ export default function PagoStorePage() {
       ffid: form.ffid.trim(),
       method: form.method,
       total: +cartTotal.toFixed(2),
+      // Lo que de verdad necesitas para atenderlo: de donde es y cuanto paga
+      // en SU moneda. Con el total en dolares hay que hacer la cuenta a mano.
+      pais: pais.nombre,
+      total_local: currency === 'USD' ? null : fmt(cartTotal),
+      moneda: currency,
+      whatsapp: form.discord.trim() || null,
       orders,
     })
     setSubmitting(false)
@@ -205,12 +221,16 @@ export default function PagoStorePage() {
               ))}
             </select>
           </div>
-          {currency === 'VES' && (
+          {/* La tasa se muestra siempre: el visitante tiene derecho a saber de
+              donde sale el numero que va a pagar. */}
+          {currency !== 'USD' && (
             <span className="text-white/50 text-xs">
-              {vesRate ? `1 USDT ≈ Bs.S ${vesRate.toLocaleString('es-VE')} (Binance P2P)` : 'cargando tasa…'}
+              {tasa
+                ? `1 USDT ≈ ${pais.simbolo} ${tasa.toLocaleString(pais.locale, { maximumFractionDigits: 2 })} · Binance P2P`
+                : 'Sin tasa disponible · precios en USD'}
             </span>
           )}
-          {currency === 'USD' && country !== 'ALL' && (
+          {currency === 'USD' && (
             <span className="text-white/50 text-xs">Precios en USD</span>
           )}
         </div>
@@ -245,6 +265,42 @@ export default function PagoStorePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        {/* Cargando: esqueletos, no precios inventados. */}
+        {cargandoProductos && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="card-glow h-52 animate-pulse bg-elite-card/40" />
+            ))}
+          </div>
+        )}
+
+        {/* Sin conexion o catalogo vacio: se dice, no se disimula. */}
+        {!cargandoProductos && products.length === 0 && (
+          <div className="card-glow p-10 text-center">
+            <p className="font-display text-2xl mb-2">Tienda temporalmente no disponible</p>
+            <p className="text-white/60 mb-6">
+              No pudimos cargar el catálogo. Los precios cambian a diario, así que
+              preferimos no mostrarte cifras que podrían estar mal.
+            </p>
+            {whatsapp && (
+              <a
+                href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary inline-block"
+              >
+                Escríbenos por WhatsApp
+              </a>
+            )}
+          </div>
+        )}
+
+        {!cargandoProductos && products.length > 0 && filtered.length === 0 && (
+          <p className="text-white/50 py-10 text-center">
+            Nada coincide con esa búsqueda.
+          </p>
+        )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filtered.map((product, i) => (

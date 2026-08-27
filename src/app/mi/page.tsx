@@ -170,14 +170,14 @@ export default function MiPage() {
               className="h-28 sm:h-32"
               style={{
                 background: linkedMember
-                  ? `linear-gradient(90deg, ${RANK_COLORS[linkedMember.rank || 'Bronze']}55, #7c3aed33, #00d4ff44)`
-                  : 'linear-gradient(90deg, #00d4ff44, #7c3aed44)',
+                  ? `linear-gradient(90deg, ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}55, #ff950033, #ff5a1f44)`
+                  : 'linear-gradient(90deg, #ff5a1f44, #ff950044)',
               }}
             />
           )}
           <div
             className="absolute inset-0 opacity-30"
-            style={{ background: 'linear-gradient(180deg, transparent 40%, #0a0a0f 100%), radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: 'auto, 22px 22px' }}
+            style={{ background: 'linear-gradient(180deg, transparent 40%, #0d0b09 100%), radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: 'auto, 22px 22px' }}
           />
           <div className="relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end gap-4 px-6 pb-6">
             {linkedMember?.avatar_url || linkedMember?.outfit_image_url ? (
@@ -185,14 +185,14 @@ export default function MiPage() {
                 src={linkedMember.avatar_url || linkedMember.outfit_image_url || ''}
                 alt=""
                 className="w-24 h-24 rounded-2xl object-cover shadow-lg"
-                style={{ boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f' }}
+                style={{ boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09' }}
               />
             ) : (
               <div
                 className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
                 style={{
-                  background: 'linear-gradient(135deg, #00d4ff, #7c3aed)',
-                  boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f',
+                  background: 'linear-gradient(135deg, #ff5a1f, #ff9500)',
+                  boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09',
                 }}
               >
                 {(linkedMember?.nickname || profile?.display_name || '?').slice(0, 2).toUpperCase()}

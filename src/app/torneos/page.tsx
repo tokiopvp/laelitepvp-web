@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Crown, Users, Calendar, Target, Radio, CheckCircle2 } from 'lucide-react'
 import { Tournament, Member } from '@/lib/types'
-import { getTournaments, getMembers, subscribeToTable } from '@/lib/data'
-import { demoTournaments } from '@/lib/demo-data'
+import { useTournaments, useMembers } from '@/lib/hooks'
 import { formatDate } from '@/lib/utils'
+import { TournamentListSkeleton } from '@/components/Skeletons'
 
 const modeColors: Record<string, string> = {
-  Solo: '#00d4ff',
-  Duo: '#7c3aed',
+  Solo: '#ff5a1f',
+  Duo: '#ff9500',
   Squad: '#ffd700',
   'Clash Squad': '#ff6b6b',
 }
@@ -19,8 +18,8 @@ const rankColors: Record<string, string> = {
   Bronze: '#cd7f32',
   Silver: '#c0c0c0',
   Gold: '#ffd700',
-  Platinum: '#00d4ff',
-  Diamond: '#7c3aed',
+  Platinum: '#e5e4e2',
+  Diamond: '#b9f2ff',
   Master: '#ff6b6b',
   Grandmaster: '#ff2d6f',
 }
@@ -30,7 +29,7 @@ function hasData(m: Member): boolean {
 }
 
 function Avatar({ m }: { m: Member }) {
-  const color = rankColors[m.rank || 'Diamond'] || '#00d4ff'
+  const color = (m.rank ? rankColors[m.rank] : null) || '#6b6156'
   const src = m.outfit_image_url || m.avatar_url
   if (src) {
     return (
@@ -53,23 +52,8 @@ function Avatar({ m }: { m: Member }) {
 }
 
 export default function TorneosPage() {
-  const [tournaments, setTournaments] = useState<Tournament[]>(demoTournaments)
-  const [members, setMembers] = useState<Member[]>([])
-
-  useEffect(() => {
-    let active = true
-    const loadT = () => getTournaments().then((t) => { if (active) setTournaments(t) })
-    const loadM = () => getMembers().then((m) => { if (active) setMembers(m) })
-    loadT(); loadM()
-    const unsubT = subscribeToTable('tournaments', loadT)
-    const unsubM = subscribeToTable('members', loadM)
-    const id = setInterval(() => { loadT(); loadM() }, 20000)
-    return () => {
-      active = false
-      clearInterval(id)
-      unsubT(); unsubM()
-    }
-  }, [])
+  const { tournaments, loading: loadingT } = useTournaments()
+  const { members, loading: loadingM } = useMembers()
 
   const withData = members.filter(hasData).length
   const total = members.length
@@ -145,8 +129,8 @@ export default function TorneosPage() {
                     <span
                       className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                       style={{
-                        color: rankColors[m.rank || 'Diamond'] || '#00d4ff',
-                        background: `${rankColors[m.rank || 'Diamond'] || '#00d4ff'}15`,
+                        color: (m.rank ? rankColors[m.rank] : null) || '#6b6156',
+                        background: `${(m.rank ? rankColors[m.rank] : null) || '#6b6156'}15`,
                       }}
                     >
                       {m.rank || '—'}
@@ -154,12 +138,15 @@ export default function TorneosPage() {
                     <span className="text-[10px] text-white/50">K/D {m.kd_ratio || 0}</span>
                   </div>
                 )
-              })}
-            </div>
-          )}
+          })}
+          </div>
+        )}
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loadingT && tournaments.length === 0 ? (
+          <TournamentListSkeleton />
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {tournaments.map((t, i) => (
             <motion.div
               key={t.id}
@@ -197,7 +184,7 @@ export default function TorneosPage() {
                   <span className="text-white/50 flex items-center gap-1"><Trophy className="w-3 h-3" /> Posición</span>
                   <span
                     className="font-bold"
-                    style={{ color: t.placement === 1 ? '#ffd700' : t.placement ? '#fff' : '#00d4ff' }}
+                    style={{ color: t.placement === 1 ? '#e8b33c' : t.placement ? '#fff' : '#ff5a1f' }}
                   >
                     {t.placement === 1 ? '🏆 CAMPEÓN' : t.placement ? `#${t.placement}` : '🔴 EN CURSO'}
                   </span>
@@ -210,6 +197,7 @@ export default function TorneosPage() {
             </motion.div>
           ))}
         </div>
+      )}
       </div>
     </div>
   )

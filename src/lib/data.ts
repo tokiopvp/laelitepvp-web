@@ -22,8 +22,13 @@ export async function getMembers(): Promise<Member[]> {
     .from('members')
     .select('*')
     .eq('is_active', true)
-    .order('kd_ratio', { ascending: false })
-  if (error || !data || data.length === 0) return demoMembers
+    // nullsFirst:false es decisivo. En PostgreSQL, ORDER BY ... DESC pone los
+    // NULL PRIMERO: la pagina de miembros abria con un muro de tarjetas vacias
+    // (los que el bot aun no ha leido) y enterraba abajo a los jugadores con
+    // estadisticas reales.
+    .order('kd_ratio', { ascending: false, nullsFirst: false })
+  if (error) return []
+  if (!data || data.length === 0) return []
   return data as Member[]
 }
 
@@ -34,31 +39,54 @@ export async function getTournaments(): Promise<Tournament[]> {
     .from('tournaments')
     .select('*')
     .order('date_played', { ascending: false })
-  if (error || !data || data.length === 0) return demoTournaments
+  if (error) return []
+  if (!data || data.length === 0) return []
   return data as Tournament[]
 }
 
 export async function getProducts(): Promise<Product[]> {
   const sb = client()
-  if (!sb) return demoProducts
+  if (!sb) return []
   const { data, error } = await sb
     .from('products')
     .select('*')
     .eq('is_active', true)
     .order('category')
-  if (error || !data || data.length === 0) return demoProducts
+  // Ante un fallo se devuelve vacio y la tienda dice "no disponible". Caer a
+  // datos de demostracion mostraba PRECIOS FALSOS como si fueran reales, que
+  // es peor que no mostrar nada: el cliente escribe por WhatsApp con una cifra
+  // que no existe.
+  if (error || !data) return []
   return data as Product[]
+}
+
+/**
+ * Momento de la ultima sincronizacion del bot, para poder decir en pantalla
+ * hace cuanto que el dato es real en vez de un puntito que dice LIVE sin
+ * consultar nada.
+ */
+export async function getUltimaSync(): Promise<Date | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb
+    .from('members')
+    .select('last_sync')
+    .order('last_sync', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error || !data?.last_sync) return null
+  return new Date(data.last_sync as string)
 }
 
 export async function getNews(): Promise<News[]> {
   const sb = client()
-  if (!sb) return demoNews
+  if (!sb) return []
   const { data, error } = await sb
     .from('news')
     .select('*')
     .eq('is_published', true)
     .order('published_at', { ascending: false })
-  if (error || !data || data.length === 0) return demoNews
+  if (error || !data) return []
   return data as News[]
 }
 

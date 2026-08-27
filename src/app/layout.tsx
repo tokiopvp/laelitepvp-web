@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Rajdhani } from 'next/font/google'
+import { Barlow, Oswald, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import SiteNav from '@/components/layout/SiteNav'
@@ -7,17 +7,30 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
 import WhatsAppSupport from '@/components/layout/WhatsAppSupport'
 
-const inter = Inter({
+// Cuerpo: Barlow. Buena legibilidad en pantallas chicas y de gama baja, con
+// mas caracter que las sans neutras de siempre.
+const body = Barlow({
   subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-const rajdhani = Rajdhani({
-  subsets: ['latin'],
-  variable: '--font-rajdhani',
+  variable: '--font-body',
   display: 'swap',
   weight: ['400', '500', '600', '700'],
+})
+
+// Titulos y marcadores: Oswald. Condensada con peso real, el registro de los
+// tableros de estadio y los overlays de transmision.
+const display = Oswald({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+})
+
+// Cifras que se alinean en columna: K/D, precios, tops.
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+  weight: ['400', '500', '600'],
 })
 
 export const metadata: Metadata = {
@@ -57,7 +70,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0f',
+  themeColor: '#0d0b09',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
@@ -69,7 +82,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className={`${inter.variable} ${rajdhani.variable}`}>
+    <html lang="es" className={`${body.variable} ${display.variable} ${mono.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

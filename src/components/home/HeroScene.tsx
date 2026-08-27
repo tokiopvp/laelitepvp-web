@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Trophy, Users, Flame, Crown } from 'lucide-react'
+import LiveBadge from '@/components/LiveBadge'
 
 const CHIP_POS = ['-top-8 -left-8', '-top-8 -right-8', '-bottom-8 -left-8', '-bottom-8 -right-8']
 const CHIP_ICON = [Users, Trophy, Crown, Flame]
@@ -37,13 +38,13 @@ export default function HeroScene({
         {/* Anillos rotatorios de fondo */}
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[125%] aspect-square rounded-full pointer-events-none"
-          style={{ border: '2px solid rgba(0,212,255,0.22)', z: -70 }}
+          style={{ border: '2px solid rgba(255,90,31,0.22)', z: -70 }}
           animate={{ rotate: 360 }}
           transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
         />
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92%] aspect-square rounded-full pointer-events-none"
-          style={{ border: '1px dashed rgba(124,58,237,0.35)', z: -40 }}
+          style={{ border: '1px dashed rgba(232,179,60,0.35)', z: -40 }}
           animate={{ rotate: -360 }}
           transition={{ duration: 34, repeat: Infinity, ease: 'linear' }}
         />
@@ -61,10 +62,8 @@ export default function HeroScene({
                   <p className="text-sm text-white/50">Clan Oficial • Verificado</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2 bg-elite-primary/10 px-3 py-1 rounded-full">
-                <motion.div className="w-2 h-2 bg-elite-primary rounded-full animate-pulse" />
-                <span className="text-xs font-medium text-elite-primary">LIVE</span>
-              </div>
+              {/* Respaldado por el last_sync real, no un puntito decorativo. */}
+              <LiveBadge />
             </div>
 
             <p className="text-xs uppercase tracking-widest text-white/40 mb-3">Top General • K/D</p>
