@@ -5,12 +5,14 @@ import { motion } from 'framer-motion'
 import { Newspaper, ArrowRight } from 'lucide-react'
 import { News } from '@/lib/types'
 import { getNews } from '@/lib/data'
-import { demoNews } from '@/lib/demo-data'
 import { formatDate } from '@/lib/utils'
 import Link from 'next/link'
+import Leaks from '@/components/news/Leaks'
 
 export default function NoticiasPage() {
-  const [news, setNews] = useState<News[]>(demoNews)
+  // Arranca vacio: un anuncio de demostracion en la pagina de noticias
+  // se lee como un anuncio de verdad.
+  const [news, setNews] = useState<News[]>([])
 
   useEffect(() => {
     getNews().then(setNews)
@@ -25,9 +27,18 @@ export default function NoticiasPage() {
             <span className="text-sm font-medium text-elite-secondary">NOTICIAS DEL CLAN</span>
           </div>
           <h1 className="font-display font-bold text-4xl sm:text-5xl gradient-text mb-2">Últimas Noticias</h1>
-          <p className="text-white/60">Anuncios, torneos y eventos de La Elite PvP.</p>
+          <p className="text-white/60">Filtraciones, próximas colaboraciones y todo lo del clan.</p>
         </motion.div>
 
+        {/* Lo que se viene, primero: es lo que trae a la gente. Los anuncios
+            del clan van despues, que son para quien ya esta dentro. */}
+        <section className="mb-16">
+          <Leaks />
+        </section>
+
+        {news.length > 0 && (
+          <h2 className="section-title !text-2xl sm:!text-3xl mb-6">Del clan</h2>
+        )}
         <div className="grid md:grid-cols-2 gap-6">
           {news.map((n, i) => (
             <motion.article

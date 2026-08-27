@@ -574,6 +574,64 @@ def sync_metodos_pago(config_path=DEFAULT_BOT_CONFIG):
     log.info("metodos de pago: %d publicados", len(salida))
     return len(salida)
 
+
+# ------------------------------------------------------ leaks -> Supabase
+# El bot de ventas ya vigila seis fuentes de filtraciones (Google News en
+# espanol, r/FreeFireLeaks, canales de YouTube), deduplica, saca la imagen de
+# portada y traduce al espanol. Todo eso quedaba en un cache local que solo
+# veia WhatsApp.
+#
+# Aqui SOLO se lee ese cache y se publica: no se vuelve a descargar nada. El
+# bot es el que sabe de leaks; este script solo lo lleva a la web.
+#
+# Se publica titular, resumen corto, FUENTE y ENLACE al original. La gracia de
+# un agregador es mandar trafico a quien lo publico, no quedarse el contenido.
+LEAKS_CACHE = os.path.join(os.path.dirname(DEFAULT_BOT_CONFIG), "leaks_cache.json")
+
+
+def sync_leaks(max_items: int = 24):
+    if not os.path.exists(LEAKS_CACHE):
+        return 0
+    try:
+        with open(LEAKS_CACHE, encoding="utf-8") as f:
+            datos = json.load(f)
+    except Exception as e:
+        log.error("no pude leer el cache de leaks: %s", e)
+        return 0
+
+    items = []
+    for it in (datos.get("items") or [])[:max_items]:
+        titulo = (it.get("titulo") or "").strip()
+        enlace = (it.get("link") or "").strip()
+        # Sin titular o sin enlace no se publica: un agregador que no puede
+        # devolver el clic al medio no aporta nada.
+        if not titulo or not enlace:
+            continue
+        items.append({
+            "titulo": titulo[:200],
+            # Resumen corto: es un adelanto para decidir si abres, no el
+            # articulo. El propio bot ya lo recorta a 220.
+            "resumen": (it.get("descripcion") or "").strip()[:220],
+            "fuente": (it.get("fuente") or "").strip()[:80],
+            "fecha": (it.get("fecha") or "").strip(),
+            "ts": it.get("ts") or 0,
+            "link": enlace,
+            "imagen": (it.get("imagen") or "").strip() or None,
+        })
+
+    if not items:
+        log.info("leaks: cache sin elementos publicables")
+        return 0
+
+    supabase("settings", "POST", [
+        {"key": "leaks_json",
+         "value": json.dumps({"actualizado": datos.get("actualizado", 0),
+                              "items": items}, ensure_ascii=False),
+         "updated_at": datetime.now(timezone.utc).isoformat()},
+    ], params="?on_conflict=key")
+    log.info("leaks: %d publicados (de %d fuentes)", len(items), datos.get("fuentes", 0))
+    return len(items)
+
 # ---------------------------------------------------------------- run
 def run_once():
     try:
@@ -617,6 +675,12 @@ def run_once():
         sync_metodos_pago()
     except Exception as e:
         log.error("sync de metodos de pago fallo: %s", e)
+
+    # Filtraciones de Free Fire que ya recolecta el bot de ventas.
+    try:
+        sync_leaks()
+    except Exception as e:
+        log.error("sync de leaks fallo: %s", e)
 
     log.info("Supabase OK -> members:%d torneos:%d participantes:%d productos:%d", n_m, n_t, n_p, n_prod)
     return n_m + n_t + n_p + n_prod

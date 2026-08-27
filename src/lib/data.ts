@@ -452,3 +452,38 @@ export async function getMetodosPago(): Promise<MetodoPago[]> {
     return []
   }
 }
+
+// ---- Filtraciones de Free Fire (las recolecta el bot de ventas) ----
+export interface Leak {
+  titulo: string
+  resumen: string
+  fuente: string
+  fecha: string
+  ts: number
+  link: string
+  imagen: string | null
+}
+
+/**
+ * Lo que se viene en Free Fire, segun seis fuentes que el bot vigila.
+ *
+ * Es un AGREGADOR: se muestra el titular, un adelanto corto y de donde salio,
+ * y el clic va siempre al medio que lo publico. Ni se copia el articulo ni se
+ * esconde la fuente; el valor esta en juntarlo y traducirlo, no en quedarselo.
+ */
+export async function getLeaks(): Promise<{ items: Leak[]; actualizado: number }> {
+  const sb = client()
+  if (!sb) return { items: [], actualizado: 0 }
+  const { data, error } = await sb
+    .from('settings')
+    .select('value')
+    .eq('key', 'leaks_json')
+    .maybeSingle()
+  if (error || !data?.value) return { items: [], actualizado: 0 }
+  try {
+    const j = JSON.parse(data.value as string)
+    return { items: (j.items ?? []) as Leak[], actualizado: j.actualizado ?? 0 }
+  } catch {
+    return { items: [], actualizado: 0 }
+  }
+}
