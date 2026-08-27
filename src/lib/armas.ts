@@ -135,3 +135,52 @@ export function honorSemana(m: Member): number {
   const sj = m.stats_json as Record<string, number> | null
   return Number(sj?.clan_honor_semana ?? 0) || 0
 }
+
+export interface ArmaJugador {
+  arma: string
+  kills: number
+  puntuacion: number
+  headshot: number
+}
+
+/**
+ * Las armas de UN jugador, ordenadas por lo que mas ha matado con ellas.
+ *
+ * Antes esto se enseñaba como un top global por arma, y era ilegible: mezclaba
+ * a todo el clan en una rejilla donde no se entendia de quien era cada cosa.
+ * El sitio natural de este dato es la ficha del jugador.
+ */
+export function armasDe(
+  m: Member, modo: Modo, periodo: Periodo
+): ArmaJugador[] {
+  const sj = m.stats_json
+  if (!sj || typeof sj !== 'object') return []
+  const prefijo = `arma_${modo}_${periodo}_`
+  const acc = new Map<string, ArmaJugador>()
+
+  for (const [clave, valor] of Object.entries(sj)) {
+    if (!clave.startsWith(prefijo)) continue
+    const v = Number(valor)
+    if (!Number.isFinite(v) || v <= 0) continue
+    const resto = clave.slice(prefijo.length)
+    const corte = resto.lastIndexOf('_')
+    if (corte < 0) continue
+    const bruto = resto.slice(0, corte)
+    const met = resto.slice(corte + 1) as MetricaArma
+    if (!['kills', 'puntuacion', 'headshot'].includes(met)) continue
+    const arma = armaValida(bruto)
+    if (!arma) continue
+    const fila = acc.get(arma) ?? { arma, kills: 0, puntuacion: 0, headshot: 0 }
+    fila[met] = v
+    acc.set(arma, fila)
+  }
+  return Array.from(acc.values())
+    .sort((a, b) => b.kills - a.kills || b.puntuacion - a.puntuacion)
+}
+
+/** Si el bot no leyo ninguna combinación, no se enseña la pestaña vacía. */
+export function tieneArmas(m: Member): boolean {
+  const sj = m.stats_json
+  if (!sj || typeof sj !== 'object') return false
+  return Object.keys(sj).some((k) => k.startsWith('arma_'))
+}

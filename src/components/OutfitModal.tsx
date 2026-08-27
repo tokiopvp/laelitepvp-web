@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import type { Member } from '@/lib/types'
 import { RankEmblem } from '@/components/RankEmblem'
+import {
+  MODOS, PERIODOS, armasDe, tieneArmas, nombreArma,
+  type Modo, type Periodo,
+} from '@/lib/armas'
 
 /**
  * El personaje del jugador, a pantalla completa.
@@ -29,6 +33,15 @@ export default function OutfitModal({
       window.removeEventListener('keydown', tecla)
     }
   }, [member, onClose])
+
+  const [modo, setModo] = useState<Modo>('br')
+  const [periodo, setPeriodo] = useState<Periodo>('temp')
+
+  const armas = useMemo(
+    () => (member ? armasDe(member, modo, periodo) : []),
+    [member, modo, periodo]
+  )
+  const maxKills = armas[0]?.kills || 1
 
   const imagen = member?.outfit_image_url || member?.avatar_url
 
@@ -89,8 +102,8 @@ export default function OutfitModal({
               )}
             </div>
 
-            {/* Su ficha */}
-            <div className="sm:w-60 shrink-0 p-5 sm:border-l border-white/[0.07] flex flex-col gap-4">
+            {/* Su ficha, con sus armas */}
+            <div className="sm:w-[19rem] shrink-0 p-5 sm:border-l border-white/[0.07] flex flex-col gap-4 overflow-y-auto max-h-[88vh]">
               <div>
                 <p className="font-display font-bold text-2xl leading-tight">
                   {member.nickname}
@@ -120,6 +133,86 @@ export default function OutfitModal({
                   </div>
                 ))}
               </div>
+
+              {/* SUS armas. Aqui si tiene sentido: son las de esta persona,
+                  ordenadas por lo que mas ha matado con ellas. Como top global
+                  en /tops mezclaba a todo el clan y no se entendia nada. */}
+              {tieneArmas(member) && (
+                <div className="pt-1">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-white/40 mb-2">
+                    Sus armas
+                  </p>
+                  <div className="flex gap-1.5 mb-3">
+                    {MODOS.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setModo(o.id)}
+                        className={`px-2 py-1 text-[10px] font-semibold rounded transition-colors ${
+                          modo === o.id
+                            ? 'bg-elite-primary text-white'
+                            : 'bg-white/[0.05] text-white/50 hover:text-white/80'
+                        }`}
+                      >
+                        {o.id.toUpperCase()}
+                      </button>
+                    ))}
+                    <span className="w-px bg-white/10 mx-0.5" />
+                    {PERIODOS.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setPeriodo(o.id)}
+                        className={`px-2 py-1 text-[10px] font-semibold rounded transition-colors ${
+                          periodo === o.id
+                            ? 'bg-elite-primary text-white'
+                            : 'bg-white/[0.05] text-white/50 hover:text-white/80'
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {armas.length === 0 ? (
+                    <p className="text-white/35 text-xs">
+                      Sin lecturas para esta combinación.
+                    </p>
+                  ) : (
+                    <div className="space-y-1">
+                      {armas.map((a, i) => (
+                        <div
+                          key={a.arma}
+                          className="relative rounded-lg overflow-hidden border border-white/[0.06] px-2.5 py-1.5"
+                        >
+                          <motion.div
+                            className="absolute inset-y-0 left-0 pointer-events-none"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(a.kills / maxKills) * 100}%` }}
+                            transition={{ delay: 0.1 + i * 0.04, duration: 0.6 }}
+                            style={{
+                              background:
+                                'linear-gradient(90deg, rgba(225,29,60,0.20), rgba(225,29,60,0.02))',
+                            }}
+                          />
+                          <div className="relative flex items-center gap-2">
+                            <span className="font-display font-semibold text-xs w-[4.5rem] shrink-0 truncate">
+                              {nombreArma(a.arma)}
+                            </span>
+                            <span className="font-mono tabular-nums text-xs text-white/80 w-12 text-right">
+                              {a.kills.toLocaleString('es')}
+                            </span>
+                            <span className="text-[9px] text-white/30">kills</span>
+                            {a.headshot > 0 && (
+                              <span className="ml-auto font-mono tabular-nums text-[10px] text-elite-gold shrink-0">
+                                {a.headshot.toFixed(0)}% hs
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </motion.div>

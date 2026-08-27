@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Trophy, Flame, Crown } from 'lucide-react'
+import { Trophy, Flame, Crown, ChevronLeft, ChevronRight } from 'lucide-react'
 import LiveBadge from '@/components/LiveBadge'
 import type { Member } from '@/lib/types'
-import { honorHoy } from '@/lib/armas'
+import { honorHoy, honorSemana } from '@/lib/armas'
 import CompetenciaViva from '@/components/home/CompetenciaViva'
 
 // El heroe es una tesis: lo primero que se ve es el marcador EN VIVO del clan,
@@ -20,15 +20,26 @@ const TOPS: {
   valor: (m: Member) => number
   formato: (v: number) => string
 }[] = [
+  // Las KILLS primero: es la cifra que el jugador presume, mas que el K/D.
   { id: 'kills', titulo: 'Top eliminaciones', valor: (m) => m.kills ?? 0,
     formato: (v) => v.toLocaleString('es') },
   { id: 'kd', titulo: 'Top K/D', valor: (m) => m.kd_ratio ?? 0,
     formato: (v) => v.toFixed(2) },
+  { id: 'honor_hoy', titulo: 'Honor de hoy', valor: honorHoy,
+    formato: (v) => `+${v.toLocaleString('es')}` },
   { id: 'hs', titulo: 'Top headshots', valor: (m) => m.headshots ?? 0,
     formato: (v) => v.toLocaleString('es') },
-  { id: 'honor', titulo: 'Honor de hoy', valor: honorHoy,
-    formato: (v) => `+${v.toLocaleString('es')}` },
   { id: 'wins', titulo: 'Top victorias', valor: (m) => m.wins ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'honor_semana', titulo: 'Honor de la semana', valor: honorSemana,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'booyahs', titulo: 'Top booyahs', valor: (m) => m.booyahs ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'winrate', titulo: 'Top winrate', valor: (m) => m.winrate ?? 0,
+    formato: (v) => `${v.toFixed(1)}%` },
+  { id: 'maxk', titulo: 'Mas kills en una partida', valor: (m) => m.max_kills ?? 0,
+    formato: (v) => v.toLocaleString('es') },
+  { id: 'rev', titulo: 'Top revividas', valor: (m) => m.revividas ?? 0,
     formato: (v) => v.toLocaleString('es') },
 ]
 
@@ -36,12 +47,25 @@ export default function HeroScene({ members }: { members: Member[] }) {
   // El marcador cambia de top cada 6 s. Un panel que siempre enseña lo mismo
   // deja de mirarse; rotando, el visitante se queda a ver que sale.
   const [iTop, setITop] = useState(0)
+  // `pausa` cubre dos casos: el visitante puso el dedo/raton encima para leer,
+  // o esta navegando a mano con las flechas.
+  const [pausa, setPausa] = useState(false)
+
   useEffect(() => {
+    if (pausa) return
+    // Quien pide menos movimiento no recibe rotacion automatica, pero SI puede
+    // llegar a todos los tops con las flechas: la accesibilidad no puede
+    // significar "te quedas sin ver nueve de diez tablas".
     if (typeof window !== 'undefined'
         && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 6000)
+    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 4500)
     return () => clearInterval(id)
-  }, [])
+  }, [pausa])
+
+  const irA = (paso: number) => {
+    setPausa(true)
+    setITop((i) => (i + paso + TOPS.length) % TOPS.length)
+  }
 
   const top = TOPS[iTop]
   const filas = useMemo(
@@ -90,7 +114,11 @@ export default function HeroScene({ members }: { members: Member[] }) {
 
         {/* HUD principal (datos reales) */}
         <motion.div className="relative card-glow p-1" style={{ z: 50 }}>
-          <div className="relative h-full bg-elite-card/90 backdrop-blur-2xl border border-elite-border rounded-2xl p-6 overflow-hidden">
+          <div
+            className="relative h-full bg-elite-card/90 backdrop-blur-2xl border border-elite-border rounded-2xl p-6 overflow-hidden"
+            onMouseEnter={() => setPausa(true)}
+            onMouseLeave={() => setPausa(false)}
+          >
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center">
@@ -108,17 +136,33 @@ export default function HeroScene({ members }: { members: Member[] }) {
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs uppercase tracking-widest text-white/40">{top.titulo}</p>
               {/* Puntitos: se ve que hay mas tops y cual toca. */}
-              <div className="flex gap-1" aria-hidden>
-                {TOPS.map((t, i) => (
-                  <span
-                    key={t.id}
-                    className="h-1 rounded-full transition-all duration-500"
-                    style={{
-                      width: i === iTop ? 14 : 5,
-                      background: i === iTop ? '#e11d3c' : 'rgba(255,255,255,0.2)',
-                    }}
+              {/* Con diez tops, diez puntitos no caben ni se leen: una barra
+                  que avanza dice lo mismo y ocupa lo mismo siempre. */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => irA(-1)}
+                  aria-label="Top anterior"
+                  className="w-5 h-5 rounded flex items-center justify-center text-white/35 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[10px] font-mono tabular-nums text-white/30">
+                  {iTop + 1}/{TOPS.length}
+                </span>
+                <button
+                  onClick={() => irA(1)}
+                  aria-label="Top siguiente"
+                  className="w-5 h-5 rounded flex items-center justify-center text-white/35 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <div className="w-14 h-[3px] rounded-full bg-white/10 overflow-hidden" aria-hidden>
+                  <motion.div
+                    className="h-full rounded-full bg-elite-primary"
+                    animate={{ width: `${((iTop + 1) / TOPS.length) * 100}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
                   />
-                ))}
+                </div>
               </div>
             </div>
             <div className="space-y-2">

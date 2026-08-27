@@ -13,7 +13,7 @@ import type { Member } from '@/lib/types'
 import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
 import HeroScene from '@/components/home/HeroScene'
-import HonorHoy from '@/components/home/HonorHoy'
+import OutfitAmbiente from '@/components/home/OutfitAmbiente'
 
 const features = [
   {
@@ -89,6 +89,7 @@ export default function Home() {
       {/* Hero Section */}
       <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20 overflow-hidden">
         <WeaponParallax />
+        <OutfitAmbiente members={todos} />
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div
             className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200%] h-[55%]"
@@ -182,8 +183,6 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-
-      <HonorHoy />
 
       {/* Stats Bar */}
       <section className="py-16 border-y border-elite-border">
