@@ -317,7 +317,7 @@ def run_once():
 
 def main():
     loop = "--loop" in sys.argv
-    interval = int(os.environ.get("SYNC_INTERVAL", ENV.get("SYNC_INTERVAL", "300")))
+    interval = int(os.environ.get("SYNC_INTERVAL", ENV.get("SYNC_INTERVAL", "60")))
     if loop:
         log.info("Modo bucle cada %ss (DB=%s)", interval, DB_PATH)
         while True:
