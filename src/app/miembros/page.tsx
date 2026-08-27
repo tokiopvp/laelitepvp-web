@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shield, Zap, Target, Medal } from 'lucide-react'
 import { Member, Rank } from '@/lib/types'
@@ -7,6 +8,7 @@ import { useMembers } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 import { RankEmblem } from '@/components/RankEmblem'
+import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
 
 const RANK_COLORS: Record<string, string> = {
@@ -62,6 +64,7 @@ function getBadges(m: Member): BadgeDef[] {
 
 export default function MiembrosPage() {
   const { members, loading } = useMembers()
+  const [verOutfit, setVerOutfit] = useState<Member | null>(null)
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -104,7 +107,11 @@ export default function MiembrosPage() {
             return (
               <motion.div
                 key={member.id}
-                className="card-glow p-6 group relative overflow-hidden"
+                onClick={() => setVerOutfit(member)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
+                className="card-glow p-6 group relative overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
                 initial={{ y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
@@ -121,9 +128,21 @@ export default function MiembrosPage() {
                 />
                 <div className="flex items-start justify-between mb-4">
                   <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center text-2xl font-display font-bold gradient-text ring-1 ring-white/10">
-                      {(member.nickname || '??').slice(0, 2).toUpperCase()}
-                    </div>
+                    {/* El icono REAL del jugador, recortado por el bot de su
+                        propio perfil. Las iniciales quedan solo para quien
+                        todavia no ha pasado por el barrido. */}
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt=""
+                        loading="lazy"
+                        className="w-16 h-16 rounded-2xl object-cover ring-1 ring-white/10"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center text-2xl font-display font-bold gradient-text ring-1 ring-white/10">
+                        {(member.nickname || '??').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-elite-dark border border-elite-border flex items-center justify-center">
                       <RoleIcon className="w-4 h-4 text-elite-gold" />
                     </div>
@@ -192,6 +211,7 @@ export default function MiembrosPage() {
           </div>
         )}
       </div>
+      <OutfitModal member={verOutfit} onClose={() => setVerOutfit(null)} />
     </div>
   )
 }

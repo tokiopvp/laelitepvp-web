@@ -438,6 +438,92 @@ def sync_tasas():
     log.info("tasas: %s", ", ".join(f"{k}={v}" for k, v in tasas.items()))
     return len(tasas)
 
+
+# ------------------------------------------------- retratos -> Supabase Storage
+# El bot recorta avatar, outfit, banner y emblema del perfil de cada jugador y
+# los deja en BOT/datos/retratos. Aqui se suben a Storage y se enlazan en la
+# ficha del miembro, para que la web deje de mostrar iniciales sobre un cuadro
+# de color y enseñe al personaje de verdad.
+RETRATOS_DIR = os.path.join(os.path.dirname(DEFAULT_DB), "retratos")
+# pieza del recorte -> (bucket, columna de members)
+PIEZAS = {
+    "avatar": ("avatars", "avatar_url"),
+    "outfit": ("outfits", "outfit_image_url"),
+}
+_SUBIDOS_CACHE = os.path.join(BASE, ".retratos_subidos.json")
+
+
+def _huellas_previas():
+    try:
+        with open(_SUBIDOS_CACHE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def _subir_archivo(bucket, nombre, ruta):
+    """Sube (o reemplaza) un PNG en Storage y devuelve su URL publica."""
+    with open(ruta, "rb") as fh:
+        datos = fh.read()
+    url = f"{SUPABASE_URL}/storage/v1/object/{bucket}/{nombre}"
+    req = urllib.request.Request(url, data=datos, method="POST")
+    req.add_header("apikey", SERVICE_KEY)
+    req.add_header("Authorization", f"Bearer {SERVICE_KEY}")
+    req.add_header("Content-Type", "image/png")
+    # x-upsert: el retrato se rehace en cada lectura, siempre reemplaza.
+    req.add_header("x-upsert", "true")
+    try:
+        urllib.request.urlopen(req, timeout=60).read()
+    except urllib.error.HTTPError as e:
+        log.error("subida %s/%s -> %s %s", bucket, nombre, e.code,
+                  e.read().decode("utf-8", "ignore")[:160])
+        return None
+    return f"{SUPABASE_URL}/storage/v1/object/public/{bucket}/{nombre}"
+
+
+def sync_retratos():
+    """Sube los retratos NUEVOS y enlaza las URLs en members."""
+    if not os.path.isdir(RETRATOS_DIR):
+        return 0
+    previas = _huellas_previas()
+    nuevas = dict(previas)
+    filas = {}
+    subidos = 0
+
+    for archivo in sorted(os.listdir(RETRATOS_DIR)):
+        if not archivo.endswith(".png") or archivo.startswith("_"):
+            continue
+        uid, _, pieza = archivo[:-4].partition("_")
+        destino = PIEZAS.get(pieza)
+        if not destino or not uid.isdigit():
+            continue
+        ruta = os.path.join(RETRATOS_DIR, archivo)
+        # Solo se resube si el archivo cambio: el barrido reescribe el mismo
+        # PNG en cada vuelta y no tiene sentido pagar la subida cada minuto.
+        firma = f"{os.path.getmtime(ruta):.0f}:{os.path.getsize(ruta)}"
+        if previas.get(archivo) == firma:
+            continue
+        bucket, columna = destino
+        url = _subir_archivo(bucket, f"{uid}.png", ruta)
+        if not url:
+            continue
+        nuevas[archivo] = firma
+        filas.setdefault(uid, {})[columna] = url
+        subidos += 1
+
+    for uid, cols in filas.items():
+        try:
+            supabase("members", "PATCH", cols,
+                     params=f"?id=eq.{mid_for(uid)}")
+        except Exception as e:
+            log.error("no pude enlazar el retrato de %s: %s", uid, e)
+
+    if subidos:
+        with open(_SUBIDOS_CACHE, "w", encoding="utf-8") as fh:
+            json.dump(nuevas, fh)
+        log.info("retratos: %d subidos, %d miembros enlazados", subidos, len(filas))
+    return subidos
+
 # ---------------------------------------------------------------- run
 def run_once():
     try:
@@ -469,6 +555,12 @@ def run_once():
         sync_tasas()
     except Exception as e:
         log.error("sync de tasas fallo: %s", e)
+
+    # Retratos recortados del perfil (avatar y outfit).
+    try:
+        sync_retratos()
+    except Exception as e:
+        log.error("sync de retratos fallo: %s", e)
 
     log.info("Supabase OK -> members:%d torneos:%d participantes:%d productos:%d", n_m, n_t, n_p, n_prod)
     return n_m + n_t + n_p + n_prod
