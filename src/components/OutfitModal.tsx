@@ -59,24 +59,33 @@ export default function OutfitModal({
           aria-modal="true"
           aria-label={`Personaje de ${member.nickname}`}
         >
+          {/* El boton vive en la CAPA, no en la tarjeta. Dentro de la tarjeta
+              no servia: framer-motion le aplica un transform, y un elemento
+              con transform pasa a ser el marco de referencia de sus hijos
+              `fixed`, asi que el boton se posicionaba respecto a la tarjeta y
+              no respecto a la pantalla. En movil quedaba descolocado. */}
+          <button
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="fixed top-5 right-5 z-[60] w-11 h-11 sm:w-9 sm:h-9 rounded-full flex items-center justify-center bg-black/70 backdrop-blur border border-white/15 hover:border-elite-primary/60 transition-colors"
+          >
+            <X className="w-5 h-5 sm:w-4 sm:h-4" />
+          </button>
           <motion.div
             initial={{ scale: 0.94, y: 18 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.96, y: 10 }}
             transition={{ type: 'spring', stiffness: 260, damping: 26 }}
             onClick={(e) => e.stopPropagation()}
-            className="card relative w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col sm:flex-row"
+            className="card relative w-full max-w-3xl max-h-[90vh] overflow-y-auto sm:overflow-hidden flex flex-col sm:flex-row"
           >
-            <button
-              onClick={onClose}
-              aria-label="Cerrar"
-              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center bg-black/40 border border-white/10 hover:border-elite-primary/60 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
 
             {/* El personaje */}
-            <div className="relative flex-1 min-h-[280px] sm:min-h-[520px] flex items-end justify-center overflow-hidden">
+            {/* En movil el personaje va arriba con alto acotado (42vh) y
+                CENTRADO: con items-end y un alto fijo mayor que el hueco, la
+                imagen se recortaba por arriba y solo se veian las piernas.
+                En escritorio se mantiene apoyado abajo, que es como luce. */}
+            <div className="relative shrink-0 sm:flex-1 h-[42vh] sm:h-auto sm:min-h-[520px] flex items-center sm:items-end justify-center overflow-hidden">
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -91,7 +100,7 @@ export default function OutfitModal({
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.08, duration: 0.5 }}
-                  className="relative max-h-[520px] w-auto object-contain drop-shadow-2xl"
+                  className="relative max-h-full sm:max-h-[520px] max-w-full w-auto object-contain drop-shadow-2xl"
                 />
               ) : (
                 <p className="relative text-white/40 text-sm p-8 text-center">
@@ -103,7 +112,7 @@ export default function OutfitModal({
             </div>
 
             {/* Su ficha, con sus armas */}
-            <div className="sm:w-[19rem] shrink-0 p-5 sm:border-l border-white/[0.07] flex flex-col gap-4 overflow-y-auto max-h-[88vh]">
+            <div className="sm:w-[19rem] shrink-0 p-5 sm:border-l border-white/[0.07] flex flex-col gap-4 sm:overflow-y-auto sm:max-h-[88vh]">
               <div>
                 <p className="font-display font-bold text-2xl leading-tight">
                   {member.nickname}
