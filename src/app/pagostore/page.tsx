@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
-import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting, getRates } from '@/lib/data'
+import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting, getRates, getMetodosPago } from '@/lib/data'
 import { formatUSD, cn } from '@/lib/utils'
 import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais } from '@/lib/paises'
 import type { PaymentMethod } from '@/lib/types'
+import type { MetodoPago } from '@/lib/data'
+import PantallaPago from '@/components/store/PantallaPago'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
   diamonds: { label: 'Diamantes', icon: Gem, color: '#e11d3c' },
@@ -30,7 +32,11 @@ export default function PagoStorePage() {
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
   const [cart, setCart] = useState<Cart>({})
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string[] | null>(null)
+  // El carrito se vacia al confirmar, asi que el total hay que
+  // guardarlo antes o la pantalla de pago mostraria 0.
+  const [ultimoTotal, setUltimoTotal] = useState(0)
+  const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
   const [form, setForm] = useState({ name: '', ffid: '', discord: '', method: FALLBACK_METHODS[0] })
   const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -45,6 +51,7 @@ export default function PagoStorePage() {
       .then(setProducts)
       .finally(() => setCargandoProductos(false))
     getPaymentMethods().then(setMethods)
+    getMetodosPago().then(setMetodosPago)
     getSetting('whatsapp_number').then(setWhatsapp)
     const saved = typeof window !== 'undefined' ? localStorage.getItem('store_country') : null
     // Sin eleccion previa, conjeturamos por zona horaria para que el
@@ -130,6 +137,7 @@ export default function PagoStorePage() {
     if (items.length === 0) return setFormError('El carrito está vacío.')
 
     setSubmitting(true)
+    setUltimoTotal(cartTotal)
     let ok = 0
     const orders: string[] = []
     for (const it of items) {
@@ -175,7 +183,7 @@ export default function PagoStorePage() {
     })
     setSubmitting(false)
     if (ok > 0) {
-      setSuccess(orders.join(', '))
+      setSuccess(orders)
       setCart({})
     } else {
       setFormError('No se pudo enviar el pedido. Inténtalo de nuevo o contáctanos por Discord.')
@@ -301,61 +309,76 @@ export default function PagoStorePage() {
           </p>
         )}
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((product, i) => (
-            <motion.div
-              key={product.id}
-              className="card-glow p-6 group relative overflow-hidden"
-              initial={{ y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              whileHover={{ y: -5 }}
-            >
-              {product.discount_percent > 0 && (
-                <div className="absolute top-4 right-4 z-10 px-3 py-1 rounded-full bg-red-500/20 border border-red-500/50 text-red-400 text-xs font-bold">
-                  -{product.discount_percent}%
-                </div>
-              )}
-              {product.is_featured && (
-                <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-elite-gold/20 border border-elite-gold/50 text-elite-gold text-xs font-bold flex items-center gap-1">
-                  <Star className="w-3 h-3" /> TOP
-                </div>
-              )}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {filtered.map((product, i) => {
+            const enCarrito = cart[product.id]?.qty ?? 0
+            const precio = product.discount_percent > 0
+              ? product.price_usd * (1 - product.discount_percent / 100)
+              : product.price_usd
+            return (
+              <motion.button
+                key={product.id}
+                type="button"
+                onClick={() => addToCart(product)}
+                aria-label={`Agregar ${product.name}`}
+                className="card relative overflow-hidden p-3.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i * 0.03, 0.3) }}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* TODA la baldosa es el boton. Antes cada producto llevaba un
+                    boton "Agregar" a todo el ancho dentro de una tarjeta con
+                    128 px solo de icono: ocupaba una pantalla entera para
+                    enseñar cuatro precios. */}
+                {product.is_featured && (
+                  <span className="absolute top-2 right-2 z-10 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-elite-gold/15 text-elite-gold border border-elite-gold/30">
+                    TOP
+                  </span>
+                )}
+                {product.discount_percent > 0 && (
+                  <span className="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded text-[9px] font-bold bg-elite-primary/20 text-elite-primary border border-elite-primary/40">
+                    -{product.discount_percent}%
+                  </span>
+                )}
 
-              <div className="flex items-center justify-center h-32 mb-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {(() => {
-                    const Icon = categoryConfig[product.category].icon
-                    return <Icon className="w-10 h-10 text-elite-primary" />
-                  })()}
+                <div className="flex items-baseline gap-1.5 mt-3 mb-0.5">
+                  <span className="font-display font-bold text-2xl leading-none tabular-nums">
+                    {product.diamonds_amount
+                      ? product.diamonds_amount.toLocaleString('es')
+                      : product.name}
+                  </span>
+                  {!!product.diamonds_amount && <span className="text-base leading-none">💎</span>}
                 </div>
-              </div>
+                {!!product.diamonds_amount && (
+                  <p className="text-[11px] text-white/35 truncate mb-2.5">{product.name}</p>
+                )}
 
-              <h3 className="font-display font-bold text-lg text-center mb-2">{product.name}</h3>
-              {(product.diamonds_amount ?? 0) > 0 && (
-                <p className="text-center text-white/50 text-sm mb-4">{product.diamonds_amount} 💎</p>
-              )}
-
-                  <div className="text-center mb-4">
-                    {product.discount_percent > 0 ? (
-                      <div>
-                        <span className="text-white/40 line-through text-sm mr-2">{fmt(product.price_usd)}</span>
-                        <span className="font-display font-bold text-2xl gradient-text">
-                          {fmt(product.price_usd * (1 - product.discount_percent / 100))}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="font-display font-bold text-2xl gradient-text">{fmt(product.price_usd)}</span>
+                <div className="flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    {product.discount_percent > 0 && (
+                      <span className="block text-[11px] text-white/30 line-through leading-none">
+                        {fmt(product.price_usd)}
+                      </span>
                     )}
+                    <span className="font-mono tabular-nums font-semibold text-elite-primary text-[15px] leading-tight break-all">
+                      {fmt(precio)}
+                    </span>
                   </div>
-
-              <button onClick={() => addToCart(product)} className="btn-primary w-full justify-center group/btn">
-                <ShoppingCart className="w-4 h-4" />
-                Agregar
-                <Plus className="w-4 h-4 group-hover/btn:scale-125 transition-transform" />
-              </button>
-            </motion.div>
-          ))}
+                  <span
+                    className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold tabular-nums transition-colors ${
+                      enCarrito
+                        ? 'bg-elite-primary text-white'
+                        : 'bg-white/[0.07] text-white/45 group-hover:bg-elite-primary group-hover:text-white'
+                    }`}
+                  >
+                    {enCarrito || <Plus className="w-3.5 h-3.5" />}
+                  </span>
+                </div>
+              </motion.button>
+            )
+          })}
         </div>
 
         <div className="mt-12 card-glow p-6 text-center">
@@ -462,33 +485,22 @@ export default function PagoStorePage() {
         )}
       </AnimatePresence>
 
-      {/* Modal de éxito */}
+      {/* PANTALLA DE PAGO. Antes aqui salia "pedido recibido, te avisamos
+          por Discord": el cliente se quedaba con un numero y sin saber donde
+          pagar, asi que tenia que irse a WhatsApp a preguntar. Cada paso extra
+          en ese momento es una venta que se cae. */}
       <AnimatePresence>
         {success && (
-          <motion.div
-            className="fixed inset-0 bg-black/70 z-[60] flex items-center justify-center p-4"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div className="card-premium p-8 max-w-md text-center">
-              <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-elite-gold" />
-              <h3 className="font-display font-bold text-2xl gradient-text mb-2">¡Pedido recibido!</h3>
-              <p className="text-white/70 mb-4">
-                Guardamos tu pedido y te avisamos por Discord para confirmar el pago y entregar tus diamantes.
-              </p>
-              <p className="text-sm text-white/50 mb-6">N°: <span className="text-elite-primary">{success}</span></p>
-              {whatsapp && (
-                <a
-                  href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-secondary w-full justify-center mb-3"
-                >
-                  <MessageCircle className="w-4 h-4" /> Soporte por WhatsApp
-                </a>
-              )}
-              <button onClick={() => setSuccess(null)} className="btn-primary w-full justify-center">Listo</button>
-            </motion.div>
-          </motion.div>
+          <PantallaPago
+            pedidos={success}
+            totalUSD={ultimoTotal}
+            totalLocal={currency === 'USD' ? null : fmt(ultimoTotal)}
+            pais={pais}
+            metodos={metodosPago}
+            metodoElegido={form.method}
+            whatsapp={whatsapp}
+            onCerrar={() => setSuccess(null)}
+          />
         )}
       </AnimatePresence>
     </div>

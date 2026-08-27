@@ -419,3 +419,36 @@ export async function getCompetidores(): Promise<Competidor[]> {
       avatar_url: r.members.avatar_url ?? null,
     }))
 }
+
+// ---- Metodos de pago CON sus datos (cuenta, cedula, telefono) ----
+export interface MetodoPago {
+  id: string
+  nombre: string
+  datos: string
+  moneda: string
+  paises: string[]
+}
+
+/**
+ * Los datos con los que el cliente paga, publicados por el sync desde la
+ * configuracion del bot de ventas.
+ *
+ * La tabla `payment_methods` solo tenia nombre y emoji, asi que la tienda
+ * podia registrar el pedido pero no decir DONDE pagar: el cliente terminaba
+ * y se iba a WhatsApp a preguntar. Esto es lo que cierra la venta.
+ */
+export async function getMetodosPago(): Promise<MetodoPago[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('settings')
+    .select('value')
+    .eq('key', 'pagos_json')
+    .maybeSingle()
+  if (error || !data?.value) return []
+  try {
+    return JSON.parse(data.value as string) as MetodoPago[]
+  } catch {
+    return []
+  }
+}

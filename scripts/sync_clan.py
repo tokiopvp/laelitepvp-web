@@ -524,6 +524,56 @@ def sync_retratos():
         log.info("retratos: %d subidos, %d miembros enlazados", subidos, len(filas))
     return subidos
 
+
+# ------------------------------------------------ metodos de pago -> Supabase
+# La tabla `payment_methods` solo guarda nombre, emoji y pais: los DATOS de
+# pago (cuenta, cedula, telefono, Binance ID) vivian unicamente en el
+# config.json del bot de ventas. Sin ellos la tienda no puede cobrar: el
+# cliente terminaba el pedido y tenia que irse a WhatsApp a preguntar donde
+# pagar. Se publican en settings.pagos_json, junto a los paises donde vale
+# cada uno.
+def sync_metodos_pago(config_path=DEFAULT_BOT_CONFIG):
+    if not os.path.exists(config_path):
+        return 0
+    try:
+        with open(config_path, encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception as e:
+        log.error("no pude leer la config del bot de ventas: %s", e)
+        return 0
+
+    metodos = cfg.get("metodos", {}) or {}
+    paises = cfg.get("paises", {}) or {}
+
+    # Que metodo acepta cada pais, segun el propio bot.
+    por_pais = {}
+    for datos_pais in paises.values():
+        code = datos_pais.get("code")
+        if code:
+            por_pais[code] = list(datos_pais.get("metodos") or [])
+
+    salida = []
+    for clave, m in metodos.items():
+        if not m.get("activo"):
+            continue
+        salida.append({
+            "id": clave,
+            "nombre": m.get("nombre") or clave,
+            "datos": (m.get("datos") or "").strip(),
+            "moneda": m.get("moneda") or "USD",
+            # Paises donde este metodo esta habilitado.
+            "paises": sorted([c for c, lista in por_pais.items() if clave in lista]),
+        })
+
+    if not salida:
+        return 0
+    supabase("settings", "POST", [
+        {"key": "pagos_json", "value": json.dumps(salida, ensure_ascii=False),
+         "updated_at": datetime.now(timezone.utc).isoformat()},
+    ], params="?on_conflict=key")
+    log.info("metodos de pago: %d publicados", len(salida))
+    return len(salida)
+
 # ---------------------------------------------------------------- run
 def run_once():
     try:
@@ -561,6 +611,12 @@ def run_once():
         sync_retratos()
     except Exception as e:
         log.error("sync de retratos fallo: %s", e)
+
+    # Metodos de pago con sus datos, para poder cobrar en la propia tienda.
+    try:
+        sync_metodos_pago()
+    except Exception as e:
+        log.error("sync de metodos de pago fallo: %s", e)
 
     log.info("Supabase OK -> members:%d torneos:%d participantes:%d productos:%d", n_m, n_t, n_p, n_prod)
     return n_m + n_t + n_p + n_prod
