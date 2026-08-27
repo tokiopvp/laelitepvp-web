@@ -1,58 +1,86 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
-  Target, Trophy, Users, Zap, Flame, Crown,
+  Trophy, Users, Zap, Flame, Crown,
   ShoppingCart, ArrowRight, MousePointer2,
-  Sparkles, Shield, Sword, Star
+  Sparkles, Shield, Sword, Star, Target,
 } from 'lucide-react'
-
-const stats = [
-  { value: '50+', label: 'Miembros Activos', icon: Users, color: '#00d4ff' },
-  { value: '200+', label: 'Torneos Ganados', icon: Trophy, color: '#ffd700' },
-  { value: '#1', label: 'Ranking Regional', icon: Crown, color: '#c77dff' },
-  { value: '99%', label: 'Win Rate Squad', icon: Flame, color: '#ff6b6b' },
-]
+import { getMembers, getTournaments } from '@/lib/data'
+import { demoMembers, demoTournaments } from '@/lib/demo-data'
+import WeaponParallax from '@/components/home/WeaponParallax'
 
 const features = [
   {
     icon: Zap,
     title: 'Tiempo Real',
-    desc: 'Stats actualizadas live desde nuestros bots. K/D, headshots, rango, todo en vivo.'
+    desc: 'Stats actualizadas live desde nuestros bots. K/D, headshots, rango, todo en vivo.',
   },
   {
     icon: Shield,
     title: 'Anti-Cheat',
-    desc: 'Sistema propio de detección. Solo jugadores limpios en La Elite.'
+    desc: 'Sistema propio de detección. Solo jugadores limpios en La Elite.',
   },
   {
     icon: Sword,
     title: 'Competitivo Puro',
-    desc: 'Scrims diarios, torneos semanales, ligas oficiales. Entrenamos para ganar.'
+    desc: 'Scrims diarios, torneos semanales, ligas oficiales. Entrenamos para ganar.',
   },
   {
     icon: Star,
     title: 'PagoStore Premium',
-    desc: 'Diamantes al mejor precio, entrega instantánea, soporte 24/7. Clon de Garena con nuestro estilo.'
+    desc: 'Diamantes al mejor precio, entrega instantánea, soporte 24/7.',
   },
 ]
 
-const leaderboard = [
-  { name: 'TokioCEO', kd: '8.4' },
-  { name: 'ShadowKiller', kd: '7.9' },
-  { name: 'NightmareOP', kd: '7.2' },
-  { name: 'GhostAim', kd: '6.8' },
-  { name: 'VenomPro', kd: '6.5' },
-]
-
 export default function Home() {
+  const [stats, setStats] = useState([
+    { value: '—', label: 'Miembros Activos', icon: Users, color: '#00d4ff' },
+    { value: '—', label: 'Torneos Ganados', icon: Trophy, color: '#ffd700' },
+    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#c77dff' },
+    { value: '—', label: 'Kills Totales', icon: Flame, color: '#ff6b6b' },
+  ])
+  const [leaderboard, setLeaderboard] = useState<{ name: string; kd: string }[]>([])
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const [members, tournaments] = await Promise.all([
+        getMembers().catch(() => demoMembers),
+        getTournaments().catch(() => demoTournaments),
+      ])
+      if (!alive) return
+      const totalMembers = members.length
+      const torneosGanados = tournaments.filter((t) => t.placement === 1).length
+      const topKd = members.reduce((a, m) => ((m.kd_ratio || 0) > a ? (m.kd_ratio as number) : a), 0)
+      const totalKills = members.reduce((a, m) => a + (m.kills ?? 0), 0)
+      setStats([
+        { value: String(totalMembers), label: 'Miembros Activos', icon: Users, color: '#00d4ff' },
+        { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#ffd700' },
+        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#c77dff' },
+        { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#ff6b6b' },
+      ])
+      const top = members
+        .filter((m) => (m.kd_ratio || 0) > 0)
+        .sort((a, b) => (b.kd_ratio as number) - (a.kd_ratio as number))
+        .slice(0, 5)
+        .map((m) => ({ name: m.nickname, kd: (m.kd_ratio as number).toFixed(1) }))
+      setLeaderboard(top)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [])
+
   return (
     <div className="min-h-screen relative overflow-x-hidden">
 
       {/* Hero Section */}
-      <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20">
-        <div className="section-container">
+      <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20 overflow-hidden">
+        <WeaponParallax />
+        <div className="section-container relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <motion.div
               initial={{ y: 40 }}
@@ -160,6 +188,9 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-3">
+                      {leaderboard.length === 0 && (
+                        <p className="text-white/40 text-sm text-center py-2">Cargando top…</p>
+                      )}
                       {leaderboard.map((row, i) => (
                         <motion.div
                           key={row.name}
@@ -208,7 +239,7 @@ export default function Home() {
                     </div>
                     <div>
                       <p className="font-bold gradient-text">Fire Pass</p>
-                      <p className="text-xs text-white/50">Nivel MAX • Todo desbloqueado</p>
+                      <p className="text-xs text-white/50">Elite Coin • Gana jugando</p>
                     </div>
                   </div>
                 </motion.div>
@@ -312,8 +343,8 @@ export default function Home() {
               <Sparkles className="w-8 h-8 text-elite-gold animate-spin" style={{ animationDirection: 'reverse' }} />
             </div>
             <p className="text-xl text-white/70 mb-8 max-w-2xl mx-auto">
-              Únete a 50+ jugadores competitivos. Scrims diarios, torneos semanales, ranked push squad,
-              y la mejor tienda de diamantes. Todo en un solo lugar.
+              Únete a la comunidad, gana Elite Coin con check-in diario y retos, y desbloquea
+              recompensas. Todo en un solo lugar.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link href="/unirse" className="btn-primary group inline-flex items-center gap-2 text-lg px-10 py-4">
@@ -321,15 +352,12 @@ export default function Home() {
                 Quiero Ser Elite
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link href="/pagostore" className="btn-secondary group inline-flex items-center gap-2 text-lg px-10 py-4">
-                <ShoppingCart className="w-5 h-5" />
-                Ver PagoStore
+              <Link href="/mi" className="btn-secondary group inline-flex items-center gap-2 text-lg px-10 py-4">
+                <Crown className="w-5 h-5" />
+                Mi Cuenta
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
-            <p className="mt-6 text-sm text-white/40">
-              Sin compromiso • Prueba 7 días gratis • Soporte Discord 24/7
-            </p>
           </motion.div>
         </div>
       </section>

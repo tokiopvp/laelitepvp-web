@@ -8,6 +8,16 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMembers } from '@/lib/data'
 import type { Profile, PointEvent, Member } from '@/lib/types'
 
+const RANK_COLORS: Record<string, string> = {
+  Bronze: '#cd7f32',
+  Silver: '#c0c0c0',
+  Gold: '#ffd700',
+  Platinum: '#e5e4e2',
+  Diamond: '#b9f2ff',
+  Master: '#ff6b6b',
+  Grandmaster: '#c77dff',
+}
+
 export default function MiPage() {
   const { user, loading, isAuthed, signIn } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -104,6 +114,50 @@ export default function MiPage() {
           <h1 className="font-display font-bold text-4xl gradient-text mb-1">Mi Cuenta</h1>
           <p className="text-white/50">Bienvenido, {profile?.display_name || user?.email}</p>
         </motion.div>
+
+        {/* Banner estilo perfil de juego */}
+        <div className="relative rounded-2xl overflow-hidden border border-elite-border card-glow mb-6">
+          <div
+            className="h-28 sm:h-32"
+            style={{
+              background: linkedMember
+                ? `linear-gradient(90deg, ${RANK_COLORS[linkedMember.rank || 'Bronze']}55, #7c3aed33, #00d4ff44)`
+                : 'linear-gradient(90deg, #00d4ff44, #7c3aed44)',
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-20"
+            style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: '22px 22px' }}
+          />
+          <div className="relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end gap-4 px-6 pb-6">
+            <div
+              className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, #00d4ff, #7c3aed)',
+                boxShadow: linkedMember ? `0 0 0 4px ${RANK_COLORS[linkedMember.rank || 'Bronze']}` : '0 0 0 4px #0a0a0f',
+              }}
+            >
+              {(linkedMember?.nickname || profile?.display_name || '?').slice(0, 2).toUpperCase()}
+            </div>
+            <div className="text-center sm:text-left">
+              <h2 className="font-display font-bold text-2xl">{linkedMember?.nickname || profile?.display_name || 'Jugador'}</h2>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-white/60">
+                {linkedMember?.rank && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: `${RANK_COLORS[linkedMember.rank] || '#888'}22`, color: RANK_COLORS[linkedMember.rank] || '#fff' }}>
+                    {linkedMember.rank}
+                  </span>
+                )}
+                {linkedMember?.role_in_clan && <span className="capitalize">{linkedMember.role_in_clan}</span>}
+                {profile?.is_member && <span className="text-elite-primary">◆ Miembro del clan</span>}
+              </div>
+            </div>
+            <div className="sm:ml-auto flex items-center gap-2 bg-elite-gold/10 border border-elite-gold/30 px-4 py-2 rounded-full">
+              <Coins className="w-4 h-4 text-elite-gold" />
+              <span className="font-bold text-elite-gold">{profile?.points ?? 0}</span>
+              <span className="text-white/60 text-sm">Elite Coin</span>
+            </div>
+          </div>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-6">
           {/* Puntos */}

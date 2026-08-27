@@ -83,6 +83,10 @@ export default function MiembrosPage() {
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -8 }}
               >
+                <div
+                  className="-mx-6 -mt-6 mb-5 h-2 rounded-t-2xl"
+                  style={{ background: `linear-gradient(90deg, ${RANK_COLORS[member.rank || 'Bronze'] || '#888'}, #7c3aed)` }}
+                />
                 <div className="flex items-start justify-between mb-4">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center text-2xl font-display font-bold gradient-text">
