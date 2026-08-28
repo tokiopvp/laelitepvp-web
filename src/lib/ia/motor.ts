@@ -8,20 +8,10 @@
  * tilde. Aqui se corrigen las dos.
  */
 import { BASE, type Entrada } from './base'
+import { normalizar, contieneAlguna, contieneFrase, pareceMisma } from './texto'
 import { generarSensi, detectarModelo, type ResultadoSensi } from './sensi'
 import { fichaDe } from './dispositivos'
 import { calcularTodos, preguntaPorBoton, type ResultadoBoton } from './boton'
-
-/** Quita tildes, signos y pasa a minusculas: "¿Cómo MEJORO?" -> "como mejoro" */
-export function normalizar(texto: string): string {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 /**
  * Sinonimos y erratas frecuentes. La gente escribe en el movil, deprisa y sin
@@ -88,15 +78,19 @@ function puntuar(entrada: Entrada, tokens: string[], texto: string): number {
         punt += 10
         continue
       }
-      // Pero la gente mete palabras en medio: "se me calienta el celular" no
-      // contiene "se calienta" como texto seguido. Si TODAS las palabras con
-      // peso de la clave están sueltas en la pregunta, cuenta casi igual.
-      const conPeso = c.split(' ').filter((w) => w.length > 2 && !VACIAS.has(w))
-      if (conPeso.length > 0 && conPeso.every((w) => texto.includes(w))) {
-        punt += 8
-      }
+      // La gente mete palabras en medio ("se me calienta el celular" contra la
+      // clave "se calienta") y ademas escribe con erratas. Ambas cosas se
+      // toleran aqui.
+      if (contieneFrase(texto, c, VACIAS)) punt += 8
     } else if (tokens.some((t) => familia(t).includes(c))) {
+      // La clave es sinonimo de alguna palabra de la pregunta.
       punt += 6
+    } else if (tokens.some((t) => pareceMisma(t, c))) {
+      // Errata directa contra la clave: "botom" -> "boton". Se compara el
+      // token contra LA CLAVE, no contra su propia familia: comparar una
+      // palabra consigo misma da siempre verdadero y hacia que cualquier
+      // pregunta casara con cualquier entrada.
+      punt += 5
     }
   }
   for (const apoyo of entrada.apoyo ?? []) {
@@ -131,7 +125,10 @@ export function responder(pregunta: string, ultimoModelo?: string): Respuesta {
   // 1. BOTON DE DISPARO. Va antes que la sensi porque es otra pregunta: el
   //    juego trae 50-60% para todos, y ese porcentaje da un boton fisico
   //    distinto en cada pantalla. Se calcula a partir de las pulgadas.
-  if (preguntaPorBoton(texto) && /disparo|boton|hud|tama/.test(texto)) {
+  // Sin doble comprobacion: `preguntaPorBoton` ya tolera erratas, y exigir
+  // ademas la palabra bien escrita anulaba justo esa tolerancia ("botom"
+  // pasaba el primer filtro y moria en el segundo).
+  if (preguntaPorBoton(texto)) {
     if (dispositivo) {
       const { ficha } = fichaDe(dispositivo)
       return {
@@ -161,7 +158,9 @@ export function responder(pregunta: string, ultimoModelo?: string): Respuesta {
 
   // 2. Sensibilidad: la calcula el generador, no la base. Los numeros salen
   //    de las medidas del dispositivo, no de una respuesta escrita a mano.
-  const pideSensi = /sensi|sensibilidad|config|configuracion|dpi/.test(texto)
+  // Con erratas: 'sensivilidad', 'sencibilidad', 'configuracion' mal escrita.
+  const pideSensi = contieneAlguna(texto,
+    ['sensi', 'sensibilidad', 'config', 'configuracion', 'dpi', 'ajustes'])
 
   if (pideSensi || detectado) {
     if (dispositivo) {

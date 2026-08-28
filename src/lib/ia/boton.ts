@@ -25,6 +25,7 @@
  * verdad absoluta.
  */
 import { type FichaDispositivo, medidasMm, respuestaTactil } from './dispositivos'
+import { contieneAlguna } from './texto'
 
 export type Estilo = 'preciso' | 'equilibrado' | 'agresivo'
 
@@ -176,7 +177,17 @@ export function calcularTodos(ficha: FichaDispositivo): Record<Estilo, Resultado
   }
 }
 
-/** Detecta si la pregunta va del boton de disparo. */
+/**
+ * Detecta si la pregunta va del boton de disparo, TOLERANDO ERRATAS.
+ *
+ * Una expresion regular exige la palabra exacta y "botom" ya no casa. En un
+ * chat escrito con el pulgar eso pasa constantemente, asi que se compara por
+ * distancia de edicion: "botom", "voton", "botonn" y "bton" caen todas.
+ */
 export function preguntaPorBoton(texto: string): boolean {
-  return /bot[oó]n|boton|tama[nñ]o.*disparo|disparo.*tama[nñ]o|hud|mira.*tama|escala/i.test(texto)
+  if (contieneAlguna(texto, ['boton', 'botones', 'hud'])) return true
+  // "que tamaño pongo al disparo" tambien es esta pregunta, sin decir boton.
+  const hayTamano = contieneAlguna(texto, ['tamano', 'tamaño', 'escala', 'grande', 'pequeno'])
+  const hayDisparo = contieneAlguna(texto, ['disparo', 'disparar', 'tiro'])
+  return hayTamano && hayDisparo
 }
