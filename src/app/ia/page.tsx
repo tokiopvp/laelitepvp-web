@@ -6,6 +6,7 @@ import { Send, Sparkles, Crosshair, RotateCcw } from 'lucide-react'
 import { responder, tamanoBase, type Respuesta } from '@/lib/ia/motor'
 import { SUGERENCIAS } from '@/lib/ia/base'
 import type { ResultadoSensi } from '@/lib/ia/sensi'
+import type { ResultadoBoton } from '@/lib/ia/boton'
 
 interface Mensaje {
   id: number
@@ -13,6 +14,7 @@ interface Mensaje {
   texto: string
   seguir?: string[]
   sensi?: ResultadoSensi
+  botones?: { modelo: string; pulgadas: number; opciones: Record<string, ResultadoBoton> }
 }
 
 const BIENVENIDA: Mensaje = {
@@ -81,6 +83,81 @@ function FichaSensi({ r }: { r: ResultadoSensi }) {
   )
 }
 
+const ETIQUETA_ESTILO: Record<string, { titulo: string; para: string }> = {
+  preciso: { titulo: 'Preciso', para: 'Tapa menos pantalla. Para distancia media y larga.' },
+  equilibrado: { titulo: 'Equilibrado', para: 'La huella cómoda del pulgar. Sirve a casi todos.' },
+  agresivo: { titulo: 'Agresivo', para: 'Se acierta sin mirar. Para combate pegado.' },
+}
+
+/** Ficha del boton de disparo: tres opciones con su medida fisica. */
+function FichaBoton({ b }: { b: { modelo: string; pulgadas: number; opciones: Record<string, ResultadoBoton> } }) {
+  const orden = ['preciso', 'equilibrado', 'agresivo']
+  const recomendado = b.opciones.equilibrado
+
+  return (
+    <div className="mt-1">
+      <div className="flex items-center gap-2 mb-1">
+        <Crosshair className="w-4 h-4 text-elite-primary" />
+        <span className="font-display font-semibold">{b.modelo}</span>
+        <span className="text-[11px] text-white/35">{b.pulgadas}&quot;</span>
+      </div>
+      <p className="text-[13px] text-white/60 leading-relaxed mb-3">
+        {recomendado.explicacion}
+      </p>
+
+      <div className="space-y-1.5 mb-3">
+        {orden.map((k) => {
+          const o = b.opciones[k]
+          const meta = ETIQUETA_ESTILO[k]
+          const esRecomendado = k === 'equilibrado'
+          return (
+            <div
+              key={k}
+              className="rounded-lg border px-3 py-2"
+              style={{
+                borderColor: esRecomendado ? 'rgba(225,29,60,0.4)' : 'rgba(255,255,255,0.08)',
+                background: esRecomendado ? 'rgba(225,29,60,0.07)' : 'rgba(255,255,255,0.03)',
+              }}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[13px] font-semibold">
+                  {meta.titulo}
+                  {esRecomendado && (
+                    <span className="ml-1.5 text-[9px] uppercase tracking-wider text-elite-primary">
+                      recomendado
+                    </span>
+                  )}
+                </span>
+                <span className="font-mono tabular-nums font-semibold text-elite-primary shrink-0">
+                  {o.porcentaje}%
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[11px] text-white/40">{meta.para}</span>
+                <span className="text-[10px] text-white/30 font-mono shrink-0">≈{o.mm} mm</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {recomendado.avisos.length > 0 && (
+        <ul className="space-y-1 mb-2">
+          {recomendado.avisos.map((a) => (
+            <li key={a} className="text-[12px] text-white/50 leading-relaxed pl-3 relative">
+              <span className="absolute left-0 text-elite-primary">·</span>{a}
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-[11px] text-white/30 leading-relaxed">
+        Es un punto de partida calculado con las medidas de tu pantalla. Pruébalo
+        en la Sala de entrenamiento y muévelo de 3 en 3 hasta que lo aciertes sin mirar.
+      </p>
+    </div>
+  )
+}
+
 export default function TokioIA() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([BIENVENIDA])
   const [entrada, setEntrada] = useState('')
@@ -110,7 +187,7 @@ export default function TokioIA() {
     window.setTimeout(() => {
       setMensajes((m) => [
         ...m,
-        { id: Date.now() + 1, de: 'ia', texto: r.texto, seguir: r.seguir, sensi: r.sensi },
+        { id: Date.now() + 1, de: 'ia', texto: r.texto, seguir: r.seguir, sensi: r.sensi, botones: r.botones },
       ])
       setPensando(false)
       inputRef.current?.focus()
@@ -165,6 +242,7 @@ export default function TokioIA() {
                       </p>
                     )}
                     {m.sensi && <FichaSensi r={m.sensi} />}
+                    {m.botones && <FichaBoton b={m.botones} />}
                   </div>
                   {!!m.seguir?.length && (
                     <div className="flex flex-wrap gap-1.5 mt-2">

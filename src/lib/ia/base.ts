@@ -240,14 +240,93 @@ export const BASE: Entrada[] = [
     ],
     seguir: ['Ver miembros', 'Ver tops del clan'],
   },
+
+  // ─────────────────────────────── OPTIMIZACIÓN DEL TELÉFONO
+  {
+    id: 'boton_disparo',
+    categoria: 'ajustes',
+    claves: ['boton de disparo', 'tamaño del boton', 'boton mas grande', 'boton mas pequeño'],
+    apoyo: ['hud', 'disparo', 'porcentaje'],
+    respuestas: [
+      'El botón viene al 50-60% para todos, y ahí está el fallo: ese porcentaje se aplica sobre TU pantalla, pero el dedo mide lo mismo en un móvil de 6.1" que en uno de 6.8". Dime tu modelo y te calculo el porcentaje que deja el botón del tamaño físico correcto.',
+    ],
+    seguir: ['Redmi Note 12', 'iPhone 13', 'Samsung A54'],
+  },
+  {
+    id: 'graficos',
+    categoria: 'ajustes',
+    claves: ['graficos', 'calidad grafica', 'ajustes graficos', 'que graficos pongo'],
+    respuestas: [
+      'Para jugar bien: gráficos en Suave y sombras desactivadas. Suena a bajar calidad, pero lo que ganas son fotogramas estables, y unos FPS constantes te dan más kills que unas texturas bonitas. Si tu móvil aguanta 90 o 120 Hz, actívalo: eso sí se nota.',
+      'Suave + sombras apagadas. Las sombras son lo que más cuesta y lo que menos aporta. Si tienes panel de alta tasa de refresco, actívalo: importa más que cualquier otro ajuste gráfico.',
+    ],
+    seguir: ['Se me traba el juego', 'Dame mi sensibilidad'],
+  },
+  {
+    id: 'calentamiento',
+    categoria: 'ajustes',
+    claves: ['se calienta', 'calienta mucho', 'temperatura', 'recalienta'],
+    apoyo: ['baja fps', 'se pone lento'],
+    respuestas: [
+      'Cuando el móvil se calienta baja su propio rendimiento para protegerse, y ahí es cuando empieza a ir a tirones. Tres cosas: juega desenchufado (cargar calienta el doble), quítale la funda en partidas largas, y no lo dejes al sol ni sobre la cama, que tapa la disipación.',
+      'El calor te baja los FPS aunque el móvil sea bueno. Desenchúfalo mientras juegas, quítale la funda y déjalo sobre una superficie dura. Si notas que a los 15 minutos empeora, es esto.',
+    ],
+    seguir: ['Se me traba el juego', '¿Qué gráficos pongo?'],
+  },
+  {
+    id: 'ping',
+    categoria: 'ajustes',
+    claves: ['ping', 'conexion', 'internet', 'me saca del juego', 'desconecta'],
+    respuestas: [
+      'El ping alto no se arregla con ajustes del juego. Ponte cerca del router o usa datos si tu wifi está saturado, cierra descargas en segundo plano y evita que otros vean vídeo mientras juegas. Si el ping salta solo a ratos, casi siempre es alguien más en tu red.',
+    ],
+  },
+  {
+    id: 'protector',
+    categoria: 'ajustes',
+    claves: ['mica', 'protector', 'vidrio templado', 'no responde el tactil'],
+    respuestas: [
+      'Un protector grueso o mal pegado te mete retardo en el toque y a veces se come arrastres. Si notas que el dedo va y la mira no, prueba a jugar sin él un rato: si mejora, ya sabes. Y limpia la pantalla, que la grasa hace que el dedo se enganche en vez de deslizar.',
+    ],
+  },
+  {
+    id: 'dedos',
+    categoria: 'ajustes',
+    claves: ['cuantos dedos', 'garra', 'claw', '4 dedos', 'tres dedos'],
+    respuestas: [
+      'Con dos dedos no puedes moverte, apuntar y disparar a la vez: siempre sacrificas uno. Con tres ya disparas mientras te mueves. Con cuatro además saltas y te agachas sin soltar la mira. Sube de uno en uno y dedica una semana a cada paso, o solo conseguirás jugar peor que antes.',
+      'Tres dedos es el salto que más cambia: uno mueve, otro apunta, otro dispara. Cuatro es para quien ya domina tres. No intentes pasar de dos a cuatro de golpe.',
+    ],
+    seguir: ['¿Cómo mejoro mi puntería?', 'Dame mi sensibilidad'],
+  },
+  {
+    id: 'entrenar',
+    categoria: 'tactica',
+    claves: ['practicar', 'entrenar', 'sala de entrenamiento', 'como practico', 'rutina'],
+    respuestas: [
+      'Quince minutos antes de jugar, y siempre lo mismo: cinco de arrastre en pared para ver tu patrón de retroceso, cinco de cambiar de blanco moviendo la mira a altura de cabeza, y cinco con el arma que peor se te da. Jugar mil partidas sin esto solo repite tus errores.',
+      'Rutina corta y fija: pared para ver el retroceso, blancos moviéndote con la mira a altura de cabeza, y práctica del arma que peor llevas. Quince minutos diarios rinden más que tres horas de partidas.',
+    ],
+    seguir: ['¿Cómo controlo el retroceso?', '¿Cómo mejoro mi puntería?'],
+  },
+  {
+    id: 'apps_fondo',
+    categoria: 'ajustes',
+    claves: ['apps en segundo plano', 'cerrar apps', 'liberar memoria', 'ram'],
+    respuestas: [
+      'Cierra de verdad lo que tengas abierto antes de entrar, sobre todo redes sociales y navegador. Y desactiva las notificaciones mientras juegas: cada aviso roba un instante de rendimiento y encima te tapa media pantalla justo cuando estás peleando.',
+    ],
+  },
 ]
 
 /** Sugerencias de arranque cuando el chat está vacío. */
 export const SUGERENCIAS = [
-  '¿MP40 o M1887 para pelear de cerca?',
+  '¿Qué tamaño de botón de disparo me conviene?',
   'Dame la sensibilidad para mi celular',
+  '¿MP40 o M1887 para pelear de cerca?',
   '¿Cómo subo a Heroico?',
-  '¿Cómo mejoro mi puntería?',
-  '¿Qué mascota me conviene?',
   'Se me traba el juego, ¿qué hago?',
+  '¿Cuántos dedos debo usar?',
+  '¿Qué gráficos pongo?',
+  '¿Cómo mejoro mi puntería?',
 ]

@@ -9,6 +9,8 @@
  */
 import { BASE, type Entrada } from './base'
 import { generarSensi, pareceDispositivo, extraerDispositivo, type ResultadoSensi } from './sensi'
+import { fichaDe } from './dispositivos'
+import { calcularTodos, preguntaPorBoton, type ResultadoBoton } from './boton'
 
 /** Quita tildes, signos y pasa a minusculas: "¿Cómo MEJORO?" -> "como mejoro" */
 export function normalizar(texto: string): string {
@@ -58,9 +60,10 @@ const VACIAS = new Set([
 export interface Respuesta {
   texto: string
   seguir: string[]
-  fuente: 'base' | 'sensi' | 'sin_respuesta'
+  fuente: 'base' | 'sensi' | 'boton' | 'sin_respuesta'
   categoria?: string
   sensi?: ResultadoSensi
+  botones?: { modelo: string; pulgadas: number; opciones: Record<string, ResultadoBoton> }
 }
 
 /**
@@ -77,9 +80,22 @@ function puntuar(entrada: Entrada, tokens: string[], texto: string): number {
 
   for (const clave of entrada.claves) {
     const c = normalizar(clave)
-    // Frase completa dentro de la pregunta: la señal más fuerte que hay.
-    if (c.includes(' ') && texto.includes(c)) punt += 10
-    else if (tokens.some((t) => familia(t).includes(c))) punt += 6
+    if (c.includes(' ')) {
+      // Frase exacta: la señal más fuerte que hay.
+      if (texto.includes(c)) {
+        punt += 10
+        continue
+      }
+      // Pero la gente mete palabras en medio: "se me calienta el celular" no
+      // contiene "se calienta" como texto seguido. Si TODAS las palabras con
+      // peso de la clave están sueltas en la pregunta, cuenta casi igual.
+      const conPeso = c.split(' ').filter((w) => w.length > 2 && !VACIAS.has(w))
+      if (conPeso.length > 0 && conPeso.every((w) => texto.includes(w))) {
+        punt += 8
+      }
+    } else if (tokens.some((t) => familia(t).includes(c))) {
+      punt += 6
+    }
   }
   for (const apoyo of entrada.apoyo ?? []) {
     const a = normalizar(apoyo)
@@ -100,10 +116,41 @@ export function responder(pregunta: string): Respuesta {
   const texto = normalizar(pregunta)
   const tokens = texto.split(' ').filter((t) => t.length > 2 && !VACIAS.has(t))
 
-  // 1. Sensibilidad: la calcula el generador, no la base. Los numeros salen
-  //    de la gama del dispositivo, no de una respuesta escrita a mano.
-  const pideSensi = /sensi|sensibilidad|config|configuracion|dpi/.test(texto)
   const dispositivo = extraerDispositivo(pregunta)
+
+  // 1. BOTON DE DISPARO. Va antes que la sensi porque es otra pregunta: el
+  //    juego trae 50-60% para todos, y ese porcentaje da un boton fisico
+  //    distinto en cada pantalla. Se calcula a partir de las pulgadas.
+  if (preguntaPorBoton(texto) && /disparo|boton|hud|tama/.test(texto)) {
+    if (dispositivo) {
+      const { ficha } = fichaDe(dispositivo)
+      return {
+        texto: '',
+        seguir: ['Dame mi sensibilidad completa', '¿Cómo mejoro mi puntería?'],
+        fuente: 'boton',
+        botones: {
+          modelo: dispositivo,
+          pulgadas: ficha.pulgadas,
+          opciones: calcularTodos(ficha),
+        },
+      }
+    }
+    return {
+      texto:
+        'El botón de disparo viene al 50-60% para todo el mundo, y ahí está el ' +
+        'problema: ese porcentaje se aplica sobre la pantalla, pero tu dedo mide ' +
+        'lo mismo en un móvil de 6.1" que en uno de 6.8".\n\n' +
+        'Dime tu modelo y te calculo el porcentaje que te deja el botón del ' +
+        'tamaño físico correcto.',
+      seguir: ['Redmi Note 12', 'iPhone 13', 'Samsung A54'],
+      fuente: 'base',
+      categoria: 'ajustes',
+    }
+  }
+
+  // 2. Sensibilidad: la calcula el generador, no la base. Los numeros salen
+  //    de las medidas del dispositivo, no de una respuesta escrita a mano.
+  const pideSensi = /sensi|sensibilidad|config|configuracion|dpi/.test(texto)
 
   if (pideSensi || (dispositivo && pareceDispositivo(pregunta))) {
     if (dispositivo) {
@@ -126,7 +173,7 @@ export function responder(pregunta: string): Respuesta {
     }
   }
 
-  // 2. Base de conocimiento por relevancia.
+  // 3. Base de conocimiento por relevancia.
   let mejor: Entrada | null = null
   let mejorPunt = 0
   for (const entrada of BASE) {

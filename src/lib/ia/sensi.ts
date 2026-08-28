@@ -9,6 +9,9 @@
  * Corre en el navegador: no hace falta servidor ni llamada a ninguna API.
  */
 
+import { fichaDe, type FichaDispositivo } from './dispositivos'
+import { calcularBoton, type ResultadoBoton } from './boton'
+
 export type Gama = 'baja' | 'media' | 'alta'
 
 export interface Sensi {
@@ -27,6 +30,12 @@ export interface ResultadoSensi {
   sensi: Sensi
   hud: string
   notas: string[]
+  /** Medidas del telefono usadas para el calculo. */
+  ficha: FichaDispositivo
+  /** false si el modelo no estaba en la lista y se estimo. */
+  reconocido: boolean
+  /** Tamano recomendado del boton de disparo. */
+  boton: ResultadoBoton
 }
 
 /** Familias conocidas y la gama a la que pertenecen. */
@@ -97,11 +106,43 @@ const LIMITES: Record<keyof Sensi, [number, number]> = {
   mira4x: [50, 200], sniper: [50, 200], vistaLibre: [50, 200], dpi: [280, 700],
 }
 
+/**
+ * Ajuste por REFRESCO de pantalla.
+ *
+ * A 120 Hz ves la correccion del arrastre el doble de veces por segundo que a
+ * 60, asi que puedes llevar mas sensibilidad sin pasarte de largo. A 60 Hz la
+ * misma sensibilidad se siente descontrolada porque corriges tarde.
+ */
+function factorRefresco(hz: number): number {
+  if (hz >= 144) return 1.06
+  if (hz >= 120) return 1.04
+  if (hz >= 90) return 1.02
+  return 1.0
+}
+
+/**
+ * Ajuste por TAMANO de pantalla.
+ *
+ * En una pantalla grande el dedo recorre mas milimetros para el mismo giro, y
+ * el gesto se queda corto; en una pequeña, el mismo gesto se pasa. Por eso el
+ * telefono grande pide algo mas de sensibilidad y el pequeño algo menos.
+ */
+function factorTamano(pulgadas: number): number {
+  // 6.5" es la referencia. Cada pulgada de diferencia mueve un 4%.
+  return 1 + (pulgadas - 6.5) * 0.04
+}
+
 export function generarSensi(dispositivo: string): ResultadoSensi {
   const limpio = dispositivo.trim().replace(/\s+/g, ' ')
   const { gama, etiqueta } = detectarGama(limpio)
   const base = BASE[gama]
   const s = semilla(limpio.toLowerCase())
+
+  // Las medidas REALES del telefono, no solo su gama. Aqui es donde el
+  // resultado deja de ser "una sensi de gama media" y pasa a ser la de ESE
+  // telefono: entran sus pulgadas y sus hercios.
+  const { ficha, reconocido } = fichaDe(limpio)
+  const ajuste = factorRefresco(ficha.refresco) * factorTamano(ficha.pulgadas)
 
   const sensi = {} as Sensi
   ;(Object.keys(base) as (keyof Sensi)[]).forEach((clave, i) => {
@@ -109,8 +150,14 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
     const rango = clave === 'dpi' ? 20 : 4
     const delta = ((s >> (i * 3)) % (rango * 2 + 1)) - rango
     const [min, max] = LIMITES[clave]
-    sensi[clave] = Math.max(min, Math.min(max, base[clave] + delta))
+    // El DPI no se toca con estos factores: es del sistema, no del gesto.
+    const conAjuste = clave === 'dpi'
+      ? base[clave] + delta
+      : Math.round((base[clave] + delta) * ajuste)
+    sensi[clave] = Math.max(min, Math.min(max, conAjuste))
   })
+
+  const boton = calcularBoton(ficha, 'equilibrado')
 
   const notas: string[] = []
   if (gama === 'baja') {
@@ -122,12 +169,22 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
   notas.push('Prueba en la Sala de entrenamiento 10 minutos antes de llevarla a rankeada.')
   notas.push('Ajusta de 3 en 3 puntos, no de 20: si cambias mucho de golpe no sabes qué te ayudó.')
 
+  if (!reconocido) {
+    notas.unshift(
+      'No tengo la ficha exacta de ese modelo, así que estimé una pantalla de ' +
+      '6.5". Si me dices las pulgadas, afino el cálculo.'
+    )
+  }
+
   return {
     modelo: limpio,
     gama,
     sensi,
     hud: HUD[gama],
     notas,
+    ficha,
+    reconocido,
+    boton,
   }
 }
 
