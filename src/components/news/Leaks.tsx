@@ -87,7 +87,7 @@ export default function Leaks() {
             whileHover={{ y: -4 }}
             className="card group overflow-hidden flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
           >
-            {it.imagen && (
+            {it.imagen ? (
               <div className="relative h-40 shrink-0 overflow-hidden bg-black/40">
                 {/* Portada del propio medio. Si no carga, la tarjeta sigue
                     entendiendose: el titular manda, la imagen acompaña. */}
@@ -102,6 +102,19 @@ export default function Leaks() {
                   className="absolute inset-0 pointer-events-none"
                   style={{ background: 'linear-gradient(0deg, rgba(16,16,20,0.9), transparent 55%)' }}
                 />
+              </div>
+            ) : (
+              /* Sin portada: una banda con el emblema en vez de un hueco. No
+                 todos los medios exponen imagen, y dejar el espacio vacio hace
+                 que la tarjeta parezca rota en vez de simplemente distinta. */
+              <div
+                className="relative h-24 shrink-0 flex items-center justify-center overflow-hidden"
+                style={{
+                  background:
+                    'radial-gradient(120% 140% at 50% 0%, rgba(225,29,60,0.22), transparent 70%)',
+                }}
+              >
+                <Radar className="w-8 h-8 text-elite-primary/35" />
               </div>
             )}
 
