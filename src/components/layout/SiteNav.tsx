@@ -8,13 +8,15 @@ import { Menu, X } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 
 const links = [
+  // Siete enlaces no caben sin apretujarse. Torneos y Comunidad van juntos
+  // porque son lo mismo para el visitante: la vida social del clan.
   { href: '/', label: 'Inicio' },
   { href: '/miembros', label: 'Miembros' },
   { href: '/tops', label: 'Tops' },
-  { href: '/torneos', label: 'Torneos' },
-  { href: '/comunidad', label: 'Comunidad' },
+  { href: '/ia', label: 'TOKIO IA', destacado: true },
   { href: '/pagostore', label: 'PagoStore' },
   { href: '/noticias', label: 'Noticias' },
+  { href: '/torneos', label: 'Comunidad', tambien: ['/comunidad'] },
 ]
 
 export default function SiteNav() {
@@ -22,8 +24,10 @@ export default function SiteNav() {
   const [open, setOpen] = useState(false)
   const { isAuthed, role } = useAuth()
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const isActive = (href: string, tambien: string[] = []) =>
+    href === '/'
+      ? pathname === '/'
+      : pathname.startsWith(href) || tambien.some((r) => pathname.startsWith(r))
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-elite-dark/80 backdrop-blur-2xl border-b border-elite-border">
@@ -50,13 +54,13 @@ export default function SiteNav() {
                 key={l.href}
                 href={l.href}
                 className={`relative px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isActive(l.href)
+                  isActive(l.href, l.tambien)
                     ? 'text-elite-primary'
                     : 'text-white/70 hover:text-white'
                 }`}
               >
                 {l.label}
-                {isActive(l.href) && (
+                {isActive(l.href, l.tambien) && (
                   <motion.span
                     layoutId="nav-active"
                     className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-elite-primary to-elite-secondary"
@@ -110,7 +114,7 @@ export default function SiteNav() {
                   href={l.href}
                   onClick={() => setOpen(false)}
                   className={`px-4 py-3 rounded-lg font-medium ${
-                    isActive(l.href) ? 'bg-elite-primary/10 text-elite-primary' : 'text-white/80'
+                    isActive(l.href, l.tambien) ? 'bg-elite-primary/10 text-elite-primary' : 'text-white/80'
                   }`}
                 >
                   {l.label}
