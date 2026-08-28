@@ -162,6 +162,9 @@ export default function TokioIA() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([BIENVENIDA])
   const [entrada, setEntrada] = useState('')
   const [pensando, setPensando] = useState(false)
+  // El telefono del que se hablo por ultima vez. Permite que "¿y el boton?"
+  // siga sabiendo de que equipo hablamos, como en una conversacion normal.
+  const [ultimoModelo, setUltimoModelo] = useState<string | undefined>()
   const finRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const base = tamanoBase()
@@ -181,7 +184,8 @@ export default function TokioIA() {
     // La respuesta se calcula al instante. La pausa es para que se pueda LEER
     // lo que uno acaba de escribir antes de que aparezca la contestación: sin
     // ella el texto salta de golpe y cuesta seguir la conversación.
-    const r: Respuesta = responder(limpio)
+    const r: Respuesta = responder(limpio, ultimoModelo)
+    if (r.modeloDetectado) setUltimoModelo(r.modeloDetectado)
     const espera = 320 + Math.min(700, r.texto.length * 4)
 
     window.setTimeout(() => {
@@ -204,13 +208,15 @@ export default function TokioIA() {
           </div>
           <div className="min-w-0">
             <h1 className="font-display font-bold text-xl leading-tight">TOKIO IA</h1>
-            <p className="text-[11px] text-white/40">
-              {base.entradas} temas · {base.redacciones} respuestas · funciona sin conexión
+            <p className="text-[11px] text-white/40 truncate">
+              {ultimoModelo
+                ? `Hablando de tu ${ultimoModelo}`
+                : `${base.entradas} temas · ${base.redacciones} respuestas · funciona sin conexión`}
             </p>
           </div>
           {mensajes.length > 1 && (
             <button
-              onClick={() => setMensajes([BIENVENIDA])}
+              onClick={() => { setMensajes([BIENVENIDA]); setUltimoModelo(undefined) }}
               className="ml-auto shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.07] transition-colors"
               aria-label="Empezar de nuevo"
             >

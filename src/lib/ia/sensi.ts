@@ -231,6 +231,44 @@ export function pareceDispositivo(texto: string): boolean {
 const COLA_SOBRANTE =
   /\s+(que|cual|cuanto|cuanta|para|con|y|de|mi|el|la|un|una|sensi|sensibilidad|boton|disparo|config|configuracion|dpi|uso|pongo|dame|porfa|ayuda|tamano|tamaño)\b.*$/i
 
+/**
+ * Modelos escritos SIN la marca delante.
+ *
+ * En un chat la gente contesta "a54", "note 12" o "s23" a secas, porque ya
+ * dijo la marca antes o porque le parece obvio. Sin esto, esas respuestas
+ * cortas caian en "no lo se", que es justo cuando peor queda.
+ */
+const MODELOS_SUELTOS: { patron: RegExp; completo: (m: RegExpMatchArray) => string }[] = [
+  { patron: /^\s*note\s*(\d{1,2})\s*(pro)?\s*$/i, completo: (m) => `redmi note ${m[1]}${m[2] ? ' pro' : ''}` },
+  { patron: /^\s*a(\d{2})\s*$/i, completo: (m) => `samsung a${m[1]}` },
+  { patron: /^\s*m(\d{2})\s*$/i, completo: (m) => `samsung m${m[1]}` },
+  { patron: /^\s*s(\d{2})\s*(ultra|plus)?\s*$/i, completo: (m) => `galaxy s${m[1]}${m[2] ? ' ' + m[2] : ''}` },
+  { patron: /^\s*(\d{1,2})\s*pro\s*max\s*$/i, completo: (m) => `iphone ${m[1]} pro max` },
+  { patron: /^\s*(1[0-9])\s*pro\s*$/i, completo: (m) => `iphone ${m[1]} pro` },
+  { patron: /^\s*x(\d)\s*$/i, completo: (m) => `poco x${m[1]}` },
+  { patron: /^\s*f(\d)\s*$/i, completo: (m) => `poco f${m[1]}` },
+  { patron: /^\s*g(\d{2})\s*$/i, completo: (m) => `moto g${m[1]}` },
+]
+
+/**
+ * Ultimo recurso: algo que PARECE un telefono aunque la marca no este en la
+ * lista ("Blu G91", "Cubot X30").
+ *
+ * Vale la pena reconocerlo: aunque no tengamos su ficha exacta, con la
+ * estimacion se le puede dar una respuesta util, y eso es mejor que un
+ * "no lo se" a alguien que acaba de decirnos su modelo.
+ */
+function pareceModeloDesconocido(texto: string): string | null {
+  const t = texto.trim()
+  // Dos o tres palabras cortas, al menos una con letra+numero: "Blu G91".
+  if (!/^[\w\s.+-]{3,28}$/.test(t)) return null
+  const palabras = t.split(/\s+/)
+  if (palabras.length < 1 || palabras.length > 3) return null
+  const tieneModelo = palabras.some((w) => /^[a-z]{0,4}\d{1,4}[a-z]?$/i.test(w))
+  const tieneMarca = palabras.some((w) => /^[a-z]{3,10}$/i.test(w))
+  return tieneModelo && tieneMarca ? t : null
+}
+
 /** Saca el modelo de una frase como "tengo un redmi note 12, que sensi uso". */
 export function extraerDispositivo(texto: string): string | null {
   const m = texto.match(
@@ -242,4 +280,29 @@ export function extraerDispositivo(texto: string): string | null {
   const limpio = m[1].trim().replace(COLA_SOBRANTE, '').trim()
   // "samsung" sin modelo detras no sirve para calcular nada.
   return limpio.split(/\s+/).length >= 2 || /\d/.test(limpio) ? limpio : null
+}
+
+/**
+ * Extraccion CON red de seguridad, en tres pasos de menos a mas permisivo.
+ *
+ * Se usa esta en vez de `extraerDispositivo` en todo el flujo del chat: es la
+ * que hace que responder "a54" despues de haber hablado de Samsung funcione, y
+ * que un modelo raro reciba una estimacion en vez de un "no lo se".
+ */
+export function detectarModelo(texto: string): { modelo: string; seguro: boolean } | null {
+  // 1. Marca reconocida dentro de una frase.
+  const directo = extraerDispositivo(texto)
+  if (directo) return { modelo: directo, seguro: true }
+
+  // 2. Modelo suelto sin marca: "note 12", "a54", "s23".
+  for (const { patron, completo } of MODELOS_SUELTOS) {
+    const m = texto.match(patron)
+    if (m) return { modelo: completo(m), seguro: true }
+  }
+
+  // 3. Algo con pinta de telefono aunque no conozcamos la marca.
+  const raro = pareceModeloDesconocido(texto)
+  if (raro) return { modelo: raro, seguro: false }
+
+  return null
 }

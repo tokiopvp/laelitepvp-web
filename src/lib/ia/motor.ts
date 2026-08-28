@@ -8,7 +8,7 @@
  * tilde. Aqui se corrigen las dos.
  */
 import { BASE, type Entrada } from './base'
-import { generarSensi, pareceDispositivo, extraerDispositivo, type ResultadoSensi } from './sensi'
+import { generarSensi, detectarModelo, type ResultadoSensi } from './sensi'
 import { fichaDe } from './dispositivos'
 import { calcularTodos, preguntaPorBoton, type ResultadoBoton } from './boton'
 
@@ -59,6 +59,8 @@ const VACIAS = new Set([
 
 export interface Respuesta {
   texto: string
+  /** Modelo detectado en este turno, para recordarlo en el siguiente. */
+  modeloDetectado?: string
   seguir: string[]
   fuente: 'base' | 'sensi' | 'boton' | 'sin_respuesta'
   categoria?: string
@@ -112,11 +114,19 @@ const MENSAJES_SIN_RESPUESTA = [
 /**
  * Responde una pregunta. Todo local, sin red.
  */
-export function responder(pregunta: string): Respuesta {
+export function responder(pregunta: string, ultimoModelo?: string): Respuesta {
   const texto = normalizar(pregunta)
   const tokens = texto.split(' ').filter((t) => t.length > 2 && !VACIAS.has(t))
 
-  const dispositivo = extraerDispositivo(pregunta)
+  // MEMORIA DEL TELEFONO.
+  //
+  // En una conversacion real nadie repite el modelo en cada mensaje: dice
+  // "Samsung A54" y despues "¿y el boton?". Sin recordarlo, esa segunda
+  // pregunta se quedaba sin dispositivo y caia en la respuesta generica, que
+  // es justo donde el chat deja de parecer inteligente.
+  const detectado = detectarModelo(pregunta)
+  const dispositivo = detectado?.modelo ?? ultimoModelo ?? null
+  const modeloDetectado = detectado?.modelo ?? ultimoModelo
 
   // 1. BOTON DE DISPARO. Va antes que la sensi porque es otra pregunta: el
   //    juego trae 50-60% para todos, y ese porcentaje da un boton fisico
@@ -128,6 +138,7 @@ export function responder(pregunta: string): Respuesta {
         texto: '',
         seguir: ['Dame mi sensibilidad completa', '¿Cómo mejoro mi puntería?'],
         fuente: 'boton',
+        modeloDetectado,
         botones: {
           modelo: dispositivo,
           pulgadas: ficha.pulgadas,
@@ -152,14 +163,15 @@ export function responder(pregunta: string): Respuesta {
   //    de las medidas del dispositivo, no de una respuesta escrita a mano.
   const pideSensi = /sensi|sensibilidad|config|configuracion|dpi/.test(texto)
 
-  if (pideSensi || (dispositivo && pareceDispositivo(pregunta))) {
+  if (pideSensi || detectado) {
     if (dispositivo) {
       const r = generarSensi(dispositivo)
       return {
         texto: '',
-        seguir: ['¿Cómo mejoro mi puntería?', '¿Cómo controlo el retroceso?'],
+        seguir: ['¿Cómo mejoro mi puntería?', '¿Qué tamaño de botón me conviene?'],
         fuente: 'sensi',
         sensi: r,
+        modeloDetectado,
       }
     }
     return {
