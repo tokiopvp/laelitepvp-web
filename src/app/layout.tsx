@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Barlow, Oswald, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { ADSENSE_PUBLISHER } from '@/lib/adsense'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
@@ -89,6 +90,16 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+        {/* AdSense. Solo se carga si hay editor configurado: sin IDs no se
+            pide nada a Google, ni script ni cookies. Va con async para que
+            nunca bloquee el pintado de la pagina. */}
+        {ADSENSE_PUBLISHER ? (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUBLISHER}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
       </head>
       <body className="min-h-screen flex flex-col">
         <AnimatedBackground />

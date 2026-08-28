@@ -1,9 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Radar, ExternalLink } from 'lucide-react'
 import { getLeaks, type Leak } from '@/lib/data'
+import AnuncioFeed from './AnuncioFeed'
+import { CADA_CUANTAS_NOTICIAS } from '@/lib/adsense'
 
 /**
  * Lo que se viene en Free Fire.
@@ -75,8 +77,11 @@ export default function Leaks() {
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((it, i) => (
+          <Fragment key={it.link}>
+            {/* Un anuncio cada N noticias, nunca el primero: la seccion tiene
+                que abrir con contenido. */}
+            {i > 0 && i % CADA_CUANTAS_NOTICIAS === 0 && <AnuncioFeed />}
           <motion.a
-            key={it.link}
             href={it.link}
             target="_blank"
             rel="noopener noreferrer"
@@ -144,6 +149,7 @@ export default function Leaks() {
               </span>
             </div>
           </motion.a>
+          </Fragment>
         ))}
       </div>
     </>
