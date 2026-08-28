@@ -9,7 +9,7 @@
  * Corre en el navegador: no hace falta servidor ni llamada a ninguna API.
  */
 
-import { fichaDe, type FichaDispositivo } from './dispositivos'
+import { fichaDe, respuestaTactil, type FichaDispositivo } from './dispositivos'
 import { calcularBoton, type ResultadoBoton } from './boton'
 
 export type Gama = 'baja' | 'media' | 'alta'
@@ -107,17 +107,19 @@ const LIMITES: Record<keyof Sensi, [number, number]> = {
 }
 
 /**
- * Ajuste por REFRESCO de pantalla.
+ * Ajuste por RESPUESTA de la pantalla.
  *
- * A 120 Hz ves la correccion del arrastre el doble de veces por segundo que a
- * 60, asi que puedes llevar mas sensibilidad sin pasarte de largo. A 60 Hz la
- * misma sensibilidad se siente descontrolada porque corriges tarde.
+ * Manda el muestreo TACTIL sobre el refresco del panel: es la tasa a la que el
+ * telefono lee el dedo, y por tanto lo que decide si el arrastre se siente
+ * pegado o con retardo. Un movil de 60 Hz con tactil de 120 responde mejor de
+ * lo que su ficha aparenta.
+ *
+ * Cuanto mejor responde, mas sensibilidad se aguanta sin pasarse de largo,
+ * porque la correccion llega antes.
  */
-function factorRefresco(hz: number): number {
-  if (hz >= 144) return 1.06
-  if (hz >= 120) return 1.04
-  if (hz >= 90) return 1.02
-  return 1.0
+function factorRespuesta(f: FichaDispositivo): number {
+  // respuestaTactil devuelve 0..1 combinando tactil, refresco y tipo de panel.
+  return 1 + respuestaTactil(f) * 0.07
 }
 
 /**
@@ -142,7 +144,7 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
   // resultado deja de ser "una sensi de gama media" y pasa a ser la de ESE
   // telefono: entran sus pulgadas y sus hercios.
   const { ficha, reconocido } = fichaDe(limpio)
-  const ajuste = factorRefresco(ficha.refresco) * factorTamano(ficha.pulgadas)
+  const ajuste = factorRespuesta(ficha) * factorTamano(ficha.pulgadas)
 
   const sensi = {} as Sensi
   ;(Object.keys(base) as (keyof Sensi)[]).forEach((clave, i) => {
@@ -168,6 +170,31 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
   }
   notas.push('Prueba en la Sala de entrenamiento 10 minutos antes de llevarla a rankeada.')
   notas.push('Ajusta de 3 en 3 puntos, no de 20: si cambias mucho de golpe no sabes qué te ayudó.')
+
+  // Notas que salen de las ESPECIFICACIONES, no de la gama a secas.
+  if (ficha.refresco >= 120) {
+    notas.unshift(
+      `Tu panel va a ${ficha.refresco} Hz: actívalo en los ajustes gráficos del ` +
+      'juego. Cambia más que cualquier sensibilidad.'
+    )
+  }
+  if (ficha.tactil >= 240) {
+    notas.push(
+      `Con ${ficha.tactil} Hz de muestreo táctil el arrastre va pegado al dedo; ` +
+      'por eso estos valores van algo por encima de la media.'
+    )
+  } else if (ficha.tactil <= 60) {
+    notas.push(
+      `Tu muestreo táctil es de ${ficha.tactil} Hz, así que estos valores van ` +
+      'algo por debajo: con más, la mira se te pasaría de largo.'
+    )
+  }
+  if (ficha.panel === 'IPS') {
+    notas.push(
+      'Al ser panel IPS, en giros muy rápidos verás algo de estela. Mejor ' +
+      'movimientos cortos y repetidos que uno largo.'
+    )
+  }
 
   if (!reconocido) {
     notas.unshift(
@@ -195,11 +222,24 @@ export function pareceDispositivo(texto: string): boolean {
   return /\b(iphone|samsung|galaxy|xiaomi|redmi|poco|motorola|moto|huawei|honor|realme|oppo|vivo|infinix|tecno|nokia|lg|zte|alcatel)\b/.test(t)
 }
 
+/**
+ * Palabras que la gente pega al modelo y que NO forman parte de el.
+ *
+ * "mi galaxy s23 sensi" no es un telefono llamado "galaxy s23 sensi": hay que
+ * cortar donde acaba el modelo o la ficha no se encuentra.
+ */
+const COLA_SOBRANTE =
+  /\s+(que|cual|cuanto|cuanta|para|con|y|de|mi|el|la|un|una|sensi|sensibilidad|boton|disparo|config|configuracion|dpi|uso|pongo|dame|porfa|ayuda|tamano|tamaño)\b.*$/i
+
 /** Saca el modelo de una frase como "tengo un redmi note 12, que sensi uso". */
 export function extraerDispositivo(texto: string): string | null {
   const m = texto.match(
-    /\b((?:iphone|samsung\s+galaxy|galaxy|xiaomi|redmi|poco|motorola|moto|huawei|honor|realme|oppo|vivo|infinix|tecno|nokia|zte|rog\s+phone|black\s+shark|red\s+magic|oneplus|pixel)[\w\s]{0,18})/i
+    // 'samsung' a secas tiene que estar: la gente escribe "samsung a54", no
+    // "samsung galaxy a54". Sin el, esa marca entera se quedaba sin reconocer.
+    /\b((?:iphone|samsung|galaxy|xiaomi|redmi|poco|motorola|moto|huawei|honor|realme|oppo|vivo|infinix|tecno|nokia|zte|rog\s+phone|black\s+shark|red\s+magic|oneplus|pixel)[\w\s]{0,20})/i
   )
   if (!m) return null
-  return m[1].trim().replace(/\s+(que|cual|cuanto|para|con|y|de|mi|el|la|un|una)\b.*$/i, '').trim()
+  const limpio = m[1].trim().replace(COLA_SOBRANTE, '').trim()
+  // "samsung" sin modelo detras no sirve para calcular nada.
+  return limpio.split(/\s+/).length >= 2 || /\d/.test(limpio) ? limpio : null
 }

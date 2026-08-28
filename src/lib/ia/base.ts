@@ -317,6 +317,68 @@ export const BASE: Entrada[] = [
       'Cierra de verdad lo que tengas abierto antes de entrar, sobre todo redes sociales y navegador. Y desactiva las notificaciones mientras juegas: cada aviso roba un instante de rendimiento y encima te tapa media pantalla justo cuando estás peleando.',
     ],
   },
+
+  // ─────────────────────────────── AJUSTES DENTRO DEL TELÉFONO
+  {
+    id: 'modo_juego',
+    categoria: 'ajustes',
+    claves: ['modo juego', 'game mode', 'game turbo', 'modo gaming', 'game booster'],
+    respuestas: [
+      'Casi todos los Android traen un modo de juego (Game Turbo en Xiaomi, Game Booster en Samsung, Modo Juego en Motorola). Actívalo y dentro bloquea el brillo y las notificaciones: lo que más molesta en partida no es la potencia, es que te salte un aviso y te tape la mira justo al pelear.',
+      'Búscalo en ajustes como Game Turbo, Game Booster o Modo Juego según la marca. Lo importante que hay que activar ahí: bloqueo de notificaciones, brillo fijo y rechazo de llamadas mientras juegas.',
+    ],
+    seguir: ['¿Qué gráficos pongo?', 'Se me traba el juego'],
+  },
+  {
+    id: 'tasa_refresco',
+    categoria: 'ajustes',
+    claves: ['tasa de refresco', 'hercios', 'hz', '120hz', '90hz', 'pantalla fluida'],
+    respuestas: [
+      'Si tu móvil tiene 90 o 120 Hz, actívalo en Ajustes › Pantalla › Tasa de refresco, y ponlo en el valor alto FIJO, no en automático: en automático el sistema lo baja solo para ahorrar batería, justo cuando estás jugando. Luego el juego tiene que soportarlo también en sus ajustes gráficos.',
+    ],
+    seguir: ['¿Qué gráficos pongo?', 'Dame mi sensibilidad'],
+  },
+  {
+    id: 'muestreo_tactil',
+    categoria: 'ajustes',
+    claves: ['muestreo tactil', 'touch sampling', 'respuesta tactil', 'sensibilidad del tactil'],
+    respuestas: [
+      'Es la tasa a la que el teléfono lee tu dedo, y se nota más que los Hz de la pantalla. No se puede subir por software, viene fijo del hardware. Lo que sí puedes: quitar el protector si es grueso, jugar con las manos secas y limpiar la pantalla — la grasa hace que el dedo se enganche en vez de deslizar.',
+    ],
+  },
+  {
+    id: 'bateria_ahorro',
+    categoria: 'ajustes',
+    claves: ['ahorro de bateria', 'modo ahorro', 'bateria', 'optimizacion de bateria'],
+    respuestas: [
+      'Desactiva el ahorro de batería mientras juegas: recorta el rendimiento del procesador y baja la tasa de refresco sin avisarte. Y quita al juego de la "optimización de batería" en los ajustes de apps, o el sistema lo frena en segundo plano.',
+    ],
+    seguir: ['Se me calienta el celular', 'Se me traba el juego'],
+  },
+  {
+    id: 'almacenamiento',
+    categoria: 'ajustes',
+    claves: ['almacenamiento', 'espacio', 'memoria llena', 'sin espacio'],
+    respuestas: [
+      'Con el almacenamiento casi lleno el móvil va peor en todo, y el juego tarda más en cargar texturas — eso son esos tirones al entrar a una casa. Deja al menos un 15% libre. Y si el juego te va lento desde hace semanas, borra su caché desde Ajustes › Apps (la caché, no los datos: no pierdes la cuenta).',
+    ],
+  },
+  {
+    id: 'resolucion_pantalla',
+    categoria: 'ajustes',
+    claves: ['resolucion de pantalla', 'bajar resolucion', 'full hd', 'hd+'],
+    respuestas: [
+      'Si tu móvil deja elegir resolución (algunos Samsung y Xiaomi), bajarla de Full HD+ a HD+ le quita trabajo a la gráfica y sube los FPS. Se ve algo menos definido, pero en una partida vas mirando movimiento, no texturas.',
+    ],
+  },
+  {
+    id: 'audio',
+    categoria: 'ajustes',
+    claves: ['audio', 'sonido', 'audifonos', 'escuchar pasos'],
+    respuestas: [
+      'Juega con auriculares aunque sean sencillos: escuchar de qué lado vienen los pasos vale más que cualquier ajuste gráfico. Y usa cable si puedes — el bluetooth mete retardo, y en un juego de disparos oír el paso medio segundo tarde es oírlo tarde.',
+    ],
+  },
 ]
 
 /** Sugerencias de arranque cuando el chat está vacío. */

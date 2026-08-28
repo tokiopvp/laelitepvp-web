@@ -24,7 +24,7 @@
  * eso el resultado se entrega como punto de partida para afinar, no como
  * verdad absoluta.
  */
-import { type FichaDispositivo, medidasMm } from './dispositivos'
+import { type FichaDispositivo, medidasMm, respuestaTactil } from './dispositivos'
 
 export type Estilo = 'preciso' | 'equilibrado' | 'agresivo'
 
@@ -97,10 +97,65 @@ export function calcularBoton(
     )
   }
 
-  const explicacion =
-    `En tu pantalla de ${ficha.pulgadas}" el alto útil en horizontal es de ` +
-    `unos ${Math.round(alto)} mm. Al ${porcentaje}%, el botón mide alrededor de ` +
-    `${mm} mm: es la huella con la que el pulgar acierta sin tapar mira.`
+  // La explicacion NOMBRA las especificaciones del telefono en cuestion. Decir
+  // "depende del tamaño de pantalla" es una respuesta generica; decir "tu panel
+  // AMOLED de 6.67 pulgadas a 120 Hz" es una respuesta a ESE telefono, y es lo
+  // que hace que el consejo se siga.
+  const rapidez = respuestaTactil(ficha)
+  const partes: string[] = []
+
+  partes.push(
+    `Tu ${ficha.nombre} lleva un panel ${ficha.panel} de ${ficha.pulgadas}" ` +
+    `a ${ficha.refresco} Hz (${ficha.resolucion}), con muestreo táctil de ` +
+    `${ficha.tactil} Hz.`
+  )
+  partes.push(
+    `Jugando en horizontal eso deja unos ${Math.round(alto)} mm de alto útil. ` +
+    `Al ${porcentaje}% el botón te queda en ${mm} mm, que es la huella con la ` +
+    `que el pulgar acierta sin taparte la mira.`
+  )
+
+  // El porcentaje por defecto del juego ronda el 55%: decir si le sobra o le
+  // falta respecto a eso es la parte accionable.
+  const diferencia = porcentaje - 55
+  if (Math.abs(diferencia) >= 4) {
+    partes.push(
+      diferencia > 0
+        ? `Ojo: es ${diferencia} puntos MÁS que el valor de fábrica. Tu pantalla ` +
+          `es pequeña para lo que ocupa el dedo, así que con el 50-60% de serie ` +
+          `estás fallando toques sin darte cuenta.`
+        : `Ojo: es ${Math.abs(diferencia)} puntos MENOS que el valor de fábrica. ` +
+          `Tu pantalla es grande, así que el 50-60% de serie te pone un botón ` +
+          `enorme que te tapa media zona de tiro.`
+    )
+  } else {
+    partes.push(
+      `Queda cerca del valor de fábrica, así que tu pantalla es de las que el ` +
+      `juego tiene en mente por defecto. Aun así ajústalo al milímetro con las ` +
+      `otras dos opciones si tu estilo no es el del medio.`
+    )
+  }
+
+  const explicacion = partes.join(' ')
+
+  // Avisos que dependen de las especificaciones concretas, no genéricos.
+  if (ficha.tactil >= 240) {
+    avisos.push(
+      `Con ${ficha.tactil} Hz de muestreo táctil el arrastre se siente pegado al ` +
+      `dedo: puedes subir la sensibilidad un par de puntos por encima de lo normal.`
+    )
+  } else if (ficha.tactil <= 60) {
+    avisos.push(
+      `Tu muestreo táctil es de ${ficha.tactil} Hz, que es lo justo. Baja la ` +
+      `sensibilidad un par de puntos: notarás que la mira se pasa menos de largo.`
+    )
+  }
+  if (ficha.panel === 'IPS' && rapidez < 0.4) {
+    avisos.push(
+      'Al ser IPS y sin alta tasa de refresco, en giros rápidos verás algo de ' +
+      'estela. Compensa con movimientos más cortos en vez de subir sensibilidad.'
+    )
+  }
 
   return {
     porcentaje,
