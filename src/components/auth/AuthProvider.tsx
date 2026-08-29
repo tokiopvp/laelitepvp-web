@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { User } from '@supabase/supabase-js'
+import type { Session, User } from '@supabase/supabase-js'
 import { supabaseBrowser } from '@/lib/supabase/client'
 
 export type Role = 'owner' | 'admin' | 'moderator' | 'editor' | 'member'
@@ -37,23 +37,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const fetchRole = async (uid: string) => {
-      const { data } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle()
+      const { data } = await sb!.from('profiles').select('role').eq('id', uid).maybeSingle()
       setRole((data?.role as Role) ?? null)
     }
 
-    sb.auth.getUser().then(({ data }) => {
-      setUser(data.user ?? null)
-      if (data.user) fetchRole(data.user.id)
-      setLoading(false)
-    })
-
-    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+    const aplicarSesion = (session: { user: User } | null) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchRole(session.user.id)
       else setRole(null)
+    }
+
+    // Restauracion robusta: si hay sesion guardada la usamos; si no,
+    // intentamos refrescar el token antes de dar la sesion por cerrada.
+    const restaurar = async () => {
+      const { data: sesionGuardada } = await sb!.auth.getSession()
+      if (sesionGuardada.session) {
+        aplicarSesion(sesionGuardada.session)
+      } else {
+        const { data: refrescada } = await sb!.auth.refreshSession()
+        aplicarSesion(refrescada.session)
+      }
+      setLoading(false)
+    }
+    restaurar()
+
+    const { data: sub } = sb.auth.onAuthStateChange((_event: string, session: Session | null) => {
+      aplicarSesion(session)
     })
 
-    return () => sub.subscription.unsubscribe()
+    // Keep-alive: refresca el token periodicamente para que la sesion
+    // nunca expire por inactividad (persistente para todos).
+    const keepAlive = setInterval(() => {
+      sb!.auth.refreshSession()
+    }, 25 * 60 * 1000)
+
+    return () => {
+      sub.subscription.unsubscribe()
+      clearInterval(keepAlive)
+    }
   }, [])
 
   const signIn = async () => {

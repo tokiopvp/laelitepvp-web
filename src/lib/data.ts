@@ -344,6 +344,9 @@ export async function getPointEvents(): Promise<PointEvent[]> {
     .select('*')
     .eq('profile_id', uid)
     .order('created_at', { ascending: false })
+    // La pagina muestra un historial corto. Sin tope, quien lleve meses
+    // jugando se descarga cientos de filas para leer las ultimas diez.
+    .limit(50)
   if (error || !data) return []
   return data as PointEvent[]
 }
@@ -524,4 +527,60 @@ export async function getLeaks(): Promise<{ items: Leak[]; actualizado: number }
   } catch {
     return { items: [], actualizado: 0 }
   }
+}
+
+/**
+ * UN miembro por su id, sin el bulto.
+ *
+ * POR QUE EXISTE
+ * --------------
+ * `/mi` necesita los datos de UNA persona -la que tiene vinculada- y los
+ * conseguia descargando `getMembers()`: los 36 miembros con `select('*')`, que
+ * son **230 KB** porque arrastra `stats_json` y las treinta columnas de
+ * telemetria. Luego hacia `members.find(...)` y tiraba el resto. En un movil
+ * con datos eso son varios segundos de rueda girando antes de ver nada.
+ *
+ * Esta version pide una fila y solo las columnas que la pagina pinta: unos
+ * **3 KB**. Se excluye `stats_json` a proposito; es el grueso del peso y no se
+ * muestra en ningun sitio.
+ */
+const CAMPOS_PERFIL_MIEMBRO =
+  'id,nickname,free_fire_id,role_in_clan,rank,level,avatar_url,outfit_image_url,' +
+  'kd_ratio,headshots,wins,booyahs,kills,winrate,kpp,partidas,dano_partida,' +
+  'headshot_tasa,top10_tasa,max_kills,revividas,last_sync'
+
+export async function getMember(id: string): Promise<Member | null> {
+  const sb = client()
+  if (!sb || !id) return null
+  const { data, error } = await sb
+    .from('members')
+    .select(CAMPOS_PERFIL_MIEMBRO)
+    .eq('id', id)
+    .maybeSingle()
+  if (error || !data) return null
+  return data as unknown as Member
+}
+
+/**
+ * Los miembros SIN la telemetria pesada.
+ *
+ * `getMembers()` trae `select('*')`, y eso incluye `stats_json`: 230 KB para
+ * treinta y seis personas. Las paginas que solo pintan nick, foto y cuatro
+ * cifras -la portada, por ejemplo- no necesitan nada de eso, y en la PORTADA
+ * es donde mas duele: es lo primero que carga alguien que llega por primera
+ * vez, muchas veces con datos moviles.
+ *
+ * Los tops de armas SI leen `stats_json`; esas pantallas siguen usando
+ * `getMembers()`.
+ */
+export async function getMembersLigero(): Promise<Member[]> {
+  const sb = client()
+  if (!sb) return demoMembers
+  const { data, error } = await sb
+    .from('members')
+    .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at')
+    .eq('is_active', true)
+    .order('kd_ratio', { ascending: false, nullsFirst: false })
+  if (error || !data) return []
+  return data as unknown as Member[]
 }

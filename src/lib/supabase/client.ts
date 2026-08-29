@@ -6,11 +6,15 @@ import { createBrowserClient } from '@supabase/ssr'
 const noStoreFetch = (input: RequestInfo | URL, init?: RequestInit) =>
   fetch(input, { ...init, cache: 'no-store' })
 
+let cliente: ReturnType<typeof createBrowserClient> | null = null
+
 export function supabaseBrowser() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!url || !key) return null
-  return createBrowserClient(url, key, {
+  if (cliente) return cliente
+  cliente = createBrowserClient(url, key, {
     global: { fetch: noStoreFetch },
   })
+  return cliente
 }

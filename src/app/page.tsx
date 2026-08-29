@@ -8,7 +8,7 @@ import {
   ShoppingCart, ArrowRight, MousePointer2,
   Sparkles, Shield, Sword, Star, Target,
 } from 'lucide-react'
-import { getMembers, getTournaments } from '@/lib/data'
+import { getMembersLigero, getTournaments } from '@/lib/data'
 import type { Member } from '@/lib/types'
 import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
@@ -51,7 +51,10 @@ export default function Home() {
     let alive = true
     ;(async () => {
       const [members, tournaments] = await Promise.all([
-        getMembers().catch(() => demoMembers),
+        // Version ligera: la portada no pinta telemetria, y `getMembers()`
+        // arrastraba 230 KB de `stats_json` en la primera pantalla que ve
+        // alguien que llega de cero.
+        getMembersLigero().catch(() => demoMembers),
         getTournaments().catch(() => demoTournaments),
       ])
       if (!alive) return

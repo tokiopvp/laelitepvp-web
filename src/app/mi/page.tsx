@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Coins, CalendarCheck, Link2, Trophy, LogIn, Loader2, CheckCircle2, XCircle, Target, Flag } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMembers, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
+import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMember, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
 import type { Profile, PointEvent, Member } from '@/lib/types'
 import type { Challenge } from '@/lib/data'
 
@@ -39,7 +39,7 @@ export default function MiPage() {
   const { user, loading, isAuthed, signIn } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [events, setEvents] = useState<PointEvent[]>([])
-  const [members, setMembers] = useState<Member[]>([])
+  const [miembro, setMiembro] = useState<Member | null>(null)
   const [ffid, setFfid] = useState('')
   const [linking, setLinking] = useState(false)
   const [linkMsg, setLinkMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -58,21 +58,31 @@ export default function MiPage() {
     }
     let alive = true
     ;(async () => {
-      const p = await getMyProfile()
-      if (!alive) return
-      setProfile(p)
-      const [ev, mem, ch, comp] = await Promise.all([
+      // Las cuatro consultas van A LA VEZ. Antes el perfil se pedia SOLO y las
+      // demas esperaban a que volviera, aunque ninguna dependa de el: eran dos
+      // viajes al servidor en serie con la pantalla en blanco.
+      const [p, ev, ch, comp] = await Promise.all([
+        getMyProfile(),
         getPointEvents(),
-        getMembers(),
         getChallenges(),
         getMyChallengeCompletions(),
       ])
       if (!alive) return
+      setProfile(p)
       setEvents(ev)
-      setMembers(mem)
       setChallenges(ch)
       setCompletions(comp)
+
+      // Ya se puede pintar. El miembro vinculado se carga despues porque solo
+      // afecta a la tarjeta de arriba, y hacerlo esperar dejaba la pagina en
+      // blanco por un dato accesorio.
       setLoad(false)
+
+      // Este SI depende del perfil: hace falta su member_id.
+      if (p?.member_id) {
+        const m = await getMember(p.member_id)
+        if (alive && m) setMiembro(m)
+      }
     })()
     return () => {
       alive = false
@@ -95,9 +105,7 @@ export default function MiPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed, profile?.is_member])
 
-  const linkedMember: Member | undefined = profile?.member_id
-    ? members.find((m) => m.id === profile.member_id)
-    : undefined
+  const linkedMember: Member | undefined = miembro ?? undefined
 
   const alreadyCheckedIn = profile?.last_checkin
     ? new Date(profile.last_checkin).toDateString() === new Date().toDateString()
@@ -110,9 +118,12 @@ export default function MiPage() {
     const ok = await linkMember(ffid.trim())
     if (ok) {
       setLinkMsg({ ok: true, text: '¡Vinculado! Ganaste +20 puntos de bienvenida.' })
-      setProfile(await getMyProfile())
+      const actualizado = await getMyProfile()
+      setProfile(actualizado)
       setEvents(await getPointEvents())
       setCompletions(await getMyChallengeCompletions())
+      // Recien vinculado: su ficha todavia no estaba cargada.
+      if (actualizado?.member_id) setMiembro(await getMember(actualizado.member_id))
       runChallenges()
     } else {
       setLinkMsg({ ok: false, text: 'No encontramos ese ID en el clan. Revisa tu Free Fire ID.' })
