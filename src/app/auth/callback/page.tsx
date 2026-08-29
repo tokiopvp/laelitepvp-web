@@ -48,6 +48,13 @@ const ESPERA_MAX_MS = 15_000
  */
 const TRADUCCIONES: { patron: RegExp; texto: string }[] = [
   {
+    patron: /code verifier|pkce/i,
+    texto:
+      'Se perdió el hilo del acceso. Suele pasar si empezaste a entrar en otro ' +
+      'navegador, o si se limpiaron los datos del sitio a mitad. Vuelve a ' +
+      'pulsar el botón de entrar: a la segunda funciona.',
+  },
+  {
     patron: /email/i,
     texto:
       'Discord no nos dio tu correo. Suele ser porque lo tienes sin verificar: ' +
@@ -87,6 +94,37 @@ function CallbackInner() {
       return
     }
 
+    /**
+     * Reintento automático, UNA sola vez.
+     *
+     * Cuando falta el verificador no hay nada que recuperar: ese código ya no
+     * se puede canjear. Pero volver a empezar el login desde el mismo navegador
+     * funciona casi siempre, así que llevar a alguien a un callejón sin salida
+     * y pedirle que pulse un botón es un paso de más — y un paso de más, en un
+     * móvil, es gente que se va.
+     *
+     * El pestillo en `sessionStorage` es imprescindible: sin él, un fallo
+     * persistente (almacenamiento bloqueado, modo privado) reintentaría en
+     * bucle infinito entre Discord y la web.
+     */
+    const CLAVE_REINTENTO = 'elite_login_reintento'
+    const reintentar = () => {
+      try {
+        if (sessionStorage.getItem(CLAVE_REINTENTO)) return false
+        sessionStorage.setItem(CLAVE_REINTENTO, '1')
+      } catch {
+        return false
+      }
+      sb.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          scopes: 'identify email',
+          redirectTo: 'https://www.laelitepvp.com/auth/callback',
+        },
+      })
+      return true
+    }
+
     let vivo = true
     // Red de seguridad: si nada resuelve en quince segundos, se muestra la
     // salida. Es el cinturón que impide volver a colgarse pase lo que pase.
@@ -97,6 +135,11 @@ function CallbackInner() {
     const terminar = (destino: string) => {
       if (!vivo) return
       clearTimeout(corte)
+      try {
+        sessionStorage.removeItem('elite_login_reintento')
+      } catch {
+        /* sin almacenamiento: nada que limpiar */
+      }
       router.replace(destino)
     }
 
@@ -130,6 +173,10 @@ function CallbackInner() {
           // código. Se comprueba antes de dar el fallo por bueno.
           const { data: tras } = await sb.auth.getSession()
           if (tras.session) return terminar(await destinoSegun(sb))
+
+          // Verificador perdido: se reintenta el login entero, en silencio.
+          if (/code verifier|pkce/i.test(error.message) && reintentar()) return
+
           return rendirse(
             traducir(error.message) ||
               'No se pudo completar el acceso. Vuelve a intentarlo desde el mismo navegador.'

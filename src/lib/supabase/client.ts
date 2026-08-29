@@ -86,6 +86,29 @@ function migrarDesdeCookies(clave: string): void {
   }
 }
 
+/**
+ * Rescata el verificador PKCE de la cookie a `localStorage`.
+ *
+ * Es un valor corto y en texto plano (no va en base64 ni troceado como la
+ * sesión), así que basta con copiarlo tal cual.
+ */
+function migrarVerificador(clave: string): void {
+  try {
+    if (localStorage.getItem(clave)) return
+    for (const par of document.cookie.split(';')) {
+      const i = par.indexOf('=')
+      if (i < 0) continue
+      if (par.slice(0, i).trim() === clave) {
+        const v = decodeURIComponent(par.slice(i + 1))
+        if (v) localStorage.setItem(clave, v)
+        return
+      }
+    }
+  } catch {
+    // Almacenamiento bloqueado: se sigue sin migrar.
+  }
+}
+
 // Desactiva el cache HTTP del navegador para todas las lecturas de Supabase.
 // Sin esto, los polls (ej. cada 20s en /miembros) devuelven respuestas
 // cacheadas y la UI parece "congelada" aunque los datos en BD estan frescos.
@@ -99,7 +122,17 @@ export function supabaseBrowser(): SupabaseClient | null {
   if (cliente) return cliente
 
   const clave = `sb-${refProyecto(URL_SB)}-auth-token`
-  if (typeof window !== 'undefined') migrarDesdeCookies(clave)
+  if (typeof window !== 'undefined') {
+    migrarDesdeCookies(clave)
+    // El VERIFICADOR del login en curso también hay que rescatarlo.
+    //
+    // Quien pulsó "entrar" antes de que este cambio se desplegara tiene su
+    // verificador guardado en una cookie, y al volver de Discord el canje lo
+    // busca en `localStorage`: no lo encuentra y el acceso muere con
+    // "PKCE code verifier not found in storage". Es un login a medias que se
+    // pierde por un detalle de almacenamiento.
+    migrarVerificador(`${clave}-code-verifier`)
+  }
 
   cliente = createClient(URL_SB, CLAVE_SB, {
     global: { fetch: noStoreFetch },

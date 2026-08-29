@@ -176,12 +176,105 @@ async function aTelegram(env, body, esVenta) {
   return !!r.ok
 }
 
+/**
+ * Comprueba en la base de datos que el aviso corresponde a algo REAL.
+ *
+ * ESTE ES EL CERROJO PRINCIPAL
+ * ----------------------------
+ * Esta URL es publica y tiene que serlo: la llama el navegador del cliente
+ * justo despues de comprar. Sin comprobacion, cualquiera con una terminal podia
+ * inundar el telefono del dueño con ventas inventadas, y una venta de verdad
+ * quedaba enterrada entre el ruido. No es un robo de datos, pero deja el
+ * negocio ciego, que a efectos practicos es peor.
+ *
+ * La defensa no es un secreto -en el navegador no hay secretos que valgan- sino
+ * COMPROBAR: un aviso de venta solo sale si ese numero de pedido existe de
+ * verdad, y uno de solicitud solo si esa postulacion esta guardada. Para
+ * falsificar un aviso habria que crear antes el pedido, y entonces ya no es
+ * falso.
+ */
+async function esReal(env, body) {
+  const url = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL
+  const key = env.SUPABASE_SERVICE_ROLE_KEY
+  // Sin credenciales no se puede comprobar. Se deja pasar en vez de bloquear:
+  // quedarse sin avisos de venta por un fallo de configuracion es peor que el
+  // riesgo de spam, y el resto de frenos siguen puestos.
+  if (!url || !key) return true
+
+  const cabeceras = { apikey: key, Authorization: `Bearer ${key}` }
+  try {
+    if (body.type === 'purchase') {
+      const refs = Array.isArray(body.orders) ? body.orders : [body.orders].filter(Boolean)
+      if (!refs.length) return false
+      const r = await fetch(
+        `${url}/rest/v1/orders?order_number=eq.${encodeURIComponent(refs[0])}&select=order_number`,
+        { headers: cabeceras }
+      )
+      const filas = await r.json()
+      return Array.isArray(filas) && filas.length > 0
+    }
+
+    if (body.type === 'application') {
+      if (!body.free_fire_id) return false
+      // Ademas de existir, tiene que ser RECIENTE: si no, alguien podria
+      // repetir el aviso de una solicitud vieja una y otra vez.
+      const hace5min = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+      const r = await fetch(
+        `${url}/rest/v1/applications?free_fire_id=eq.${encodeURIComponent(body.free_fire_id)}` +
+          `&created_at=gte.${hace5min}&select=id`,
+        { headers: cabeceras }
+      )
+      const filas = await r.json()
+      return Array.isArray(filas) && filas.length > 0
+    }
+  } catch {
+    // Si la comprobacion falla por red, se deja pasar: perder el aviso de una
+    // venta real es un daño mayor que un aviso de mas.
+    return true
+  }
+  return false
+}
+
+/**
+ * Freno por IP. Segunda linea, para el caso de que alguien cree pedidos reales
+ * en bucle solo para hacer sonar el telefono.
+ */
+const VISTOS = new Map()
+function demasiadoRapido(ip) {
+  const ahora = Date.now()
+  if (VISTOS.size > 800) {
+    for (const [k, t] of VISTOS) if (ahora - t.hasta < ahora) VISTOS.delete(k)
+  }
+  const v = VISTOS.get(ip)
+  if (!v || ahora > v.hasta) {
+    VISTOS.set(ip, { n: 1, hasta: ahora + 60_000 })
+    return false
+  }
+  v.n += 1
+  return v.n > 8 // mas de ocho avisos por minuto desde una IP no es una persona
+}
+
 export async function onRequestPost(context) {
   try {
     const body = await context.request.json()
     const env = context.env
-    const esVenta = body.type === 'purchase'
 
+    // Solo se atienden los dos tipos que avisan. Cualquier otra cosa se
+    // descarta antes de tocar la base de datos.
+    if (body.type !== 'purchase' && body.type !== 'application') {
+      return Response.json({ ok: false, reason: 'tipo-no-admitido' })
+    }
+
+    const ip = context.request.headers.get('cf-connecting-ip') || 'anon'
+    if (demasiadoRapido(ip)) {
+      return Response.json({ ok: false, reason: 'demasiadas-peticiones' })
+    }
+
+    if (!(await esReal(env, body))) {
+      return Response.json({ ok: false, reason: 'no-verificado' })
+    }
+
+    const esVenta = body.type === 'purchase'
     const [discord, telegram] = await Promise.all([
       aDiscord(env, body, esVenta),
       aTelegram(env, body, esVenta),

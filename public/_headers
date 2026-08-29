@@ -1,0 +1,60 @@
+# Cabeceras de seguridad y caché · Cloudflare Pages
+#
+# Cloudflare sirve este archivo como configuración, no como página. Cada bloque
+# es un patrón de ruta seguido de las cabeceras que se le añaden.
+
+/*
+  # Impide que la web se cargue dentro de un <iframe> ajeno.
+  #
+  # Sin esto, cualquiera puede meter laelitepvp.com en una página suya, ponerle
+  # un botón invisible encima y conseguir que alguien pulse "canjear" o
+  # "aceptar apuesta" creyendo que pulsa otra cosa. Se llama clickjacking y es
+  # trivial de montar.
+  X-Frame-Options: DENY
+
+  # El navegador respeta el tipo declarado y no "adivina" otro. Evita que un
+  # archivo subido por alguien se acabe ejecutando como si fuera JavaScript.
+  X-Content-Type-Options: nosniff
+
+  # Al salir hacia otro sitio solo se manda el dominio, nunca la ruta completa:
+  # una URL con el número de pedido dentro no tiene por qué acabar en los
+  # registros de un tercero.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Se apagan permisos que esta web no usa. Si algún día se cuela un script de
+  # terceros, no podrá pedir la cámara ni la ubicación en tu nombre.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+
+  # HTTPS obligatorio durante un año, subdominios incluidos. Cierra la ventana
+  # en la que alguien en la misma wifi podría interceptar la primera visita.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # De dónde puede cargar cosas la página. Es la defensa de fondo contra XSS:
+  # aunque alguien lograra inyectar un <script src="malo.com">, el navegador se
+  # negaría a cargarlo porque ese dominio no está en la lista.
+  #
+  # 'unsafe-inline' y 'unsafe-eval' hacen falta para Next.js y sus scripts de
+  # arranque; sin ellos la web no funciona. Aun así la política sigue valiendo:
+  # lo que bloquea es traer código de un dominio ajeno, que es como llegan
+  # prácticamente todos los ataques reales.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net https://*.googlesyndication.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+
+# El panel no se guarda en ninguna caché, ni del navegador ni intermedia.
+# En un móvil compartido, el pedido de un cliente no debe quedar recuperable
+# con el botón "atrás" después de cerrar sesión.
+/admin/*
+  Cache-Control: no-store, must-revalidate
+  X-Robots-Tag: noindex, nofollow
+
+/mi
+  Cache-Control: no-store, must-revalidate
+  X-Robots-Tag: noindex, nofollow
+
+# Los archivos con huella en el nombre (page-4f1e5bb3.js) no cambian nunca:
+# si cambia el contenido, cambia el nombre. Se pueden guardar para siempre y
+# eso quita una petición de red en cada visita repetida.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/media/*
+  Cache-Control: public, max-age=604800
