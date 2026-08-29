@@ -5,6 +5,7 @@ import { supabaseBrowser } from '@/lib/supabase/client'
 import { AdminGuard, AdminHeader } from '@/components/admin/AdminGuard'
 import { operarCasa, coinsCorto, precioTexto } from '@/lib/economia'
 import type { Tarea, ItemTienda, Casa } from '@/lib/economia'
+import TiendaAdmin from '@/components/admin/TiendaAdmin'
 
 /**
  * Panel de la economía Elite Coin.
@@ -17,8 +18,8 @@ import type { Tarea, ItemTienda, Casa } from '@/lib/economia'
  * los precios, las recompensas, los topes de Discord y hasta el comportamiento
  * del mercado viven en la base de datos y se editan desde aquí.
  *
- * La palanca de Barron Trump (comprar/vender) es la corrección manual: cuando el
- * precio se dispare, vendes y lo bajas.
+ * La palanca de la cuenta grande (comprar/vender) es la corrección manual:
+ * cuando el precio se dispare, vendes y lo bajas.
  */
 
 /** Los ajustes que de verdad se tocan, con su explicación en corto. */
@@ -28,11 +29,11 @@ const AJUSTES: { key: string; label: string; ayuda: string }[] = [
   { key: 'eco.discord_msg',          label: 'Coins por mensaje',            ayuda: 'Lo que paga cada mensaje válido en el Discord.' },
   { key: 'eco.discord_msg_max_dia',  label: 'Tope diario de mensajes',      ayuda: 'Freno anti-spam: por encima de esto, escribir ya no paga.' },
   { key: 'eco.discord_msg_cooldown', label: 'Segundos entre mensajes',      ayuda: 'Mensajes seguidos dentro de esta ventana no cuentan.' },
-  { key: 'eco.mercado_deriva',       label: 'Deriva alcista por vela',      ayuda: 'Subida de fondo. 0.0012 = +0,12% por vela. Es lo que hace que siempre tienda a subir.' },
+  { key: 'eco.mercado_deriva',       label: 'Deriva alcista por vela',      ayuda: 'Subida de fondo por vela (ahora de 1 minuto). Es lo que hace que siempre tienda a subir.' },
   { key: 'eco.mercado_ruido',        label: 'Ruido del mercado',            ayuda: 'Amplitud del vaivén. Más alto = velas más grandes en los dos sentidos.' },
   { key: 'eco.mercado_impacto',      label: 'Impacto por coin ganada',      ayuda: 'Cuánto empuja el precio cada coin que gana la comunidad.' },
-  { key: 'eco.mercado_barron_prob',  label: 'Probabilidad de venta',        ayuda: '0.35 = Barron vende en un 35% de las velas. Es lo que crea las rojas.' },
-  { key: 'eco.mercado_barron_fuerza',label: 'Fuerza de esas ventas',        ayuda: 'Cuánto pesa cada venta automática de la casa.' },
+  { key: 'eco.mercado_barron_prob',  label: 'Probabilidad de venta',        ayuda: '0.35 = la cuenta grande vende en un 35% de las velas. Es lo que crea las rojas.' },
+  { key: 'eco.mercado_barron_fuerza',label: 'Fuerza de esas ventas',        ayuda: 'Cuánto pesa cada venta automática.' },
   { key: 'eco.mercado_minutos_vela', label: 'Minutos por vela',             ayuda: 'Duración de cada vela del gráfico.' },
 ]
 
@@ -86,14 +87,6 @@ function EconomiaAdmin() {
     if (!error) setTareas((ts) => ts.map((x) => (x.id === t.id ? { ...x, [campo]: valor } : x)))
   }
 
-  const guardarItem = async (it: ItemTienda, campo: keyof ItemTienda, valor: any) => {
-    const c = sb()
-    if (!c) return
-    const { error } = await c.from('shop_items').update({ [campo]: valor }).eq('id', it.id)
-    avisar(error ? error.message : 'Guardado ✓')
-    if (!error) setItems((xs) => xs.map((x) => (x.id === it.id ? { ...x, [campo]: valor } : x)))
-  }
-
   const guardarAjuste = async (key: string, value: string) => {
     const c = sb()
     if (!c) return
@@ -127,7 +120,7 @@ function EconomiaAdmin() {
       <section className="card-glow p-6 mb-8">
         <h2 className="font-display font-bold text-xl mb-1">Mercado</h2>
         <p className="text-white/40 text-sm mb-5">
-          Tu mano como {casa?.nombre || 'la casa'}. Vender baja el precio, comprar lo sube.
+          Tu mano como {casa?.nombre || 'la cuenta grande'}. Vender baja el precio, comprar lo sube. Tus operaciones salen en la cinta con billetera anónima.
         </p>
 
         <div className="grid sm:grid-cols-3 gap-4 mb-5">
@@ -136,7 +129,7 @@ function EconomiaAdmin() {
             <p className="font-mono font-bold text-2xl text-elite-gold">{precioTexto(precio)}</p>
           </div>
           <div className="rounded-lg border border-white/10 p-4">
-            <p className="text-white/40 text-xs">Saldo de la casa</p>
+            <p className="text-white/40 text-xs">Saldo de {casa?.nombre || "la cuenta"}</p>
             <p className="font-mono font-bold text-2xl">{coinsCorto(casa?.coins ?? 0)}</p>
           </div>
           <div className="rounded-lg border border-white/10 p-4">
@@ -191,73 +184,7 @@ function EconomiaAdmin() {
         </div>
       </section>
 
-      {/* ---------- TIENDA ---------- */}
-      <section className="card-glow p-6 mb-8 overflow-x-auto">
-        <h2 className="font-display font-bold text-xl mb-1">Tienda</h2>
-        <p className="text-white/40 text-sm mb-5">
-          Referencia actual: 1.000.000 coins = premio de 100 USD.
-        </p>
-        <table className="w-full text-sm min-w-[860px]">
-          <thead className="text-white/40 text-xs font-display">
-            <tr className="text-left">
-              <th className="pb-2">Premio</th>
-              <th className="pb-2 w-32">Precio (coins)</th>
-              <th className="pb-2 w-28">Diamantes</th>
-              <th className="pb-2 w-24">USD</th>
-              <th className="pb-2 w-28">Rareza</th>
-              <th className="pb-2 w-24">Stock</th>
-              <th className="pb-2 w-20">/día</th>
-              <th className="pb-2 w-20">Clan</th>
-              <th className="pb-2 w-20">Activo</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/[0.05]">
-            {items.map((it) => (
-              <tr key={it.id}>
-                <td className="py-2 pr-3 font-display font-semibold">{it.nombre}</td>
-                <td className="py-2 pr-2">
-                  <input className="input w-full" type="number" defaultValue={it.precio_coins}
-                    onBlur={(e) => guardarItem(it, 'precio_coins', +e.target.value)} />
-                </td>
-                <td className="py-2 pr-2">
-                  <input className="input w-full" type="number" defaultValue={it.diamantes ?? ''}
-                    onBlur={(e) => guardarItem(it, 'diamantes', e.target.value === '' ? null : +e.target.value)} />
-                </td>
-                <td className="py-2 pr-2">
-                  <input className="input w-full" type="number" step="0.01" defaultValue={it.valor_usd ?? ''}
-                    onBlur={(e) => guardarItem(it, 'valor_usd', e.target.value === '' ? null : +e.target.value)} />
-                </td>
-                <td className="py-2 pr-2">
-                  <select className="input w-full" defaultValue={it.rareza}
-                    onChange={(e) => guardarItem(it, 'rareza', e.target.value)}>
-                    {['basura', 'normal', 'epico', 'legendario'].map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </td>
-                <td className="py-2 pr-2">
-                  <input className="input w-full" type="number" defaultValue={it.stock}
-                    title="-1 = ilimitado"
-                    onBlur={(e) => guardarItem(it, 'stock', +e.target.value)} />
-                </td>
-                <td className="py-2 pr-2">
-                  <input className="input w-full" type="number" defaultValue={it.limite_dia}
-                    title="0 = sin límite"
-                    onBlur={(e) => guardarItem(it, 'limite_dia', +e.target.value)} />
-                </td>
-                <td className="py-2 text-center">
-                  <input type="checkbox" defaultChecked={it.solo_clan}
-                    onChange={(e) => guardarItem(it, 'solo_clan', e.target.checked)} />
-                </td>
-                <td className="py-2 text-center">
-                  <input type="checkbox" defaultChecked={it.activo}
-                    onChange={(e) => guardarItem(it, 'activo', e.target.checked)} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <TiendaAdmin items={items} onCambio={cargar} avisar={avisar} />
 
       {/* ---------- TAREAS ---------- */}
       <section className="card-glow p-6 mb-8 overflow-x-auto">
