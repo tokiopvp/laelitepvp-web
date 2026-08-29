@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { PaginaLegal, Nota } from '@/components/legal/PaginaLegal'
-import { EMAIL, WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
+import { EMAIL } from '@/lib/contacto'
 
 export const metadata: Metadata = {
   title: 'Política de privacidad · La Elite PvP',
@@ -125,9 +125,7 @@ export default function Privacidad() {
       <h2>Tus derechos</h2>
       <p>
         Puedes pedirnos <strong>ver, corregir o borrar</strong> lo que tenemos sobre ti, o que
-        dejemos de usarlo. Escríbenos a <a href={`mailto:${EMAIL}`}>{EMAIL}</a> o por{' '}
-        <a href={enlaceWhatsApp('Hola, quiero consultar sobre mis datos personales.')}
-           target="_blank" rel="noopener noreferrer">WhatsApp ({WHATSAPP})</a>.
+        dejemos de usarlo. Escríbenos a <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
         Respondemos en un plazo razonable y sin pedirte explicaciones.
       </p>
 

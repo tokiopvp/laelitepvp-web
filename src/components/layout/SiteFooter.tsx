@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Crown } from 'lucide-react'
-import { REDES, DISCORD, EMAIL, WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
+import { REDES, DISCORD, EMAIL } from '@/lib/contacto'
 
 const navLinks = [
   { href: '/miembros', label: 'Miembros' },
@@ -70,16 +70,6 @@ export default function SiteFooter() {
               <li>
                 <a href={`mailto:${EMAIL}`} className="hover:text-elite-primary transition-colors">
                   Email: {EMAIL}
-                </a>
-              </li>
-              <li>
-                <a
-                  href={enlaceWhatsApp('Hola, vengo de la web de La Elite PvP.')}
-                  target="_blank"
-                  rel="noopener"
-                  className="hover:text-elite-primary transition-colors"
-                >
-                  WhatsApp: {WHATSAPP}
                 </a>
               </li>
             </ul>

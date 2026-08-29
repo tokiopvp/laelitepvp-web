@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { PaginaLegal, Nota } from '@/components/legal/PaginaLegal'
-import { EMAIL, WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
+import { EMAIL } from '@/lib/contacto'
 
 export const metadata: Metadata = {
   title: 'Términos y condiciones · La Elite PvP',
@@ -130,9 +130,7 @@ export default function Terminos() {
 
       <h2>Contacto</h2>
       <p>
-        Para cualquier cosa: <a href={`mailto:${EMAIL}`}>{EMAIL}</a> o{' '}
-        <a href={enlaceWhatsApp('Hola, tengo una consulta sobre los términos.')}
-           target="_blank" rel="noopener noreferrer">WhatsApp ({WHATSAPP})</a>.
+        Para cualquier cosa: <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
         Escribir siempre es mejor que quedarse con la duda.
       </p>
     </PaginaLegal>

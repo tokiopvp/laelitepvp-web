@@ -7,7 +7,6 @@ import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
 import AjusteRendimiento from '@/components/layout/AjusteRendimiento'
-import WhatsAppSupport from '@/components/layout/WhatsAppSupport'
 import AvisoVisita from '@/components/layout/AvisoVisita'
 
 // Cuerpo: Barlow. Buena legibilidad en pantallas chicas y de gama baja, con
@@ -122,7 +121,6 @@ export default function RootLayout({
           <SiteNav />
           <main className="flex-1">{children}</main>
           <SiteFooter />
-          <WhatsAppSupport />
         </AuthProvider>
       </body>
     </html>
