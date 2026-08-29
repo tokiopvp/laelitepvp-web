@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle, Coins, ArrowRight } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
 import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting, getRates, getMetodosPago } from '@/lib/data'
 import { formatUSD, cn } from '@/lib/utils'
@@ -13,6 +14,7 @@ import PantallaPago from '@/components/store/PantallaPago'
 import { WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
 import PedidosPendientes from '@/components/store/PedidosPendientes'
 import Resplandor from '@/components/layout/Resplandor'
+import PuenteEliteCoin from '@/components/store/PuenteEliteCoin'
 import {
   guardarCarrito, leerCarrito, reconstruirCarrito,
   agregarPendientes, guardarDatos, leerDatos,
@@ -447,6 +449,10 @@ export default function PagoStorePage() {
           })}
         </div>
 
+        {/* Los mismos diamantes, ganables jugando. Va aqui abajo y no
+            arriba: primero el catalogo para quien viene a comprar. */}
+        <PuenteEliteCoin />
+
         <div className="mt-12 card-glow p-6 text-center">
           <p className="text-white/60 text-sm mb-4">
             🔒 Pago 100% seguro • Entrega en 5-15 min • Soporte Discord 24/7
@@ -526,6 +532,21 @@ export default function PagoStorePage() {
                   <div className="text-right font-display font-bold text-xl mb-4">
                     Total: <span className="gradient-text">{fmt(cartTotal)}</span>
                   </div>
+
+                  {/* Aparece justo cuando alguien ya eligio lo que quiere: es
+                      el momento en que enterarse de que existe otra via -jugar
+                      en vez de pagar- de verdad cambia lo que hace despues. */}
+                  <Link
+                    href="/comunidad"
+                    className="flex items-center gap-3 mb-4 rounded-xl border border-elite-gold/25 bg-elite-gold/[0.06] px-4 py-3 hover:bg-elite-gold/[0.1] transition-colors"
+                  >
+                    <Coins className="w-5 h-5 text-elite-gold shrink-0" />
+                    <span className="text-xs text-white/70 leading-snug flex-1">
+                      También puedes ganar esto <strong className="text-elite-gold">gratis</strong> con
+                      Elite Coin, jugando en nuestro Discord.
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-elite-gold shrink-0" />
+                  </Link>
 
                   <div className="space-y-3 mb-4">
                     <input className="input" placeholder="Tu nombre *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
