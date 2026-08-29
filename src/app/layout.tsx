@@ -37,7 +37,9 @@ const mono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://laelitepvp.com'),
+  // El dominio sin www NO resuelve (no tiene registro A). Todo apunta a
+  // www, que es lo unico que sirve, igual que el sitemap y el robots.
+  metadataBase: new URL('https://www.laelitepvp.com'),
   title: 'La Elite PvP | Clan Competitivo Free Fire',
   description: 'Clan competitivo de Free Fire. Tops, rankings, miembros oficiales, torneos ganados y PagoStore Premium para diamantes.',
   keywords: ['Free Fire', 'Clan', 'La Elite PvP', 'Competitivo', 'Torneos', 'Diamantes', 'PagoStore'],
@@ -48,7 +50,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_ES',
-    url: 'https://laelitepvp.com',
+    url: 'https://www.laelitepvp.com',
     title: 'La Elite PvP | Clan Competitivo Free Fire',
     description: 'Clan competitivo de Free Fire. Tops, rankings, miembros oficiales, torneos ganados y PagoStore Premium.',
     siteName: 'La Elite PvP',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getVelas, getOperaciones, precioTexto, coinsCorto } from '@/lib/economia'
 import { subscribeToTable } from '@/lib/data'
 import type { Vela, Operacion } from '@/lib/economia'
@@ -31,32 +31,53 @@ const ROJO = '#e5484d'
 const REJILLA = 'rgba(255,255,255,0.05)'
 const TEXTO = 'rgba(255,255,255,0.35)'
 
-type Rango = { label: string; velas: number }
+type Rango = { label: string; minutos: number; puntos: number }
 
-// El eje temporal depende de cuántas velas se pidan: con velas de 5 minutos,
-// 72 son 6 horas y 288 un día.
+/**
+ * Marcos de tiempo.
+ *
+ * `minutos` es cuánto pasado se pide; `puntos`, en cuántas velas se agrupa.
+ * La agrupación la hace el servidor, así que todos los marcos pesan lo mismo
+ * aunque "SEMANA" cubra diez mil velas de un minuto.
+ *
+ * Los marcos cortos piden una vela por minuto (5 min → 5 velas): ahí lo que
+ * interesa es el detalle de lo que acaba de pasar. Los largos se agrupan a
+ * ~120, que es lo que cabe legible en pantalla.
+ */
 const RANGOS: Rango[] = [
-  { label: '1H', velas: 12 },
-  { label: '6H', velas: 72 },
-  { label: '1D', velas: 288 },
-  { label: 'MAX', velas: 600 },
+  { label: '5 MIN',  minutos: 5,     puntos: 5 },
+  { label: '15 MIN', minutos: 15,    puntos: 15 },
+  { label: '30 MIN', minutos: 30,    puntos: 30 },
+  { label: '1H',     minutos: 60,    puntos: 60 },
+  { label: '6H',     minutos: 360,   puntos: 120 },
+  { label: '1D',     minutos: 1440,  puntos: 120 },
+  { label: 'SEMANA', minutos: 10080, puntos: 140 },
+  { label: 'MAX',    minutos: 0,     puntos: 160 },
 ]
+
+/** El marco que se abre por defecto: 1H. Ni tan corto que parezca plano, ni
+ *  tan largo que no se note lo que alguien acaba de ganar. */
+const RANGO_INICIAL = 3
 
 export default function GraficoMercado() {
   const [velas, setVelas] = useState<Vela[]>([])
   const [ops, setOps] = useState<Operacion[]>([])
-  const [rango, setRango] = useState(1)
+  const [rango, setRango] = useState(RANGO_INICIAL)
   const [cargando, setCargando] = useState(true)
   const [cursor, setCursor] = useState<{ i: number; x: number; y: number } | null>(null)
   const lienzo = useRef<HTMLCanvasElement>(null)
   const caja = useRef<HTMLDivElement>(null)
 
   const cargar = useCallback(async () => {
-    const [v, o] = await Promise.all([getVelas(600), getOperaciones(24)])
+    const r = RANGOS[rango]
+    const [v, o] = await Promise.all([
+      getVelas(r.minutos, r.puntos),
+      getOperaciones(24),
+    ])
     setVelas(v)
     setOps(o)
     setCargando(false)
-  }, [])
+  }, [rango])
 
   useEffect(() => {
     cargar()
@@ -82,10 +103,9 @@ export default function GraficoMercado() {
     }
   }, [cargar])
 
-  const visibles = useMemo(
-    () => velas.slice(Math.max(0, velas.length - RANGOS[rango].velas)),
-    [velas, rango]
-  )
+  // El servidor ya devuelve justo el marco pedido, agrupado. No hay nada que
+  // recortar aquí.
+  const visibles = velas
 
   const ultima = visibles[visibles.length - 1]
   const primera = visibles[0]
@@ -217,14 +237,15 @@ export default function GraficoMercado() {
     c.font = '10px ui-monospace, monospace'
     c.textAlign = 'center'
     const salto = Math.max(1, Math.floor(visibles.length / 6))
+    const largo = RANGOS[rango].minutos === 0 || RANGOS[rango].minutos >= 1440
     visibles.forEach((v, i) => {
       if (i % salto !== 0) return
       const d = new Date(v.bucket)
-      c.fillText(
-        `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
-        i * ancho + ancho / 2,
-        h - padB / 2 + 2
-      )
+      const etq = largo
+        ? // Marcos de un día o más: la hora sola no ubica nada, hace falta el día.
+          `${d.getDate()}/${d.getMonth() + 1}`
+        : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      c.fillText(etq, i * ancho + ancho / 2, h - padB / 2 + 2)
     })
 
     // --- Cruz del cursor ---
@@ -238,7 +259,7 @@ export default function GraficoMercado() {
       c.stroke()
       c.setLineDash([])
     }
-  }, [visibles, cursor, sube])
+  }, [visibles, cursor, sube, rango])
 
   // Redibujar al cambiar de tamaño (girar el teléfono rompe el gráfico si no).
   useEffect(() => {
@@ -286,12 +307,14 @@ export default function GraficoMercado() {
           </span>
         </div>
 
-        <div className="ml-auto flex gap-1">
+        {/* Ocho marcos no caben en una fila de móvil: se envuelven y se
+            aprietan un poco, manteniendo el alto cómodo para el pulgar. */}
+        <div className="ml-auto flex flex-wrap gap-1 justify-end">
           {RANGOS.map((r, i) => (
             <button
               key={r.label}
               onClick={() => setRango(i)}
-              className={`px-3.5 py-2.5 sm:py-1 rounded text-xs font-mono transition-colors ${
+              className={`px-2.5 sm:px-3 py-2 sm:py-1 rounded text-[11px] font-mono transition-colors ${
                 i === rango
                   ? 'bg-white/10 text-white'
                   : 'text-white/40 hover:text-white/70 hover:bg-white/5'

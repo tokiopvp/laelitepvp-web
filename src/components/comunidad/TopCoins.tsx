@@ -15,8 +15,8 @@ import type { FilaTop } from '@/lib/economia'
  * porque el puesto 27 no necesita el mismo espacio que el podio.
  */
 
-const CORONA = (i: number, casa: boolean) => {
-  if (casa || i === 0) return <Crown className="w-4 h-4 text-elite-gold" />
+const CORONA = (i: number) => {
+  if (i === 0) return <Crown className="w-4 h-4 text-elite-gold" />
   if (i === 1) return <Medal className="w-4 h-4 text-white/60" />
   if (i === 2) return <Medal className="w-4 h-4 text-amber-700" />
   return <span className="text-white/30 font-mono text-xs tabular-nums">{i + 1}</span>
@@ -55,9 +55,9 @@ export default function TopCoins({
                   // Tu propia fila se resalta: en una lista de cincuenta, sin
                   // esto hay que ir leyendo nombre a nombre para encontrarse.
                   mio ? 'bg-elite-primary/[0.08] border-l-2 border-elite-primary' : ''
-                } ${f.es_casa ? 'bg-elite-gold/[0.05]' : ''}`}
+                }`}
               >
-                <span className="w-6 flex justify-center shrink-0">{CORONA(i, f.es_casa)}</span>
+                <span className="w-6 flex justify-center shrink-0">{CORONA(i)}</span>
 
                 {f.avatar_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -78,9 +78,7 @@ export default function TopCoins({
                     {f.nombre}
                     {mio && <span className="text-elite-primary text-xs ml-1.5">· tú</span>}
                   </p>
-                  {f.es_casa ? (
-                    <span className="text-[10px] text-elite-gold">Cuenta de la casa</span>
-                  ) : f.es_miembro ? (
+                  {f.es_miembro ? (
                     <span className="text-[10px] text-elite-primary">Miembro del clan</span>
                   ) : (
                     <span className="text-[10px] text-white/25">Comunidad</span>

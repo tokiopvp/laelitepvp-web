@@ -68,7 +68,7 @@ export default function TiendaCoins({
         )}
       </header>
 
-      <div className="grid sm:grid-cols-2 gap-px bg-white/[0.04]">
+      <div className="divide-y divide-white/[0.04]">
         {items.map((it) => {
           const c = COLOR_RAREZA[it.rareza]
           const bloqueado = it.solo_clan && !esMiembro
@@ -77,57 +77,51 @@ export default function TiendaCoins({
           const agotado = it.stock === 0
 
           return (
-            <article
-              key={it.id}
-              className={`relative p-4 bg-elite-card ${c.fondo} flex flex-col gap-3`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <h3 className="font-display font-bold text-base leading-tight">{it.nombre}</h3>
-                  <p className="text-white/40 text-xs mt-1 leading-snug">{it.descripcion}</p>
-                </div>
-                <span
-                  className={`shrink-0 text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border ${c.borde} ${c.texto}`}
-                >
-                  {c.etiqueta}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap text-xs">
-                {it.diamantes && (
-                  <span className="inline-flex items-center gap-1 text-elite-live font-mono">
-                    <Gem className="w-3 h-3" /> {it.diamantes.toLocaleString('es')}
+            <article key={it.id} className={`flex items-center gap-3 px-4 py-3 ${c.fondo}`}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-display font-bold text-sm leading-tight">{it.nombre}</h3>
+                  <span
+                    className={`text-[10px] uppercase tracking-widest px-1.5 rounded border ${c.borde} ${c.texto}`}
+                  >
+                    {c.etiqueta}
                   </span>
-                )}
-                {it.valor_usd && (
-                  <span className="text-white/30 font-mono">≈ ${Number(it.valor_usd).toFixed(2)}</span>
-                )}
-                {it.limite_dia > 0 && (
-                  <span className="text-white/30">· {it.limite_dia}/día</span>
-                )}
-                {it.stock > 0 && <span className="text-amber-400/70">· quedan {it.stock}</span>}
-              </div>
-
-              {/* Cuánto falta. Es la parte que engancha: ver la barra a 80%
-                  hace que la última tarea del día se haga. */}
-              {autenticado && !alcanza && !bloqueado && (
-                <div>
-                  <div className="h-1 rounded-full bg-white/[0.06] overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-elite-gold/70 transition-[width] duration-500"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-white/30 mt-1 font-mono">
-                    faltan {coinsCorto(it.precio_coins - saldo)}
-                  </p>
                 </div>
-              )}
+
+                <div className="flex items-center gap-2 flex-wrap text-[11px] mt-0.5">
+                  {it.diamantes && (
+                    <span className="inline-flex items-center gap-1 text-elite-live font-mono">
+                      <Gem className="w-3 h-3" /> {it.diamantes.toLocaleString('es')}
+                    </span>
+                  )}
+                  {it.valor_usd && (
+                    <span className="text-white/30 font-mono">≈ ${Number(it.valor_usd).toFixed(2)}</span>
+                  )}
+                  {it.limite_dia > 0 && <span className="text-white/30">· {it.limite_dia}/día</span>}
+                  {it.stock > 0 && <span className="text-amber-400/70">· quedan {it.stock}</span>}
+                </div>
+
+                {/* Cuánto falta. Es la parte que engancha: ver la barra a 80%
+                    hace que la última tarea del día se haga. */}
+                {autenticado && !alcanza && !bloqueado && (
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <div className="h-1 flex-1 max-w-[160px] rounded-full bg-white/[0.06] overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-elite-gold/70 transition-[width] duration-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-white/30 font-mono">
+                      faltan {coinsCorto(it.precio_coins - saldo)}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={() => pedir(it)}
                 disabled={ocupado === it.id || agotado || bloqueado || (autenticado && !alcanza)}
-                className={`mt-auto w-full min-h-[44px] rounded-lg px-3 py-2 text-sm font-display font-bold transition-colors border ${
+                className={`shrink-0 w-28 min-h-[40px] rounded-lg px-2 py-1.5 text-xs font-display font-bold transition-colors border ${
                   agotado || bloqueado || (autenticado && !alcanza)
                     ? 'border-white/[0.06] text-white/25 cursor-not-allowed'
                     : `${c.borde} ${c.texto} hover:bg-white/[0.06]`
@@ -136,15 +130,15 @@ export default function TiendaCoins({
                 {agotado ? (
                   'Agotado'
                 ) : bloqueado ? (
-                  <span className="inline-flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5" /> Solo miembros
+                  <span className="inline-flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> Solo clan
                   </span>
                 ) : ocupado === it.id ? (
-                  'Canjeando…'
+                  '…'
                 ) : (
-                  <span className="inline-flex items-center gap-1.5">
-                    {autenticado && alcanza && <Check className="w-3.5 h-3.5" />}
-                    {coinsCorto(it.precio_coins)} coins
+                  <span className="inline-flex items-center gap-1">
+                    {autenticado && alcanza && <Check className="w-3 h-3" />}
+                    {coinsCorto(it.precio_coins)}
                   </span>
                 )}
               </button>

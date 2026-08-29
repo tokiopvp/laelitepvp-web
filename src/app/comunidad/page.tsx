@@ -135,9 +135,18 @@ export default function ComunidadPage() {
           </motion.div>
         )}
 
-        {/* LO PRIMERO: quién gana y qué se lleva, uno al lado del otro */}
-        <div className="grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] gap-6 mb-6">
+        {/* ARRIBA: el mercado y el ranking, juntos.
+            El gráfico es lo que hace que la página parezca viva al abrirla, y
+            el top responde de inmediato a "¿quién va ganando?". Van lado a lado
+            porque cuentan la misma historia: el gráfico sube cuando esos
+            nombres ganan coins. */}
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] gap-6 mb-6">
+          <GraficoMercado />
           <TopCoins filas={top} yo={user?.id} cargando={cargando} />
+        </div>
+
+        {/* ABAJO: qué se lleva y cómo se consigue, en paralelo. */}
+        <div className="grid lg:grid-cols-2 gap-6">
           <TiendaCoins
             items={tienda}
             saldo={saldo}
@@ -146,10 +155,6 @@ export default function ComunidadPage() {
             onCanje={tras}
             onEntrar={signIn}
           />
-        </div>
-
-        {/* EL CÓMO */}
-        <div className="mb-6">
           <Tareas
             tareas={tareas}
             progreso={progreso}
@@ -159,9 +164,6 @@ export default function ComunidadPage() {
             onEntrar={signIn}
           />
         </div>
-
-        {/* EL ESPEJO: el mercado moviéndose con lo que hace la comunidad */}
-        <GraficoMercado />
 
         {!isAuthed && (
           <div className="mt-8 text-center">

@@ -167,12 +167,16 @@ export async function getCasa(): Promise<Casa | null> {
 }
 
 /**
- * El ranking, con la cuenta de la casa insertada en su sitio.
+ * El ranking, con la cuenta grande insertada en su sitio.
  *
- * Barron Trump no está en `profiles` (no tiene cuenta de verdad), así que se
- * mezcla aquí y se reordena por saldo. Va primero porque tiene millones, no
- * porque se le haya clavado el puesto 1 a mano: si alguien lo superase de
- * verdad, la lista lo reflejaría.
+ * Esa cuenta no está en `profiles` (no tiene login detrás), así que se mezcla
+ * aquí y se reordena por saldo. Va primero porque tiene el saldo más alto, no
+ * porque se le haya clavado el puesto 1: si alguien lo superase de verdad, la
+ * lista lo reflejaría.
+ *
+ * Sale etiquetada como un miembro más de la comunidad, no como "la casa": que
+ * el número uno y quien mueve el mercado sean la misma mano es justo lo que no
+ * debe deducirse mirando la tabla.
  */
 export async function getTop(limite = 50): Promise<FilaTop[]> {
   const sb = client()
@@ -201,7 +205,10 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
       nombre: casa.nombre,
       coins: casa.coins,
       avatar_url: casa.avatar_url,
-      es_miembro: true,
+      // Se presenta como comunidad, igual que cualquier otro: marcarla como
+      // miembro del clan la señalaría, y la gracia es que no destaque por nada
+      // salvo por su saldo.
+      es_miembro: false,
       es_casa: true,
     })
   }
@@ -209,30 +216,30 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
 }
 
 /**
- * Velas del gráfico.
+ * Serie del gráfico para un marco de tiempo.
  *
- * Antes de leer se llama a `market_tick()`, que cierra las velas que quedaron
- * pendientes desde la última visita. Es idempotente: si la vela del intervalo
- * actual ya existe no hace nada, así que da igual que entren cien personas a la
- * vez. Gracias a eso el mercado sigue vivo sin depender de ningún cron.
+ * `market_series` agrupa en el SERVIDOR a ~120 puntos. El marco "SEMANA" son
+ * 10.080 velas de un minuto: mandarlas enteras al móvil de alguien con datos
+ * para pintar 120 columnas es tirar megabytes. Así cada marco pesa lo mismo.
+ *
+ * Antes se llama a `market_tick()`, que cierra las velas pendientes desde la
+ * última visita. Es idempotente, así que da igual que entren cien personas a
+ * la vez: el mercado sigue vivo sin depender de ningún cron.
  */
-export async function getVelas(limite = 180): Promise<Vela[]> {
+export async function getVelas(minutos: number, puntos = 120): Promise<Vela[]> {
   const sb = client()
   if (!sb) return []
   try {
     await sb.rpc('market_tick')
   } catch {
-    /* si el tick falla, se pintan las velas que ya hubiera */
+    /* si el tick falla, se pinta lo que ya hubiera */
   }
-  const { data, error } = await sb
-    .from('market_candles')
-    .select('bucket, open, high, low, close, volumen')
-    .order('bucket', { ascending: false })
-    .limit(limite)
-  if (error || !data) return []
-  // Se piden las más nuevas y se les da la vuelta: pedirlas ascendentes traería
-  // las más ANTIGUAS y el gráfico mostraría historia muerta.
-  return (data as any[]).map(normalizarVela).reverse()
+  const { data, error } = await sb.rpc('market_series', {
+    p_minutos: minutos,
+    p_puntos: puntos,
+  })
+  if (error || !Array.isArray(data)) return []
+  return (data as any[]).map(normalizarVela)
 }
 
 function normalizarVela(v: any): Vela {
@@ -309,11 +316,15 @@ export async function operarCasa(lado: 'compra' | 'venta', coins: number): Promi
 // Presentación
 // ------------------------------------------------------------
 
-/** 1.234.567 → "1.23M". En una tabla de tops, doce dígitos no se leen. */
+/**
+ * Coins con separador de miles: 1200000 → "1.200.000".
+ *
+ * Se abrevió a "1.2M" en su día por ahorrar ancho, pero un saldo abreviado
+ * pierde justo lo que lo hace impresionante. El número entero es el que
+ * impone en un ranking, y con `tabular-nums` las columnas siguen cuadrando.
+ */
 export function coinsCorto(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M'
-  if (n >= 10_000) return Math.round(n / 1000) + 'K'
-  return n.toLocaleString('es')
+  return Math.round(n).toLocaleString('es-ES')
 }
 
 /** El precio es minúsculo por diseño: hacen falta muchos decimales. */
