@@ -87,7 +87,7 @@ export default function TiendaCoins({
                   <p className="text-white/40 text-xs mt-1 leading-snug">{it.descripcion}</p>
                 </div>
                 <span
-                  className={`shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded border ${c.borde} ${c.texto}`}
+                  className={`shrink-0 text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border ${c.borde} ${c.texto}`}
                 >
                   {c.etiqueta}
                 </span>
@@ -127,7 +127,7 @@ export default function TiendaCoins({
               <button
                 onClick={() => pedir(it)}
                 disabled={ocupado === it.id || agotado || bloqueado || (autenticado && !alcanza)}
-                className={`mt-auto w-full rounded-lg px-3 py-2 text-sm font-display font-bold transition-colors border ${
+                className={`mt-auto w-full min-h-[44px] rounded-lg px-3 py-2 text-sm font-display font-bold transition-colors border ${
                   agotado || bloqueado || (autenticado && !alcanza)
                     ? 'border-white/[0.06] text-white/25 cursor-not-allowed'
                     : `${c.borde} ${c.texto} hover:bg-white/[0.06]`

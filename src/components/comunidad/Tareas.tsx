@@ -110,7 +110,7 @@ export default function Tareas({
             <button
               key={v}
               onClick={() => setPestana(v)}
-              className={`px-3 py-1.5 rounded text-xs font-display font-semibold transition-colors ${
+              className={`px-4 py-2.5 sm:py-1.5 rounded text-xs font-display font-semibold transition-colors ${
                 pestana === v ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/70'
               }`}
             >
@@ -163,7 +163,7 @@ export default function Tareas({
                     {t.titulo}
                   </h3>
                   <span
-                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded border ${colorNivel(t.nivel)}`}
+                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${colorNivel(t.nivel)}`}
                     title={`Deja una vela de tamaño ${t.nivel} en el gráfico`}
                   >
                     N{t.nivel}
@@ -202,7 +202,7 @@ export default function Tareas({
               <button
                 onClick={() => cobrar(t)}
                 disabled={hecha || bloqueada || ocupado === t.id}
-                className={`shrink-0 w-24 rounded-lg px-3 py-1.5 text-xs font-display font-bold border transition-colors ${
+                className={`shrink-0 w-24 min-h-[44px] sm:min-h-0 sm:py-1.5 rounded-lg px-3 py-2 text-xs font-display font-bold border transition-colors ${
                   hecha
                     ? 'border-elite-success/30 text-elite-success cursor-default'
                     : bloqueada

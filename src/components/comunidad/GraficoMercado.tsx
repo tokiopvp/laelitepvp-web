@@ -291,7 +291,7 @@ export default function GraficoMercado() {
             <button
               key={r.label}
               onClick={() => setRango(i)}
-              className={`px-2.5 py-1 rounded text-xs font-mono transition-colors ${
+              className={`px-3.5 py-2.5 sm:py-1 rounded text-xs font-mono transition-colors ${
                 i === rango
                   ? 'bg-white/10 text-white'
                   : 'text-white/40 hover:text-white/70 hover:bg-white/5'
