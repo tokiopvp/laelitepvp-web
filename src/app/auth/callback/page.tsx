@@ -82,6 +82,42 @@ function traducir(mensaje: string): string {
   return mensaje
 }
 
+/**
+ * Espera a que exista sesión, por evento y por sondeo.
+ *
+ * Los dos caminos hacen falta: el evento cubre el caso normal, y el sondeo
+ * cubre el canje que terminó antes de montar el componente —ahí el evento ya
+ * pasó y esperarlo sería esperar para siempre.
+ */
+async function esperarSesion(
+  sb: NonNullable<ReturnType<typeof supabaseBrowser>>,
+  msMax = 12_000
+): Promise<boolean> {
+  const { data: ya } = await sb.auth.getSession()
+  if (ya.session) return true
+
+  return new Promise<boolean>((resolve) => {
+    let resuelto = false
+    const acabar = (v: boolean) => {
+      if (resuelto) return
+      resuelto = true
+      clearInterval(sondeo)
+      clearTimeout(tope)
+      sub.subscription.unsubscribe()
+      resolve(v)
+    }
+
+    const { data: sub } = sb.auth.onAuthStateChange((_e, sesion) => {
+      if (sesion) acabar(true)
+    })
+    const sondeo = setInterval(async () => {
+      const { data } = await sb.auth.getSession()
+      if (data.session) acabar(true)
+    }, 400)
+    const tope = setTimeout(() => acabar(false), msMax)
+  })
+}
+
 function CallbackInner() {
   const router = useRouter()
   const params = useSearchParams()
@@ -156,30 +192,23 @@ function CallbackInner() {
         const errUrl = params.get('error_description') || params.get('error')
         if (errUrl) return rendirse(traducir(decodeURIComponent(errUrl)))
 
-        // 2. ¿Ya hay sesión? Pasa al recargar esta página o al volver atrás:
-        //    el código ya se usó, pero la persona SÍ está dentro. Antes se la
-        //    echaba al inicio como si hubiera fallado algo.
-        const { data: ya } = await sb.auth.getSession()
-        if (ya.session) return terminar(await destinoSegun(sb))
-
-        // 3. Sin código y sin sesión no hay nada que hacer aquí.
-        const code = params.get('code')
-        if (!code) return terminar('/')
-
-        // 4. El canje. Esta es la llamada que antes podía colgar la pantalla.
-        const { error } = await sb.auth.exchangeCodeForSession(code)
-        if (error) {
-          // Puede haber fallado porque otra pestaña se adelantó y ya canjeó el
-          // código. Se comprueba antes de dar el fallo por bueno.
-          const { data: tras } = await sb.auth.getSession()
-          if (tras.session) return terminar(await destinoSegun(sb))
-
-          // Verificador perdido: se reintenta el login entero, en silencio.
-          if (/code verifier|pkce/i.test(error.message) && reintentar()) return
-
+        // 2. Se espera a que la LIBRERIA canjee el código.
+        //
+        // Con `detectSessionInUrl: true`, supabase-js detecta el `?code=` de la
+        // URL al arrancar y hace el canje solo, emparejando el estado con su
+        // verificador. Aquí no se canjea nada: solo se espera el resultado.
+        //
+        // Se escucha el evento Y se sondea, porque el canje puede haber
+        // terminado ANTES de que este componente llegue a montarse -pasa cuando
+        // la respuesta es rápida- y entonces el evento ya no llega.
+        const sesion = await esperarSesion(sb)
+        if (!sesion) {
+          // Un reintento en silencio antes de rendirse: si el flujo se perdió,
+          // empezarlo de nuevo desde este navegador funciona casi siempre.
+          if (params.get('code') && reintentar()) return
           return rendirse(
-            traducir(error.message) ||
-              'No se pudo completar el acceso. Vuelve a intentarlo desde el mismo navegador.'
+            'No pudimos completar el acceso. Vuelve a pulsar el botón de entrar ' +
+              'desde este mismo navegador.'
           )
         }
 

@@ -87,25 +87,27 @@ function migrarDesdeCookies(clave: string): void {
 }
 
 /**
- * Rescata el verificador PKCE de la cookie a `localStorage`.
+ * Borra los verificadores de logins que quedaron a medias.
  *
- * Es un valor corto y en texto plano (no va en base64 ni troceado como la
- * sesión), así que basta con copiarlo tal cual.
+ * Cada intento crea una clave `...-flow-<state>-code-verifier`. Si el login se
+ * abandona -se cierra la pestaña, se cancela en Discord- esa clave se queda
+ * ahí para siempre. No rompe nada, pero se acumulan sin límite y ensucian el
+ * almacenamiento del navegador.
+ *
+ * Se conservan las tres más recientes: un login en curso puede tener la suya
+ * viva, y borrarla sería tirar piedras al propio tejado.
  */
-function migrarVerificador(clave: string): void {
+function limpiarFlujosViejos(base: string): void {
   try {
-    if (localStorage.getItem(clave)) return
-    for (const par of document.cookie.split(';')) {
-      const i = par.indexOf('=')
-      if (i < 0) continue
-      if (par.slice(0, i).trim() === clave) {
-        const v = decodeURIComponent(par.slice(i + 1))
-        if (v) localStorage.setItem(clave, v)
-        return
-      }
+    const flujos: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (k && k.startsWith(`${base}-flow-`) && k.endsWith('-code-verifier')) flujos.push(k)
     }
+    if (flujos.length <= 3) return
+    for (const k of flujos.slice(0, flujos.length - 3)) localStorage.removeItem(k)
   } catch {
-    // Almacenamiento bloqueado: se sigue sin migrar.
+    // Almacenamiento bloqueado: no hay nada que limpiar.
   }
 }
 
@@ -124,14 +126,7 @@ export function supabaseBrowser(): SupabaseClient | null {
   const clave = `sb-${refProyecto(URL_SB)}-auth-token`
   if (typeof window !== 'undefined') {
     migrarDesdeCookies(clave)
-    // El VERIFICADOR del login en curso también hay que rescatarlo.
-    //
-    // Quien pulsó "entrar" antes de que este cambio se desplegara tiene su
-    // verificador guardado en una cookie, y al volver de Discord el canje lo
-    // busca en `localStorage`: no lo encuentra y el acceso muere con
-    // "PKCE code verifier not found in storage". Es un login a medias que se
-    // pierde por un detalle de almacenamiento.
-    migrarVerificador(`${clave}-code-verifier`)
+    limpiarFlujosViejos(clave)
   }
 
   cliente = createClient(URL_SB, CLAVE_SB, {
@@ -143,10 +138,24 @@ export function supabaseBrowser(): SupabaseClient | null {
       // El token de acceso dura una hora; este renueva solo, sin que nadie note
       // nada. Mientras el de refresco valga, no hay que volver a entrar.
       autoRefreshToken: true,
-      // El intercambio del código lo hace /auth/callback a mano. Dejarlo
-      // también aquí provocaría que dos sitios intenten canjear el MISMO código
-      // y el segundo falle, porque un código solo se puede usar una vez.
-      detectSessionInUrl: false,
+      // El canje del código lo hace LA LIBRERÍA, no nuestro callback.
+      //
+      // Antes se ponía a `false` y `/auth/callback` llamaba a
+      // `exchangeCodeForSession(code)` a mano. Eso funcionaba con versiones
+      // antiguas, pero esta guarda un verificador POR FLUJO, indexado por el
+      // `state` de OAuth:
+      //
+      //   sb-<ref>-auth-token-flow-<state>-code-verifier
+      //
+      // Pasándole solo el código, sin el `state`, la librería no encuentra su
+      // verificador y responde "PKCE code verifier not found in storage",
+      // aunque el verificador esté ahí delante. Cada intento fallido dejaba
+      // además otra clave acumulada.
+      //
+      // Con `true`, la librería lee la URL entera -código Y estado-, empareja
+      // el flujo correcto y canjea. No hay doble canje porque el callback ya no
+      // canjea: solo espera a que aparezca la sesión.
+      detectSessionInUrl: true,
       flowType: 'pkce',
       storageKey: clave,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
