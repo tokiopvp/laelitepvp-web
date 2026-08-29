@@ -35,6 +35,46 @@ import { supabaseBrowser } from '@/lib/supabase/client'
 
 const ESPERA_MAX_MS = 15_000
 
+/**
+ * Errores de Supabase traducidos a algo que se pueda ACCIONAR.
+ *
+ * El que veia la gente era "Error getting user email from external provider":
+ * en inglés, técnico, y sin decir qué hacer. Quien lo lee no sabe si el fallo
+ * es suyo, del clan o de Discord, así que abandona.
+ *
+ * Cada entrada dice qué pasó Y el paso siguiente. Lo demás se muestra tal cual:
+ * inventar un mensaje bonito para un fallo que no conocemos solo sirve para que
+ * nadie pueda diagnosticarlo después.
+ */
+const TRADUCCIONES: { patron: RegExp; texto: string }[] = [
+  {
+    patron: /email/i,
+    texto:
+      'Discord no nos dio tu correo. Suele ser porque lo tienes sin verificar: ' +
+      'abre Discord → Ajustes de usuario → Mi cuenta y confirma tu email. ' +
+      'Luego vuelve a intentarlo.',
+  },
+  {
+    patron: /access_denied|cancel/i,
+    texto: 'Cancelaste el inicio de sesión.',
+  },
+  {
+    patron: /expired|invalid.*(code|grant)/i,
+    texto:
+      'El enlace de acceso caducó. Empieza de nuevo desde el botón de entrar; ' +
+      'no reutilices un enlace viejo.',
+  },
+  {
+    patron: /network|fetch|timeout/i,
+    texto: 'Se cortó la conexión. Comprueba tu internet e inténtalo otra vez.',
+  },
+]
+
+function traducir(mensaje: string): string {
+  for (const t of TRADUCCIONES) if (t.patron.test(mensaje)) return t.texto
+  return mensaje
+}
+
 function CallbackInner() {
   const router = useRouter()
   const params = useSearchParams()
@@ -71,13 +111,7 @@ function CallbackInner() {
         // 1. Discord puede volver con un error explícito (normalmente porque
         //    la persona pulsó "Cancelar").
         const errUrl = params.get('error_description') || params.get('error')
-        if (errUrl) {
-          return rendirse(
-            /access_denied|cancel/i.test(errUrl)
-              ? 'Cancelaste el inicio de sesión.'
-              : decodeURIComponent(errUrl)
-          )
-        }
+        if (errUrl) return rendirse(traducir(decodeURIComponent(errUrl)))
 
         // 2. ¿Ya hay sesión? Pasa al recargar esta página o al volver atrás:
         //    el código ya se usó, pero la persona SÍ está dentro. Antes se la
@@ -97,7 +131,8 @@ function CallbackInner() {
           const { data: tras } = await sb.auth.getSession()
           if (tras.session) return terminar(await destinoSegun(sb))
           return rendirse(
-            'No se pudo completar el acceso. Vuelve a intentarlo desde el mismo navegador.'
+            traducir(error.message) ||
+              'No se pudo completar el acceso. Vuelve a intentarlo desde el mismo navegador.'
           )
         }
 
@@ -134,10 +169,15 @@ function CallbackInner() {
               Ir al inicio
             </Link>
           </div>
-          <p className="text-white/25 text-xs mt-5 leading-snug">
-            Si se repite: abre <strong>www.laelitepvp.com</strong> en tu navegador normal —
-            el navegador que abre Discord dentro de la app a veces no guarda la sesión.
-          </p>
+          {/* Este consejo solo vale cuando el fallo es de sesión perdida. En
+              un error de correo no verificado es ruido que despista: la persona
+              probaría a cambiar de navegador y seguiría sin poder entrar. */}
+          {!/correo|verificar|cancelaste/i.test(fallo) && (
+            <p className="text-white/25 text-xs mt-5 leading-snug">
+              Si se repite: abre <strong>www.laelitepvp.com</strong> en tu navegador normal —
+              el navegador que abre Discord dentro de la app a veces no guarda la sesión.
+            </p>
+          )}
         </div>
       </div>
     )

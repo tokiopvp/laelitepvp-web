@@ -104,6 +104,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sb.auth.signInWithOAuth({
       provider: 'discord',
       options: {
+        // Se piden los permisos EXPLICITAMENTE.
+        //
+        // Sin `email`, Discord no devuelve el correo y Supabase rechaza el
+        // acceso con "Error getting user email from external provider". El
+        // valor por defecto de la libreria ya deberia incluirlo, pero dejarlo
+        // escrito descarta esa causa y no cuesta nada.
+        scopes: 'identify email',
         // Siempre al dominio con www, nunca a `location.origin`.
         //
         // El sitio responde tambien en laelitepvp.com sin www, y son origenes
