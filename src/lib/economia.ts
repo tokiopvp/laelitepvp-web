@@ -178,6 +178,26 @@ export async function getCasa(): Promise<Casa | null> {
  * el número uno y quien mueve el mercado sean la misma mano es justo lo que no
  * debe deducirse mirando la tabla.
  */
+/**
+ * Nombre que se puede enseñar en público.
+ *
+ * El respaldo de `username` existe para quien no tiene nombre visible, pero
+ * históricamente ese campo llegó a contener el CORREO de la persona: el
+ * disparador de registro lo usaba como último recurso. Se limpió en la base,
+ * y esto es el cinturón por si alguna vía futura vuelve a colar uno.
+ *
+ * Ante la duda se recorta por la arroba en vez de ocultar el nombre entero:
+ * "juanito" identifica a alguien en un ranking; "Jugador" repetido veinte veces
+ * no sirve de nada.
+ */
+function nombrePublico(p: { display_name?: string | null; username?: string | null }): string {
+  const visible = (p.display_name || '').trim()
+  if (visible && !visible.includes('@')) return visible
+  const usuario = (p.username || '').trim()
+  if (!usuario) return 'Jugador'
+  return usuario.includes('@') ? usuario.split('@')[0] : usuario
+}
+
 export async function getTop(limite = 50): Promise<FilaTop[]> {
   const sb = client()
   if (!sb) return []
@@ -192,7 +212,7 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
 
   const filas: FilaTop[] = (perfiles ?? []).map((p: any) => ({
     id: p.id,
-    nombre: p.display_name || p.username || 'Jugador',
+    nombre: nombrePublico(p),
     coins: p.points ?? 0,
     avatar_url: p.avatar_url ?? null,
     es_miembro: !!p.is_member,
