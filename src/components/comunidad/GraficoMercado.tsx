@@ -45,9 +45,9 @@ type Rango = { label: string; minutos: number; puntos: number }
  * ~120, que es lo que cabe legible en pantalla.
  */
 const RANGOS: Rango[] = [
-  { label: '5 MIN',  minutos: 5,     puntos: 5 },
-  { label: '15 MIN', minutos: 15,    puntos: 15 },
-  { label: '30 MIN', minutos: 30,    puntos: 30 },
+  // Por debajo de una hora el grafico queda casi vacio: con velas de un minuto
+  // son cinco o quince columnas sueltas en un lienzo ancho, y se ve roto en vez
+  // de detallado. La hora es el marco mas corto que llena la pantalla.
   { label: '1H',     minutos: 60,    puntos: 60 },
   { label: '6H',     minutos: 360,   puntos: 120 },
   { label: '1D',     minutos: 1440,  puntos: 120 },
@@ -57,7 +57,7 @@ const RANGOS: Rango[] = [
 
 /** El marco que se abre por defecto: 1H. Ni tan corto que parezca plano, ni
  *  tan largo que no se note lo que alguien acaba de ganar. */
-const RANGO_INICIAL = 3
+const RANGO_INICIAL = 0
 
 export default function GraficoMercado() {
   const [velas, setVelas] = useState<Vela[]>([])
