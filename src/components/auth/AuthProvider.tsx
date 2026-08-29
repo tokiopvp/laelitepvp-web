@@ -69,18 +69,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // ya refresca solo cuando el token guardado esta caducado; si devuelve
     // null, no hay nada que refrescar.
     const restaurar = async () => {
-      const { data: sesionGuardada } = await sb!.auth.getSession()
-      if (sesionGuardada.session) {
-        aplicarSesion(sesionGuardada.session)
-      } else if (haySesionGuardada()) {
-        const { data: refrescada } = await sb!.auth.refreshSession()
-        aplicarSesion(refrescada.session)
-      } else {
+      // `finally` NO es opcional aqui.
+      //
+      // Media web espera a que `loading` pase a false: si algo de aqui dentro
+      // LANZA -y `getSession` lanza cuando iOS bloquea el almacenamiento, y
+      // `refreshSession` cuando la red se corta- la promesa queda rechazada sin
+      // que nadie la recoja, `setLoading(false)` no llega nunca y la pagina se
+      // queda con la rueda girando PARA SIEMPRE. Es justo lo que estaban viendo
+      // algunos miembros al entrar a su cuenta.
+      //
+      // Ante un fallo se da la sesion por cerrada: enseñar la pantalla de
+      // iniciar sesion es recuperable -se vuelve a pulsar el boton-; una rueda
+      // eterna no lo es.
+      try {
+        const { data: sesionGuardada } = await sb!.auth.getSession()
+        if (sesionGuardada.session) {
+          aplicarSesion(sesionGuardada.session)
+        } else if (haySesionGuardada()) {
+          const { data: refrescada } = await sb!.auth.refreshSession()
+          aplicarSesion(refrescada.session)
+        } else {
+          aplicarSesion(null)
+        }
+      } catch {
         aplicarSesion(null)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     restaurar()
+
+    // Cinturon: pase lo que pase, a los ocho segundos se deja de esperar.
+    // Cubre incluso el caso de que una promesa no resuelva NI rechace, que es
+    // lo que ocurre cuando el navegador congela una peticion en segundo plano.
+    const corteCarga = setTimeout(() => setLoading(false), 8000)
 
     const { data: sub } = sb.auth.onAuthStateChange((_event: string, session: Session | null) => {
       aplicarSesion(session)
@@ -95,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       sub.subscription.unsubscribe()
       clearInterval(keepAlive)
+      clearTimeout(corteCarga)
     }
   }, [])
 

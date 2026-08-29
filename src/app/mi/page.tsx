@@ -62,29 +62,48 @@ export default function MiPage() {
       // Las cuatro consultas van A LA VEZ. Antes el perfil se pedia SOLO y las
       // demas esperaban a que volviera, aunque ninguna dependa de el: eran dos
       // viajes al servidor en serie con la pantalla en blanco.
-      const [p, ev, ch, comp] = await Promise.all([
+      // `allSettled` y no `all`.
+      //
+      // Con `Promise.all`, si UNA de las cuatro consultas falla, la promesa
+      // entera se rechaza: `setLoad(false)` no se ejecuta y la pantalla se
+      // queda con la rueda girando para siempre. Y no hacen falta las cuatro
+      // para pintar algo util: con el perfil basta para enseñar el saldo,
+      // aunque el historial no haya cargado.
+      const r = await Promise.allSettled([
         getMyProfile(),
         getPointEvents(),
         getChallenges(),
         getMyChallengeCompletions(),
       ])
       if (!alive) return
+      const valor = <T,>(i: number, porDefecto: T): T =>
+        r[i].status === 'fulfilled' ? ((r[i] as PromiseFulfilledResult<T>).value ?? porDefecto) : porDefecto
+
+      const p = valor<Profile | null>(0, null)
       setProfile(p)
-      setEvents(ev)
-      setChallenges(ch)
-      setCompletions(comp)
+      setEvents(valor(1, []))
+      setChallenges(valor(2, []))
+      setCompletions(valor(3, new Set<string>()))
 
       // Ya se puede pintar. El miembro vinculado se carga despues porque solo
       // afecta a la tarjeta de arriba, y hacerlo esperar dejaba la pagina en
       // blanco por un dato accesorio.
       setLoad(false)
 
-      // Este SI depende del perfil: hace falta su member_id.
+      // Este SI depende del perfil: hace falta su member_id. Va en su propio
+      // try porque llega DESPUES de pintar: si falla, la pagina ya se ve.
       if (p?.member_id) {
-        const m = await getMember(p.member_id)
-        if (alive && m) setMiembro(m)
+        try {
+          const m = await getMember(p.member_id)
+          if (alive && m) setMiembro(m)
+        } catch {
+          /* la tarjeta de arriba se queda sin foto; el resto funciona */
+        }
       }
-    })()
+    })().catch(() => {
+      // Red de seguridad final: pase lo que pase, la rueda para.
+      if (alive) setLoad(false)
+    })
     return () => {
       alive = false
     }
