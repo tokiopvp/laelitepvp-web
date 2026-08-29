@@ -86,6 +86,11 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* La primera consulta a la base sale nada mas hidratar. Adelantando
+            aqui el DNS y el saludo TLS, ese viaje empieza ya resuelto: en un
+            movil con datos son varias decimas de segundo antes de ver nada. */}
+        <link rel="preconnect" href="https://thlbxskhcrxyejpvhpyn.supabase.co" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://thlbxskhcrxyejpvhpyn.supabase.co" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />

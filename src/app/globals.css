@@ -327,3 +327,96 @@
   backdrop-filter: var(--cristal-tarjeta);
   -webkit-backdrop-filter: var(--cristal-tarjeta);
 }
+
+
+/* ============================================================
+ * TIPOGRAFIA DE TITULARES
+ *
+ * Oswald es condensada, y a tamaño grande el espaciado por defecto la deja
+ * suelta: los titulares se leian como texto grande, no como un marcador. Se
+ * aprieta la letra y se cierra el interlineado, que es lo que le da el registro
+ * de tablero de estadio que busca la marca.
+ *
+ * Va por CSS global y no clase a clase para que valga en TODA la web sin tocar
+ * treinta componentes, y para que lo nuevo salga bien sin acordarse.
+ * ============================================================ */
+.font-display {
+  letter-spacing: -0.015em;
+}
+
+h1.font-display,
+h2.font-display {
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+/* Las cifras -saldos, precios, K/D- van con ancho fijo SIEMPRE.
+ * Sin esto, un contador que pasa de 999 a 1.000 desplaza todo lo que tiene al
+ * lado, y en una tabla las columnas bailan al actualizarse. */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================================
+ * CABECERAS DE SECCION
+ *
+ * Un marcador de brasa a la izquierda del titulo. Es un detalle pequeño, pero
+ * es lo que separa "un texto encima de una lista" de "un bloque con identidad":
+ * el ojo encuentra donde empieza cada seccion sin leer.
+ *
+ * Solo en las cabeceras que ya tienen borde inferior, para no meterlo donde no
+ * hace falta.
+ * ============================================================ */
+.card-glow > header {
+  position: relative;
+}
+
+.card-glow > header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #e11d3c, rgba(225, 29, 60, 0));
+  opacity: 0.85;
+}
+
+/* ============================================================
+ * RENDIMIENTO DE LAS LISTAS CON SCROLL
+ *
+ * `content-visibility` le dice al navegador que no calcule el diseño de lo que
+ * esta fuera de vista. En las listas largas -veinte tareas, cincuenta puestos
+ * del ranking- eso quita trabajo real en cada repintado, que es justo donde se
+ * nota en un movil de gama baja.
+ *
+ * `contain-intrinsic-size` reserva el alto estimado para que la barra de scroll
+ * no pegue saltos al ir apareciendo el contenido.
+ * ============================================================ */
+.card-glow li,
+.card-glow article {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
+/* El scroll interno de los bloques, discreto: la barra por defecto de Windows
+ * es ancha y clara, y rompe el tono oscuro del sitio. */
+.card-glow ul::-webkit-scrollbar,
+.card-glow ol::-webkit-scrollbar,
+.card-glow > div::-webkit-scrollbar {
+  width: 6px;
+}
+.card-glow ul::-webkit-scrollbar-thumb,
+.card-glow ol::-webkit-scrollbar-thumb,
+.card-glow > div::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+.card-glow ul::-webkit-scrollbar-track,
+.card-glow ol::-webkit-scrollbar-track,
+.card-glow > div::-webkit-scrollbar-track {
+  background: transparent;
+}
