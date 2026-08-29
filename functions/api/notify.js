@@ -172,3 +172,25 @@ export async function onRequestPost(context) {
     return Response.json({ ok: false, error: String(e) })
   }
 }
+
+/**
+ * Diagnostico TEMPORAL. Dice que variables ve la funcion, nunca su contenido:
+ * solo `true`/`false` y la longitud, que basta para detectar un valor pegado a
+ * medias sin revelar nada aprovechable.
+ *
+ * BORRAR en cuanto las alertas esten confirmadas.
+ */
+export async function onRequestGet(context) {
+  const e = context.env
+  const ver = (n) => ({ presente: !!e[n], largo: e[n] ? String(e[n]).length : 0 })
+  return Response.json({
+    TELEGRAM_BOT_TOKEN: ver('TELEGRAM_BOT_TOKEN'),
+    TELEGRAM_CHAT_ID: ver('TELEGRAM_CHAT_ID'),
+    TELEGRAM_WEBHOOK_SECRET: ver('TELEGRAM_WEBHOOK_SECRET'),
+    SUPABASE_URL: ver('SUPABASE_URL'),
+    SUPABASE_SERVICE_ROLE_KEY: ver('SUPABASE_SERVICE_ROLE_KEY'),
+    DISCORD_WEBHOOK_URL: ver('DISCORD_WEBHOOK_URL'),
+    // Los nombres que SI llegan, para cazar una variable mal escrita.
+    nombres_visibles: Object.keys(e).filter((k) => typeof e[k] === 'string').sort(),
+  })
+}
