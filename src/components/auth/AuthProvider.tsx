@@ -104,7 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sb.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        // Siempre al dominio con www, nunca a `location.origin`.
+        //
+        // El sitio responde tambien en laelitepvp.com sin www, y son origenes
+        // distintos para el navegador. Si el login empezaba en uno y Discord
+        // devolvia al otro, el verificador PKCE quedaba guardado en el origen
+        // equivocado: el canje fallaba y la pantalla se colgaba en
+        // "Autenticando con Discord".
+        redirectTo: 'https://www.laelitepvp.com/auth/callback',
       },
     })
   }

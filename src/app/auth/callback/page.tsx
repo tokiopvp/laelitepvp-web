@@ -1,42 +1,173 @@
 'use client'
 
-import { useEffect, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 import { supabaseBrowser } from '@/lib/supabase/client'
+
+/**
+ * Vuelta de Discord: se canjea el código por una sesión.
+ *
+ * POR QUE ESTA PAGINA SE COLGABA
+ * ------------------------------
+ * La versión anterior hacía `await exchangeCodeForSession(code)` dentro de una
+ * función async sin `try/catch`. Si esa llamada LANZA -y lanza más de lo que
+ * parece: red que se corta al cambiar de wifi a datos, `localStorage` bloqueado
+ * en modo privado de iOS, respuesta inválida- la promesa quedaba rechazada sin
+ * que nadie la recogiera, y la pantalla se quedaba en "Autenticando con
+ * Discord…" PARA SIEMPRE. Sin mensaje, sin botón, sin salida.
+ *
+ * Ahora, pase lo que pase, esto termina en uno de tres sitios: dentro, en el
+ * inicio, o en una pantalla que explica qué pasó y deja reintentar.
+ *
+ * LOS CASOS QUE HAY QUE CUBRIR
+ * ----------------------------
+ *   · Discord devuelve un error (el usuario canceló) -> hay que decirlo.
+ *   · El código YA se canjeó (recargar, volver atrás, doble pestaña). Un código
+ *     PKCE vale UNA vez, así que el segundo intento falla... pero la sesión ya
+ *     existe. Antes esto echaba a alguien que en realidad estaba dentro.
+ *   · Falta el verificador (se empezó a entrar en otro navegador, típico cuando
+ *     Discord abre su navegador interno y devuelve al de fuera).
+ *   · Algo tarda demasiado -> se corta y se ofrece reintentar, en vez de dejar
+ *     la rueda girando.
+ */
+
+const ESPERA_MAX_MS = 15_000
 
 function CallbackInner() {
   const router = useRouter()
   const params = useSearchParams()
+  const [fallo, setFallo] = useState<string | null>(null)
 
   useEffect(() => {
     const sb = supabaseBrowser()
-    const code = params.get('code')
-    if (!sb || !code) {
-      router.replace('/')
+    if (!sb) {
+      setFallo('No se pudo conectar con el servidor.')
       return
     }
+
+    let vivo = true
+    // Red de seguridad: si nada resuelve en quince segundos, se muestra la
+    // salida. Es el cinturón que impide volver a colgarse pase lo que pase.
+    const corte = setTimeout(() => {
+      if (vivo) setFallo('La conexión está tardando demasiado.')
+    }, ESPERA_MAX_MS)
+
+    const terminar = (destino: string) => {
+      if (!vivo) return
+      clearTimeout(corte)
+      router.replace(destino)
+    }
+
+    const rendirse = (motivo: string) => {
+      if (!vivo) return
+      clearTimeout(corte)
+      setFallo(motivo)
+    }
+
     ;(async () => {
-      const { error } = await sb.auth.exchangeCodeForSession(code)
-      if (error) {
-        router.replace('/')
-        return
+      try {
+        // 1. Discord puede volver con un error explícito (normalmente porque
+        //    la persona pulsó "Cancelar").
+        const errUrl = params.get('error_description') || params.get('error')
+        if (errUrl) {
+          return rendirse(
+            /access_denied|cancel/i.test(errUrl)
+              ? 'Cancelaste el inicio de sesión.'
+              : decodeURIComponent(errUrl)
+          )
+        }
+
+        // 2. ¿Ya hay sesión? Pasa al recargar esta página o al volver atrás:
+        //    el código ya se usó, pero la persona SÍ está dentro. Antes se la
+        //    echaba al inicio como si hubiera fallado algo.
+        const { data: ya } = await sb.auth.getSession()
+        if (ya.session) return terminar(await destinoSegun(sb))
+
+        // 3. Sin código y sin sesión no hay nada que hacer aquí.
+        const code = params.get('code')
+        if (!code) return terminar('/')
+
+        // 4. El canje. Esta es la llamada que antes podía colgar la pantalla.
+        const { error } = await sb.auth.exchangeCodeForSession(code)
+        if (error) {
+          // Puede haber fallado porque otra pestaña se adelantó y ya canjeó el
+          // código. Se comprueba antes de dar el fallo por bueno.
+          const { data: tras } = await sb.auth.getSession()
+          if (tras.session) return terminar(await destinoSegun(sb))
+          return rendirse(
+            'No se pudo completar el acceso. Vuelve a intentarlo desde el mismo navegador.'
+          )
+        }
+
+        terminar(await destinoSegun(sb))
+      } catch (e) {
+        rendirse(
+          'Se cortó la conexión mientras entrábamos. Inténtalo otra vez.' +
+            (process.env.NODE_ENV === 'development' ? ` (${String(e)})` : '')
+        )
       }
-      const { data: u } = await sb.auth.getUser()
-      const uid = u.user?.id
-      let role: string | null = null
-      if (uid) {
-        const { data } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle()
-        role = (data?.role as string) ?? null
-      }
-      router.replace(role && role !== 'member' ? '/admin' : '/mi')
     })()
+
+    return () => {
+      vivo = false
+      clearTimeout(corte)
+    }
   }, [params, router])
+
+  if (fallo) {
+    return (
+      <div className="min-h-screen pt-24 flex items-center justify-center px-4">
+        <div className="card-glow p-8 text-center max-w-sm">
+          <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
+          <h1 className="font-display font-bold text-xl mb-2">No pudimos entrar</h1>
+          <p className="text-white/60 text-sm mb-6">{fallo}</p>
+          <div className="space-y-2">
+            <Link href="/mi" className="btn-primary w-full justify-center inline-flex">
+              Volver a intentarlo
+            </Link>
+            <Link
+              href="/"
+              className="block text-white/40 hover:text-white/70 text-sm transition-colors"
+            >
+              Ir al inicio
+            </Link>
+          </div>
+          <p className="text-white/25 text-xs mt-5 leading-snug">
+            Si se repite: abre <strong>www.laelitepvp.com</strong> en tu navegador normal —
+            el navegador que abre Discord dentro de la app a veces no guarda la sesión.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p className="text-white/60 font-display text-lg gradient-text">Autenticando con Discord...</p>
+      <p className="text-white/60 font-display text-lg gradient-text">Autenticando con Discord…</p>
     </div>
   )
+}
+
+/**
+ * A dónde mandar a alguien que acaba de entrar.
+ *
+ * El staff va al panel y el resto a su perfil. Si la consulta del rol falla, se
+ * va a `/mi`: quedarse fuera por no poder leer un rol sería absurdo cuando la
+ * sesión ya es válida.
+ */
+async function destinoSegun(sb: NonNullable<ReturnType<typeof supabaseBrowser>>) {
+  try {
+    const { data: u } = await sb.auth.getUser()
+    const uid = u.user?.id
+    if (!uid) return '/mi'
+    const { data } = await sb.from('profiles').select('role').eq('id', uid).maybeSingle()
+    const rol = (data?.role as string) ?? null
+    return rol && rol !== 'member' ? '/admin' : '/mi'
+  } catch {
+    return '/mi'
+  }
 }
 
 export default function AuthCallbackPage() {

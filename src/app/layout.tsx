@@ -99,6 +99,24 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         ) : null}
+        {/* UN SOLO DOMINIO: laelitepvp.com -> www.laelitepvp.com
+
+            El sitio responde en los DOS, y para el navegador son origenes
+            DISTINTOS: `localStorage` no se comparte entre ellos. Consecuencias
+            reales que se vieron en produccion:
+
+              · Quien entraba en www y luego abria el dominio sin www no tenia
+                sesion, y creia que la web le habia cerrado la cuenta.
+              · Si el login empezaba en un origen y volvia al otro, el
+                verificador PKCE quedaba en el origen equivocado, el canje
+                fallaba y la pantalla se quedaba en "Autenticando con Discord".
+
+            Va como guion en el <head>, ANTES de que React arranque y antes de
+            que se cree el cliente de Supabase: si esperase a la hidratacion, ya
+            se habria leido la sesion del origen equivocado. Se conservan ruta,
+            parametros y ancla para no romper el propio callback de Discord. */}
+        <script dangerouslySetInnerHTML={{ __html: `!function(){try{if(location.hostname==='laelitepvp.com'){location.replace('https://www.laelitepvp.com'+location.pathname+location.search+location.hash)}}catch(e){}}();` }} />
+
         {/* La gama se marca ANTES del primer pintado.
             Si esperamos a que React hidrate, el navegador ya ha pintado una vez
             con todos los efectos caros puestos: justo en los equipos lentos, que
