@@ -96,8 +96,11 @@ export default function SiteNav() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            {/* "Unirse" a secas era la palabra que causaba la confusion: la
+                gente lo leia como "crear mi cuenta". "Entrar al clan" dice lo
+                que de verdad hace. */}
             <Link href="/unirse" className="btn-primary px-5 py-2.5 text-sm inline-flex items-center gap-2">
-              Unirse
+              Entrar al clan
             </Link>
             {isAuthed && (
               <Link
@@ -150,7 +153,7 @@ export default function SiteNav() {
                 onClick={() => setOpen(false)}
                 className="btn-primary mt-2 justify-center"
               >
-                Unirse al Clan
+                Entrar al clan
               </Link>
               {isAuthed && (
                 <Link

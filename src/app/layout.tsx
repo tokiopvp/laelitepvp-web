@@ -7,7 +7,6 @@ import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
 import AjusteRendimiento from '@/components/layout/AjusteRendimiento'
-import AvisoVisita from '@/components/layout/AvisoVisita'
 
 // Cuerpo: Barlow. Buena legibilidad en pantallas chicas y de gama baja, con
 // mas caracter que las sans neutras de siempre.
@@ -114,8 +113,6 @@ export default function RootLayout({
         {/* Mide el equipo y marca la gama en el <html>: de ahi cuelgan
             las reglas que apagan lo caro en maquinas justas. */}
         <AjusteRendimiento />
-        {/* Te avisa al telefono cuando entra un visitante (una vez por sesion). */}
-        <AvisoVisita />
         <AnimatedBackground />
         <AuthProvider>
           <SiteNav />

@@ -9,30 +9,6 @@
 
 import { tg, esc, chatId, tecladoPedido } from '../_lib/telegram.js'
 
-/**
- * Ritmo de los avisos de visita.
- *
- * Sin freno, "alguien entro" se dispara en cada carga de cada pestaña y el chat
- * se vuelve ilegible: a los dos dias silencias el bot y te pierdes las VENTAS,
- * que es justo lo contrario de lo que se buscaba. Se avisa como mucho una vez
- * cada VISITA_MIN_MS por visitante, y el cliente ademas solo pide el aviso una
- * vez por sesion de navegador.
- */
-const VISITA_MIN_MS = 10 * 60 * 1000
-const visitasVistas = new Map()
-
-function frenoVisita(clave) {
-  const ahora = Date.now()
-  // Poda barata: sin esto el Map crece sin limite en la instancia del worker.
-  if (visitasVistas.size > 500) {
-    for (const [k, t] of visitasVistas) if (ahora - t > VISITA_MIN_MS) visitasVistas.delete(k)
-  }
-  const previo = visitasVistas.get(clave)
-  if (previo && ahora - previo < VISITA_MIN_MS) return false
-  visitasVistas.set(clave, ahora)
-  return true
-}
-
 function embedDiscord(body, esVenta) {
   const fields = [
     { name: '👤 Cliente', value: String(body.customer || '—'), inline: true },
@@ -73,8 +49,27 @@ function embedDiscord(body, esVenta) {
 async function aDiscord(env, body, esVenta) {
   const url = env.DISCORD_WEBHOOK_URL
   if (!url) return false
-  // Las visitas NO van a Discord: el canal es para atender ventas.
-  if (body.type === 'visit') return false
+  // Las postulaciones se atienden desde Telegram, que es donde esta el boton de
+  // WhatsApp. En Discord solo se deja constancia.
+  if (body.type === 'application') {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [{
+            title: '🎯 Nueva solicitud de ingreso',
+            description: `**${body.nickname || '—'}** · FF ID \`${body.free_fire_id || '—'}\``,
+            color: 0xe8b33c,
+            timestamp: new Date().toISOString(),
+          }],
+        }),
+      })
+      return res.ok
+    } catch {
+      return false
+    }
+  }
   try {
     const res = await fetch(url, {
       method: 'POST',
@@ -110,29 +105,54 @@ function textoVenta(body) {
   return lineas.join('\n')
 }
 
-function textoVisita(body) {
-  return [
-    '👀 <b>Alguien entró a la tienda</b>',
-    body.pagina ? `📄 ${esc(body.pagina)}` : null,
-    body.pais ? `🌎 ${esc(body.pais)}` : null,
-    body.referrer ? `↩️ ${esc(body.referrer)}` : null,
+/**
+ * Aviso de postulacion al clan.
+ *
+ * Lleva boton directo de WhatsApp porque lo que decide si alguien entra al clan
+ * es que le escriban PRONTO: una solicitud contestada al dia siguiente ya se
+ * fue a otro clan. El enlace `wa.me` abre la conversacion con el mensaje
+ * escrito, asi que atenderla es un toque.
+ */
+function textoPostulacion(b) {
+  const lineas = [
+    '🎯 <b>NUEVA SOLICITUD DE INGRESO</b>',
+    '',
+    `👤 <b>${esc(b.nickname)}</b>`,
+    `🎮 FF ID: <code>${esc(b.free_fire_id)}</code>`,
   ]
-    .filter(Boolean)
-    .join('\n')
+  if (b.rank) lineas.push(`🏅 Rango: ${esc(b.rank)}`)
+  if (b.age) lineas.push(`🎂 Edad: ${esc(b.age)}`)
+  if (b.whatsapp) lineas.push(`📱 ${esc(b.whatsapp)}`)
+  if (b.discord) lineas.push(`💬 Discord: ${esc(b.discord)}`)
+  if (b.experience) lineas.push('', `📝 ${esc(String(b.experience).slice(0, 400))}`)
+  lineas.push('', '<i>Revisa y responde en /admin/postulaciones</i>')
+  return lineas.join('\n')
+}
+
+function tecladoPostulacion(b) {
+  const filas = []
+  const digitos = String(b.whatsapp || '').replace(/\D/g, '')
+  if (digitos.length >= 8) {
+    const saludo = encodeURIComponent(
+      `Hola ${b.nickname || ''}, somos La Elite PvP. Vimos tu solicitud para entrar al clan.`
+    )
+    filas.push([{ text: '📱 Escribirle por WhatsApp', url: `https://wa.me/${digitos}?text=${saludo}` }])
+  }
+  filas.push([{ text: '🗂 Ver postulaciones', url: 'https://www.laelitepvp.com/admin/postulaciones' }])
+  return { inline_keyboard: filas }
 }
 
 async function aTelegram(env, body, esVenta) {
   const chat = chatId(env)
   if (!chat) return false
 
-  if (body.type === 'visit') {
+  if (body.type === 'application') {
     const r = await tg(env, 'sendMessage', {
       chat_id: chat,
-      text: textoVisita(body),
+      text: textoPostulacion(body),
       parse_mode: 'HTML',
-      // Sin sonido: es contexto, no una venta. El aviso de venta si suena.
-      disable_notification: true,
       link_preview_options: { is_disabled: true },
+      reply_markup: tecladoPostulacion(body),
     })
     return !!r.ok
   }
@@ -153,14 +173,6 @@ export async function onRequestPost(context) {
     const body = await context.request.json()
     const env = context.env
     const esVenta = body.type === 'purchase'
-
-    if (body.type === 'visit') {
-      // La IP del visitante solo se usa como clave del freno, en memoria y por
-      // unos minutos. No se guarda ni se manda a ningun sitio.
-      const clave =
-        context.request.headers.get('cf-connecting-ip') || body.sesion || 'anon'
-      if (!frenoVisita(clave)) return Response.json({ ok: true, skipped: 'rate-limit' })
-    }
 
     const [discord, telegram] = await Promise.all([
       aDiscord(env, body, esVenta),
