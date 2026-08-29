@@ -6,6 +6,7 @@ import { AdminGuard, AdminHeader } from '@/components/admin/AdminGuard'
 import { operarCasa, coinsCorto, precioTexto } from '@/lib/economia'
 import type { Tarea, ItemTienda, Casa } from '@/lib/economia'
 import TiendaAdmin from '@/components/admin/TiendaAdmin'
+import JugadoresAdmin from '@/components/admin/JugadoresAdmin'
 
 /**
  * Panel de la economía Elite Coin.
@@ -108,6 +109,33 @@ function EconomiaAdmin() {
     const c = sb()
     if (!c) return
     await c.from('redemptions').update({ estado, updated_at: new Date().toISOString() }).eq('id', id)
+    avisar('Marcado como entregado ✓')
+    cargar()
+  }
+
+  /**
+   * Devolver un canje: coins de vuelta, stock de vuelta y canje marcado.
+   *
+   * Va por una sola funcion en el servidor y no por tres llamadas desde aqui,
+   * porque si una fallara a mitad quedaria a medias: coins devueltas con el
+   * canje aun pendiente, o el canje cerrado sin devolver nada. Cualquiera de
+   * las dos acaba en una reclamacion.
+   */
+  const devolverCanje = async (id: string, item: string) => {
+    const razon = prompt(`Devolver "${item}". ¿Por qué?`, 'No se pudo entregar')
+    if (razon === null) return
+    const c = sb()
+    if (!c) return
+    const { data, error } = await c.rpc('admin_devolver_canje', {
+      p_canje: id,
+      p_motivo: razon,
+    })
+    const r = data as { ok?: boolean; error?: string; devuelto?: number }
+    avisar(
+      error || !r?.ok
+        ? error?.message || r?.error || 'No se pudo devolver.'
+        : `Devueltas ${coinsCorto(r.devuelto ?? 0)} coins ✓`
+    )
     cargar()
   }
 
@@ -183,6 +211,8 @@ function EconomiaAdmin() {
           ))}
         </div>
       </section>
+
+      <JugadoresAdmin avisar={avisar} />
 
       <TiendaAdmin items={items} onCambio={cargar} avisar={avisar} />
 
@@ -282,9 +312,10 @@ function EconomiaAdmin() {
                       className="text-xs px-3 py-1.5 rounded border border-elite-success/40 text-elite-success hover:bg-elite-success/10">
                       Entregado
                     </button>
-                    <button onClick={() => moverCanje(r.id, 'rechazado')}
-                      className="text-xs px-3 py-1.5 rounded border border-white/15 text-white/50 hover:bg-white/5">
-                      Rechazar
+                    <button onClick={() => devolverCanje(r.id, r.item_nombre)}
+                      className="text-xs px-3 py-1.5 rounded border border-elite-danger/40 text-elite-danger hover:bg-elite-danger/10"
+                      title="Devuelve las coins y repone el stock">
+                      Devolver coins
                     </button>
                   </>
                 )}
