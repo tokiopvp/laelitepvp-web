@@ -47,15 +47,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else setRole(null)
     }
 
-    // Restauracion robusta: si hay sesion guardada la usamos; si no,
-    // intentamos refrescar el token antes de dar la sesion por cerrada.
+    /** Si el navegador guarda algo de Supabase, o sea, si alguien inicio sesion aqui alguna vez. */
+    const haySesionGuardada = () => {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i)
+          if (k && k.startsWith('sb-') && k.includes('-auth-token')) return true
+        }
+      } catch {
+        // Modo privado o almacenamiento bloqueado: se asume que no hay nada.
+      }
+      return false
+    }
+
+    // Restauracion robusta: si hay sesion guardada la usamos; si no, se intenta
+    // refrescar el token SOLO cuando queda rastro de una sesion previa.
+    //
+    // Antes se refrescaba siempre. Para un visitante que nunca ha entrado, eso
+    // es una peticion que tarda ~0,6 s y SIEMPRE devuelve 400: bloqueaba la
+    // pantalla por un token que no existe. Y es redundante, porque `getSession`
+    // ya refresca solo cuando el token guardado esta caducado; si devuelve
+    // null, no hay nada que refrescar.
     const restaurar = async () => {
       const { data: sesionGuardada } = await sb!.auth.getSession()
       if (sesionGuardada.session) {
         aplicarSesion(sesionGuardada.session)
-      } else {
+      } else if (haySesionGuardada()) {
         const { data: refrescada } = await sb!.auth.refreshSession()
         aplicarSesion(refrescada.session)
+      } else {
+        aplicarSesion(null)
       }
       setLoading(false)
     }
