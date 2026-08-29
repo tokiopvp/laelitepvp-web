@@ -33,7 +33,7 @@ export default function TopCoins({
 }) {
   return (
     <section className="card-glow overflow-hidden flex flex-col">
-      <header className="p-4 sm:p-5 border-b border-white/[0.06]">
+      <header className="p-4 border-b border-white/[0.06]">
         <h2 className="font-display font-bold text-xl">Top Elite Coin</h2>
         <p className="text-white/40 text-xs mt-0.5">Quién manda en la comunidad</p>
       </header>
@@ -45,7 +45,7 @@ export default function TopCoins({
           Todavía no hay nadie. Sé el primero.
         </div>
       ) : (
-        <ol className="divide-y divide-white/[0.04] max-h-[520px] overflow-y-auto">
+        <ol className="divide-y divide-white/[0.04] max-h-[380px] overflow-y-auto">
           {filas.map((f, i) => {
             const mio = !!yo && f.id === yo
             return (

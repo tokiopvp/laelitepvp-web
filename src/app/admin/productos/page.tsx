@@ -10,7 +10,7 @@ import { formatUSD } from '@/lib/utils'
 const empty = {
   name: '', category: 'diamonds', diamonds_amount: 0, price_usd: 0,
   discount_percent: 0, stock: -1, image_url: '', description: '',
-  is_featured: false, is_active: true,
+  is_featured: false, is_active: true, precios_locales: {},
 }
 
 function ProductosAdmin() {
@@ -28,7 +28,24 @@ function ProductosAdmin() {
 
   const save = async () => {
     const sb = supabaseBrowser(); if (!sb) return
-    const payload = { ...form, diamonds_amount: +form.diamonds_amount, price_usd: +form.price_usd, discount_percent: +form.discount_percent, stock: +form.stock }
+    // El campo se edita como texto para poder escribirlo a mano; aqui se
+    // convierte. Si el JSON esta mal se avisa en vez de guardar basura que
+    // dejaria la tienda sin precios en ese pais.
+    let precios: Record<string, number> = {}
+    if (typeof form.precios_locales === 'string') {
+      const t = form.precios_locales.trim()
+      if (t) {
+        try {
+          precios = JSON.parse(t)
+        } catch {
+          setMsg('El precio por país no es válido. Ejemplo: {"PE": 30}')
+          return
+        }
+      }
+    } else {
+      precios = form.precios_locales ?? {}
+    }
+    const payload = { ...form, diamonds_amount: +form.diamonds_amount, price_usd: +form.price_usd, discount_percent: +form.discount_percent, stock: +form.stock, precios_locales: precios }
     if (editing) {
       const { error } = await sb.from('products').update(payload).eq('id', editing)
       if (error) { setMsg(error.message); return }
@@ -57,6 +74,18 @@ function ProductosAdmin() {
           <input className="input" type="number" placeholder="Stock (-1=inf)" value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} />
           <input className="input" placeholder="Imagen URL" value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} />
           <input className="input" placeholder="Descripción" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+          {/* Precio cerrado por pais. Manda sobre la conversion por tasa: en
+              algunos mercados el precio que aguanta la competencia no es el que
+              sale de multiplicar por el dolar, y ademas asi el importe no baila
+              cada vez que se mueve el tipo de cambio. */}
+          <input
+            className="input sm:col-span-3"
+            placeholder='Precio fijo por pais, ej: {"PE": 30, "CO": 40000} — vacio = se calcula con la tasa'
+            value={typeof form.precios_locales === 'string'
+              ? form.precios_locales
+              : JSON.stringify(form.precios_locales ?? {})}
+            onChange={(e) => setForm({ ...form, precios_locales: e.target.value })}
+          />
           <label className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={!!form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} /> Destacado</label>
           <label className="flex items-center gap-2 text-sm text-white/70"><input type="checkbox" checked={!!form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} /> Activo</label>
         </div>

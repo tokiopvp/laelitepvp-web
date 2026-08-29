@@ -124,7 +124,7 @@ export default function ComunidadPage() {
             /* Arriba y grande, no escondido al final de la página: sin cuenta
                enlazada nada de lo que hay debajo se puede cobrar, así que este
                es LA acción de la pantalla para quien llega nuevo. */
-            <>
+            <div className="flex flex-col items-center">
             <button
               onClick={signIn}
               className="mt-6 inline-flex items-center gap-3 rounded-xl px-6 py-3.5 font-display font-bold text-base text-white transition-transform hover:scale-[1.03] active:scale-100"
@@ -138,8 +138,8 @@ export default function ComunidadPage() {
               </svg>
               Únete con Discord y empieza a ganar
             </button>
-            <AvisoCorreoDiscord className="mt-4 max-w-sm mx-auto" />
-            </>
+            <AvisoCorreoDiscord className="mt-3 max-w-xs" />
+            </div>
           )}
         </motion.header>
 
@@ -158,31 +158,21 @@ export default function ComunidadPage() {
           </motion.div>
         )}
 
-        {/* 1. LO PRIMERO: el premio.
-            Quien entra por primera vez tiene que ver QUE se lleva antes que
-            nada; el ranking al lado responde a "¿quién va ganando?". El
-            gráfico, por bonito que sea, no explica nada que haga falta para
-            empezar, así que baja al final. */}
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 mb-6">
-          <TiendaCoins
-            items={tienda}
-            saldo={saldo}
-            autenticado={isAuthed}
-            esMiembro={esMiembro}
-            onCanje={tras}
-            onEntrar={signIn}
-          />
-          <TopCoins filas={top} yo={user?.id} cargando={cargando} />
-        </div>
+        {/* ORDEN DE LA PAGINA
+            1. Cómo se gana + qué se lleva + cómo. Los tres bloques que
+               convierten a alguien que llega nuevo, arriba y compactos.
+            2. Quién va ganando y qué está pasando ahora mismo.
+            3. El gráfico, al final: es el espejo de todo lo anterior, no una
+               instrucción, y ocupa mucho alto.
 
-        {/* 2. EL CIRCUITO, en cuatro pasos. Une la tienda de arriba con las
-            tareas de abajo: sin esto son dos bloques sueltos. */}
-        <div className="mb-6">
+            Los bloques largos llevan tope de altura y scroll propio: sin él,
+            siete premios y veinte tareas empujaban el ranking fuera de la
+            pantalla y había que deslizar muchísimo para llegar a lo importante. */}
+        <div className="mb-5">
           <ComoGano />
         </div>
 
-        {/* 3. LAS TAREAS: el "cómo" concreto. */}
-        <div className="mb-6">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Tareas
             tareas={tareas}
             progreso={progreso}
@@ -191,17 +181,22 @@ export default function ComunidadPage() {
             onCobro={tras}
             onEntrar={signIn}
           />
+          <TiendaCoins
+            items={tienda}
+            saldo={saldo}
+            autenticado={isAuthed}
+            esMiembro={esMiembro}
+            onCanje={tras}
+            onEntrar={signIn}
+          />
         </div>
 
-        {/* 3b. LO QUE ESTÁ PASANDO AHORA. Solo aparece si hay duelos. */}
-        <div className="mb-6">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5">
+          <TopCoins filas={top} yo={user?.id} cargando={cargando} />
           <Duelos />
         </div>
 
-        {/* 4. EL ESPEJO: el mercado moviéndose con lo que hace la comunidad.
-            Va al final porque es adorno, no instrucción. */}
         <GraficoMercado />
-
 
       </div>
     </div>

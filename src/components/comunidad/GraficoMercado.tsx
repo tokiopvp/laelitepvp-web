@@ -284,7 +284,7 @@ export default function GraficoMercado() {
   return (
     <section className="card-glow overflow-hidden">
       {/* Cabecera: precio y variación, el resumen de un vistazo */}
-      <header className="flex flex-wrap items-center gap-x-6 gap-y-3 p-4 sm:p-5 border-b border-white/[0.06]">
+      <header className="flex flex-wrap items-center gap-x-5 gap-y-2 p-4 border-b border-white/[0.06]">
         <div>
           <div className="flex items-center gap-2">
             <span className="font-display font-bold text-lg tracking-wide">ELITE / USD</span>
@@ -292,7 +292,7 @@ export default function GraficoMercado() {
               EN VIVO
             </span>
           </div>
-          <p className="text-white/40 text-xs mt-0.5">Mercado interno del clan · valor simbólico</p>
+          <p className="text-white/40 text-xs mt-0.5">Sube cuando la comunidad gana coins</p>
         </div>
 
         <div className="flex items-baseline gap-3">
@@ -329,7 +329,7 @@ export default function GraficoMercado() {
       {/* Gráfico */}
       <div
         ref={caja}
-        className="relative h-[280px] sm:h-[360px] w-full touch-pan-y"
+        className="relative h-[220px] sm:h-[300px] w-full touch-pan-y"
         onPointerMove={alMover}
         onPointerLeave={() => setCursor(null)}
       >
@@ -376,11 +376,11 @@ export default function GraficoMercado() {
 
       {/* Cinta de operaciones: quién movió el mercado y con qué */}
       {ops.length > 0 && (
-        <div className="border-t border-white/[0.06] px-4 sm:px-5 py-3">
+        <div className="border-t border-white/[0.06] px-4 py-2.5">
           <p className="text-[10px] uppercase tracking-widest text-white/30 mb-2 font-display">
             Últimas operaciones
           </p>
-          <ul className="space-y-1 max-h-32 overflow-y-auto">
+          <ul className="space-y-1 max-h-24 overflow-y-auto">
             {ops.map((o) => (
               <li key={o.id} className="flex items-center gap-2 text-xs font-mono">
                 <span

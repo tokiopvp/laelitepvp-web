@@ -104,8 +104,27 @@ export default function PagoStorePage() {
     [PAIS_INTERNACIONAL, ...PAISES].map((x) => [x.code, x.nombre])
   )
   const currency = pais.moneda
-  const methodsForCountry = methods.filter((m) => m.country === country || m.country === 'ALL')
-  const methodNames = methodsForCountry.length ? methodsForCountry.map((m) => m.name) : FALLBACK_METHODS
+  /**
+   * Métodos de pago del país. UNA sola fuente.
+   *
+   * Antes había DOS listas en paralelo: la tabla `payment_methods` -que
+   * alimentaba este desplegable y solo tenía los cinco métodos originales- y
+   * `pagos_json`, que es la que mantiene el bot y donde viven Yape, Plin, MACH,
+   * BBVA y Mercado Pago. Resultado: un peruano llegaba a la pantalla de pago y
+   * veía Yape y Plin, pero en el formulario solo podía elegir entre Binance y
+   * PayPal. Elegía uno que no iba a usar, y el pedido salía con el método
+   * equivocado.
+   *
+   * Ahora manda `pagos_json`, que es la que está al día. La tabla queda como
+   * respaldo por si esa lista viniera vacía.
+   */
+  const metodosDelPais = metodosPago.filter(
+    (m) => m.paises.length === 0 || m.paises.includes(country)
+  )
+  const methodNames = metodosDelPais.length
+    ? metodosDelPais.map((m) => m.nombre)
+    : methods.filter((m) => m.country === country || m.country === 'ALL').map((m) => m.name)
+          .concat(FALLBACK_METHODS).slice(0, 6)
 
   // Mantener el metodo de pago seleccionado dentro de los disponibles para el pais
   useEffect(() => {
@@ -129,6 +148,29 @@ export default function PagoStorePage() {
   // Si la moneda del pais no tiene tasa, se muestra en USD. Nunca se inventa
   // una conversion: un precio local mal calculado se cobra mal.
   const fmt = (usd: number) => formatearLocal(usd, pais, tasa)
+
+  /**
+   * Precio de UN producto, respetando el precio cerrado del país si lo tiene.
+   *
+   * `fmt` sigue existiendo para totales y sumas, donde no hay un producto
+   * concreto del que sacar el precio fijo.
+   */
+  const precioLocal = (p: Product, cantidad = 1) => {
+    const fijo = p.precios_locales?.[pais.code]
+    return formatearLocal(
+      p.price_usd * cantidad,
+      pais,
+      tasa,
+      fijo != null ? fijo * cantidad : null
+    )
+  }
+
+  /** El importe numérico que se cobra de verdad, para totales y avisos. */
+  const importe = (p: Product, cantidad = 1) => {
+    const fijo = p.precios_locales?.[pais.code]
+    if (fijo != null && tasa) return (fijo * cantidad) / tasa   // vuelta a USD
+    return p.price_usd * cantidad
+  }
 
   // Aqui solo se venden diamantes. Las pestañas de categoria y el buscador
   // ocupaban media pantalla para filtrar sobre una sola categoria con siete
@@ -155,6 +197,22 @@ export default function PagoStorePage() {
   }, [cart])
 
   const cartCount = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart])
+  /**
+   * Total en la moneda del país, sumando producto a producto.
+   *
+   * No se puede convertir el total en dólares: si un producto tiene precio
+   * cerrado en soles y otro no, la conversión del conjunto daría un importe
+   * que no coincide con lo que el cliente vio sumado en pantalla.
+   */
+  const totalLocalTexto = () => {
+    if (currency === 'USD' || !tasa) return null
+    const suma = Object.values(cart).reduce((a, it) => {
+      const fijo = it.product.precios_locales?.[pais.code]
+      return a + (fijo != null ? fijo * it.qty : it.product.price_usd * it.qty * tasa)
+    }, 0)
+    return formatearLocal(0, pais, tasa, suma)
+  }
+
   const cartTotal = useMemo(
     () => Object.values(cart).reduce((s, i) => s + i.qty * i.product.price_usd, 0),
     [cart]
@@ -203,7 +261,7 @@ export default function PagoStorePage() {
         payment_method: form.method,
         // Se deja constancia del pais y del precio LOCAL que vio el cliente:
         // la tasa se mueve, y a la hora de cobrar hay que respetar lo pactado.
-        notes: `${it.qty}x ${it.product.name} · ${pais.nombre} · ${fmt(it.qty * it.product.price_usd)}`,
+        notes: `${it.qty}x ${it.product.name} · ${pais.nombre} · ${precioLocal(it.product, it.qty)}`,
       })
       if (!error) {
         ok++
@@ -214,7 +272,7 @@ export default function PagoStorePage() {
           referencia: order_number,
           creado: Date.now(),
           totalUSD: +(it.qty * it.product.price_usd).toFixed(2),
-          totalLocal: currency === 'USD' ? null : fmt(it.qty * it.product.price_usd),
+          totalLocal: currency === 'USD' ? null : precioLocal(it.product, it.qty),
           metodo: form.method,
           detalle: `${it.qty}x ${it.product.name}`,
           estado: 'pending',
@@ -237,7 +295,7 @@ export default function PagoStorePage() {
       // Lo que de verdad necesitas para atenderlo: de donde es y cuanto paga
       // en SU moneda. Con el total en dolares hay que hacer la cuenta a mano.
       pais: pais.nombre,
-      total_local: currency === 'USD' ? null : fmt(cartTotal),
+      total_local: totalLocalTexto(),
       moneda: currency,
       whatsapp: form.discord.trim() || null,
       // Que compro exactamente: sin esto hay que abrir el panel para saber
@@ -395,11 +453,11 @@ export default function PagoStorePage() {
                   <div className="min-w-0">
                     {product.discount_percent > 0 && (
                       <span className="block text-[11px] text-white/30 line-through leading-none">
-                        {fmt(product.price_usd)}
+                        {precioLocal(product)}
                       </span>
                     )}
                     <span className="font-mono tabular-nums font-semibold text-elite-primary text-[15px] leading-tight break-all">
-                      {fmt(precio)}
+                      {precioLocal(product)}
                     </span>
                   </div>
                   <span
@@ -485,7 +543,7 @@ export default function PagoStorePage() {
                       <div key={product.id} className="card-glow p-3 flex items-center gap-3">
                         <div className="flex-1">
                            <p className="font-medium">{product.name}</p>
-                           <p className="text-elite-primary text-sm">{fmt(product.price_usd)} c/u</p>
+                           <p className="text-elite-primary text-sm">{precioLocal(product)} c/u</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => setQty(product.id, qty - 1)} className="w-7 h-7 rounded bg-elite-card border border-elite-border flex items-center justify-center"><Minus className="w-3 h-3" /></button>
@@ -498,7 +556,7 @@ export default function PagoStorePage() {
                   </div>
 
                   <div className="text-right font-display font-bold text-xl mb-4">
-                    Total: <span className="gradient-text">{fmt(cartTotal)}</span>
+                    Total: <span className="gradient-text">{totalLocalTexto() ?? fmt(cartTotal)}</span>
                   </div>
 
                   {/* Aparece justo cuando alguien ya eligio lo que quiere: es

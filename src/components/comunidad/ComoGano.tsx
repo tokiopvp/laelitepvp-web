@@ -54,32 +54,30 @@ const PASOS = [
 
 export default function ComoGano() {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-elite-primary/[0.07] via-transparent to-elite-gold/[0.05] p-5 sm:p-7">
+    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-elite-primary/[0.07] via-transparent to-elite-gold/[0.05] p-4 sm:p-5">
       {/* Rejilla de fondo: da profundidad sin competir con el contenido. */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.15]"
         style={{
           backgroundImage:
             'linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)',
-          backgroundSize: '38px 38px',
+          backgroundSize: '30px 30px',
         }}
       />
 
       <div className="relative">
-        <h2 className="font-display font-bold text-2xl sm:text-3xl text-center mb-1">
+        <h2 className="font-display font-bold text-lg sm:text-xl text-center mb-5">
           ¿Cómo gano <span className="text-elite-gold">Elite Coin</span>?
+          <span className="text-white/35 font-normal text-sm ml-2">Cuatro pasos.</span>
         </h2>
-        <p className="text-white/50 text-sm text-center mb-8">
-          Cuatro pasos. El primero ya lo estás dando.
-        </p>
 
         <div className="relative grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* La línea que une los pasos. Solo en escritorio: en móvil los pasos
               se apilan en dos columnas y una línea horizontal mentiría sobre
               el recorrido. */}
-          <div className="hidden lg:block absolute top-7 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+          <div className="hidden lg:block absolute top-5 left-[12%] right-[12%] h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
           <motion.div
-            className="hidden lg:block absolute top-7 h-px w-16 bg-gradient-to-r from-transparent via-elite-gold to-transparent"
+            className="hidden lg:block absolute top-5 h-px w-16 bg-gradient-to-r from-transparent via-elite-gold to-transparent"
             initial={{ left: '10%', opacity: 0 }}
             whileInView={{ left: ['10%', '82%'], opacity: [0, 1, 1, 0] }}
             viewport={{ once: true }}
@@ -100,21 +98,26 @@ export default function ComoGano() {
                 transition={{ delay: i * 0.16, duration: 0.45, ease: 'easeOut' }}
               >
                 <div
-                  className="mx-auto w-14 h-14 rounded-2xl grid place-items-center mb-3 border"
+                  className="mx-auto w-10 h-10 rounded-xl grid place-items-center mb-2 border"
                   style={{
                     borderColor: p.color + '55',
                     background: p.color + '14',
                     boxShadow: `0 0 28px ${p.color}22`,
                   }}
                 >
-                  <Icono className="w-6 h-6" style={{ color: p.color }} />
+                  <Icono className="w-5 h-5" style={{ color: p.color }} />
                 </div>
 
-                <span className="font-mono text-[10px] text-white/25">PASO {i + 1}</span>
-                <h3 className="font-display font-bold text-sm sm:text-base mt-0.5 mb-1">
+                <h3 className="font-display font-bold text-xs sm:text-sm mb-0.5">
+                  <span className="text-white/25 font-mono mr-1">{i + 1}.</span>
                   {p.titulo}
                 </h3>
-                <p className="text-white/45 text-xs leading-snug px-1">{p.texto}</p>
+                {/* El detalle solo en pantalla grande: en movil, cuatro parrafos
+                    seguidos ocupan media pantalla y nadie los lee. El titulo
+                    con su icono ya cuenta la secuencia. */}
+                <p className="hidden sm:block text-white/40 text-[11px] leading-snug px-1">
+                  {p.texto}
+                </p>
               </motion.div>
             )
           })}

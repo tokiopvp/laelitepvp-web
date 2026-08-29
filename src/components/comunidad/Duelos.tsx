@@ -47,9 +47,11 @@ export default function Duelos() {
     return off
   }, [cargar])
 
-  // Si nadie ha apostado nunca, el bloque no aparece: un panel vacío
-  // permanente le dice al visitante que esto está muerto.
-  if (cargado && duelos.length === 0) return null
+  // Sin duelos NO se esconde: ahora comparte fila con el ranking y dejarlo
+  // vacío abriría un hueco. Se convierte en invitación, que además anuncia una
+  // función que mucha gente no sabe que existe. Lo que no se hace es fingir
+  // actividad: se dice claramente que no hay ninguno abierto.
+  const vacio = cargado && duelos.length === 0
 
   return (
     <section className="card-glow overflow-hidden">
@@ -72,7 +74,17 @@ export default function Duelos() {
         </a>
       </header>
 
-      <ul className="divide-y divide-white/[0.04]">
+      {vacio ? (
+        <div className="p-6 text-center">
+          <Swords className="w-8 h-8 text-white/15 mx-auto mb-3" />
+          <p className="text-white/50 text-sm mb-1">Ningún duelo abierto ahora mismo.</p>
+          <p className="text-white/30 text-xs leading-snug">
+            Reta a quien quieras en el Discord: los dos ponéis las mismas coins y el que gana
+            se lo lleva todo.
+          </p>
+        </div>
+      ) : (
+      <ul className="divide-y divide-white/[0.04] max-h-[380px] overflow-y-auto">
         <AnimatePresence initial={false}>
           {duelos.map((d) => {
             const e = ESTADO[d.estado] ?? ESTADO.cancelada
@@ -125,6 +137,7 @@ export default function Duelos() {
           })}
         </AnimatePresence>
       </ul>
+      )}
     </section>
   )
 }

@@ -95,7 +95,7 @@ export default function Tareas({
 
   return (
     <section className="card-glow overflow-hidden">
-      <header className="p-4 sm:p-5 border-b border-white/[0.06] flex flex-wrap items-center gap-4 justify-between">
+      <header className="p-4 border-b border-white/[0.06] flex flex-wrap items-center gap-3 justify-between">
         <div>
           <h2 className="font-display font-bold text-xl">Tareas</h2>
           <p className="text-white/40 text-xs mt-0.5">Cada tarea suma coins y mueve el mercado</p>
@@ -130,7 +130,9 @@ export default function Tareas({
         </p>
       )}
 
-      <ul className="divide-y divide-white/[0.04]">
+      {/* Mismo tope que la tienda: veinte tareas seguidas son una pagina
+          entera de scroll antes de llegar al ranking. */}
+      <ul className="divide-y divide-white/[0.04] max-h-[330px] overflow-y-auto">
         {visibles.map((t) => {
           const p = progreso.get(t.id)
           const hecha = !!p?.cobrada

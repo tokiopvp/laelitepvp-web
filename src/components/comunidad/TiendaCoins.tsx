@@ -53,7 +53,7 @@ export default function TiendaCoins({
 
   return (
     <section className="card-glow overflow-hidden">
-      <header className="p-4 sm:p-5 border-b border-white/[0.06] flex items-end justify-between gap-4">
+      <header className="p-4 border-b border-white/[0.06] flex items-end justify-between gap-4">
         <div>
           <h2 className="font-display font-bold text-xl">Tienda Elite</h2>
           <p className="text-white/40 text-xs mt-0.5">Cambia tus coins por diamantes reales</p>
@@ -68,7 +68,12 @@ export default function TiendaCoins({
         )}
       </header>
 
-      <div className="divide-y divide-white/[0.04]">
+      {/* Altura acotada con scroll propio.
+          Siete premios seguidos empujan las tareas y el ranking fuera de la
+          pantalla, y la pagina obliga a deslizar mucho antes de ver lo
+          importante. Con tope, cada bloque ocupa lo suyo y el que quiera ver
+          mas premios desliza DENTRO de la tienda. */}
+      <div className="divide-y divide-white/[0.04] max-h-[330px] overflow-y-auto">
         {items.map((it) => {
           const c = COLOR_RAREZA[it.rareza]
           const bloqueado = it.solo_clan && !esMiembro
@@ -77,7 +82,7 @@ export default function TiendaCoins({
           const agotado = it.stock === 0
 
           return (
-            <article key={it.id} className={`flex items-center gap-3 px-4 py-3 ${c.fondo}`}>
+            <article key={it.id} className={`flex items-center gap-3 px-4 py-2.5 ${c.fondo}`}>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <h3 className="font-display font-bold text-sm leading-tight">{it.nombre}</h3>

@@ -26,7 +26,9 @@ import { Info } from 'lucide-react'
 export default function AvisoCorreoDiscord({ className = '' }: { className?: string }) {
   return (
     <p
-      className={`inline-flex items-start gap-1.5 text-left text-white/30 text-xs leading-snug ${className}`}
+      // `flex` y no `inline-flex`: dentro de una cabecera centrada, el inline
+      // se colocaba AL LADO del boton en pantallas anchas en vez de debajo.
+      className={`flex items-start gap-1.5 text-left text-white/30 text-xs leading-snug ${className}`}
     >
       <Info className="w-3.5 h-3.5 shrink-0 mt-px" />
       <span>

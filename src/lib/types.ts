@@ -115,6 +115,8 @@ export interface Product {
   description: string | null
   is_featured: boolean
   is_active: boolean
+  /** Precio cerrado por pais en su moneda: {"PE": 30}. Manda sobre la tasa. */
+  precios_locales?: Record<string, number> | null
   created_at: string
   updated_at: string
 }

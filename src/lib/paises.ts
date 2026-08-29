@@ -66,11 +66,23 @@ export function redondearLimpio(valor: number): number {
   return Math.ceil(valor / magnitud) * magnitud
 }
 
-export function formatearLocal(usd: number, pais: Pais, tasa: number | null): string {
-  if (pais.moneda === 'USD' || !tasa) {
+export function formatearLocal(
+  usd: number,
+  pais: Pais,
+  tasa: number | null,
+  /**
+   * Precio ya cerrado en la moneda del país, si el producto lo tiene fijado.
+   *
+   * Manda sobre la conversión: en algunos mercados el precio que aguanta la
+   * competencia no es el que sale de multiplicar por la tasa, y ademas asi el
+   * importe no baila cada vez que se mueve el tipo de cambio.
+   */
+  precioFijo?: number | null
+): string {
+  if (pais.moneda === 'USD' || (!tasa && precioFijo == null)) {
     return `$${usd.toFixed(2)}`
   }
-  const local = redondearLimpio(usd * tasa)
+  const local = precioFijo != null ? precioFijo : redondearLimpio(usd * (tasa as number))
   // Decimales consistentes: sin esto salian 'S/ 15.6' y 'S/ 146' en la misma
   // grilla, que en dinero se lee como un error. Por debajo de mil se muestran
   // los dos decimales; por encima estorban (Bs 16.556,00 no le sirve a nadie).
