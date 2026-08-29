@@ -67,9 +67,6 @@ export const metadata: Metadata = {
     description: 'Clan competitivo de Free Fire. Tops, rankings, miembros oficiales, torneos ganados.',
     images: ['/og-image.jpg'],
   },
-  verification: {
-    google: 'google-site-verification-code',
-  },
 }
 
 export const viewport: Viewport = {
