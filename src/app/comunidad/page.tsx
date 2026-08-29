@@ -13,6 +13,7 @@ import TiendaCoins from '@/components/comunidad/TiendaCoins'
 import Tareas from '@/components/comunidad/Tareas'
 import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
+import Duelos from '@/components/comunidad/Duelos'
 
 /**
  * Comunidad: el ranking, la tienda, las tareas y el mercado.
@@ -186,6 +187,11 @@ export default function ComunidadPage() {
             onCobro={tras}
             onEntrar={signIn}
           />
+        </div>
+
+        {/* 3b. LO QUE ESTÁ PASANDO AHORA. Solo aparece si hay duelos. */}
+        <div className="mb-6">
+          <Duelos />
         </div>
 
         {/* 4. EL ESPEJO: el mercado moviéndose con lo que hace la comunidad.

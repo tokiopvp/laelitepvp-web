@@ -339,3 +339,47 @@ export const COLOR_RAREZA: Record<Rareza, { borde: string; texto: string; fondo:
   epico:      { borde: 'border-fuchsia-400/35',texto: 'text-fuchsia-300', fondo: 'bg-fuchsia-500/[0.07]', etiqueta: 'Épico' },
   legendario: { borde: 'border-amber-400/45',  texto: 'text-amber-300',   fondo: 'bg-amber-400/[0.08]', etiqueta: 'Legendario' },
 }
+
+// ------------------------------------------------------------
+// Apuestas PvP
+// ------------------------------------------------------------
+
+export interface Duelo {
+  id: string
+  creador_nombre: string
+  rival_nombre: string | null
+  monto: number
+  estado: 'abierta' | 'jugando' | 'resuelta' | 'cancelada'
+  ganador_id: string | null
+  creador_id: string
+  rival_id: string | null
+  created_at: string
+  resuelta_en: string | null
+}
+
+/**
+ * Duelos que están pasando o acaban de pasar.
+ *
+ * Se leen directamente de `bets` con la clave anónima: la tabla es de lectura
+ * pública a propósito. Ver quién se está jugando qué es media gracia del
+ * asunto, y lo que empuja a alguien a abrir su primer reto.
+ *
+ * Nada de esto permite MOVER una apuesta: crear, aceptar y resolver son
+ * funciones que solo puede llamar el bot con la clave de servicio.
+ */
+export async function getDuelos(limite = 8): Promise<Duelo[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('bets')
+    .select(
+      'id,creador_nombre,rival_nombre,monto,estado,ganador_id,creador_id,rival_id,created_at,resuelta_en'
+    )
+    // Lo vivo primero y lo recién resuelto después: una apuesta cancelada no
+    // le interesa a nadie y solo ocuparía sitio.
+    .in('estado', ['abierta', 'jugando', 'resuelta'])
+    .order('created_at', { ascending: false })
+    .limit(limite)
+  if (error || !data) return []
+  return (data as any[]).map((d) => ({ ...d, monto: Number(d.monto) }))
+}
