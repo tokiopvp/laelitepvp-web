@@ -14,6 +14,7 @@ import Tareas from '@/components/comunidad/Tareas'
 import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
 import Duelos from '@/components/comunidad/Duelos'
+import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 /**
  * Comunidad: el ranking, la tienda, las tareas y el mercado.
@@ -123,6 +124,7 @@ export default function ComunidadPage() {
             /* Arriba y grande, no escondido al final de la página: sin cuenta
                enlazada nada de lo que hay debajo se puede cobrar, así que este
                es LA acción de la pantalla para quien llega nuevo. */
+            <>
             <button
               onClick={signIn}
               className="mt-6 inline-flex items-center gap-3 rounded-xl px-6 py-3.5 font-display font-bold text-base text-white transition-transform hover:scale-[1.03] active:scale-100"
@@ -136,6 +138,8 @@ export default function ComunidadPage() {
               </svg>
               Únete con Discord y empieza a ganar
             </button>
+            <AvisoCorreoDiscord className="mt-4 max-w-sm mx-auto" />
+            </>
           )}
         </motion.header>
 

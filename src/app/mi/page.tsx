@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMember, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
 import type { Profile, PointEvent, Member } from '@/lib/types'
 import type { Challenge } from '@/lib/data'
+import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 const METRIC_LABEL: Record<string, string> = {
   kd_ratio: 'K/D',
@@ -159,6 +160,7 @@ export default function MiPage() {
           <button onClick={() => signIn()} className="btn-primary justify-center w-full">
             <LogIn className="w-4 h-4" /> Entrar con Discord
           </button>
+          <AvisoCorreoDiscord className="mt-4" />
         </motion.div>
       </div>
     )
