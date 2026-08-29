@@ -1,4 +1,4 @@
-// Aviso de pedidos y actividad de la tienda a Discord y a Telegram.
+// Avisos al movil: SOLO ventas y solicitudes de ingreso al clan.
 //
 // El webhook de Discord vive en DISCORD_WEBHOOK_URL y el bot de Telegram en
 // TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID, siempre como variables de entorno de
@@ -9,7 +9,7 @@
 
 import { tg, esc, chatId, tecladoPedido } from '../_lib/telegram.js'
 
-function embedDiscord(body, esVenta) {
+function embedDiscord(body) {
   const fields = [
     { name: '👤 Cliente', value: String(body.customer || '—'), inline: true },
     { name: '🎮 FF ID', value: String(body.ffid || '—'), inline: true },
@@ -37,9 +37,9 @@ function embedDiscord(body, esVenta) {
     inline: false,
   })
   return {
-    title: esVenta ? '🛒 Nuevo Pedido · La Elite PvP' : '⚡ Actividad · La Elite PvP',
-    // Brasa para una venta, ceniza para el resto (identidad del sitio).
-    color: esVenta ? 0xff5a1f : 0x8e8175,
+    title: '🛒 Nuevo Pedido · La Elite PvP',
+    // Brasa: el color de la marca para lo que urge.
+    color: 0xff5a1f,
     fields,
     footer: { text: 'La Elite PvP · PagoStore' },
     timestamp: new Date().toISOString(),
@@ -70,13 +70,14 @@ async function aDiscord(env, body, esVenta) {
       return false
     }
   }
+  if (!esVenta) return false
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        content: esVenta ? '@here nuevo pedido en la tienda' : null,
-        embeds: [embedDiscord(body, esVenta)],
+        content: '@here nuevo pedido en la tienda',
+        embeds: [embedDiscord(body)],
       }),
     })
     return res.ok
@@ -157,13 +158,20 @@ async function aTelegram(env, body, esVenta) {
     return !!r.ok
   }
 
+  // SOLO ventas y solicitudes de ingreso.
+  //
+  // Antes cualquier otro tipo caia en un aviso generico de "Actividad", y eso
+  // convertia el chat en ruido: cuando todo avisa, nada avisa, y la venta -que
+  // es lo unico que urge- queda enterrada entre mensajes que nadie lee.
+  if (!esVenta) return false
+
   const refs = Array.isArray(body.orders) ? body.orders : [body.orders].filter(Boolean)
   const r = await tg(env, 'sendMessage', {
     chat_id: chat,
-    text: esVenta ? textoVenta(body) : `⚡ <b>Actividad</b>\n${esc(body.action || body.type)}`,
+    text: textoVenta(body),
     parse_mode: 'HTML',
     link_preview_options: { is_disabled: true },
-    ...(esVenta && refs[0] ? { reply_markup: tecladoPedido(refs[0], body.ffid) } : {}),
+    ...(refs[0] ? { reply_markup: tecladoPedido(refs[0], body.ffid) } : {}),
   })
   return !!r.ok
 }
