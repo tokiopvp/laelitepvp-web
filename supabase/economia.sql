@@ -138,10 +138,10 @@ INSERT INTO shop_items (nombre, descripcion, precio_coins, diamantes, valor_usd,
 SELECT * FROM (VALUES
   -- El gancho: barato, diario, y suficiente para que enganche el circuito de
   -- recompensa. Sin esto la tienda parece inalcanzable y nadie juega.
-  ('110 Diamantes',   'El premio de cada día. Una tarea, un canje, diamantes.', 8000::bigint,     110,  1.00::numeric,  'basura',      -1, 1, false, 1),
-  ('310 Diamantes',   'Sube un escalón. Se nota en la tienda del juego.',       22000::bigint,    310,  2.50::numeric,  'normal',      -1, 1, false, 2),
-  ('Pase Elite',      'El pase de temporada completo, pagado por el clan.',     60000::bigint,    NULL, 6.00::numeric,  'normal',      -1, 0, false, 3),
-  ('1.000 Diamantes', 'Recarga seria. Ya estás jugando en serio.',              70000::bigint,    1000, 8.00::numeric,  'epico',       -1, 0, false, 4),
+  ('110 Diamantes',   'El premio de cada día. Una tarea, un canje, diamantes.', 2500::bigint,     110,  1.00::numeric,  'basura',      -1, 1, false, 1),
+  ('310 Diamantes',   'Sube un escalón. Se nota en la tienda del juego.',       7000::bigint,    310,  2.50::numeric,  'normal',      -1, 1, false, 2),
+  ('Pase Elite',      'El pase de temporada completo, pagado por el clan.',     25000::bigint,    NULL, 6.00::numeric,  'normal',      -1, 0, false, 3),
+  ('1.000 Diamantes', 'Recarga seria. Ya estás jugando en serio.',              40000::bigint,    1000, 8.00::numeric,  'epico',       -1, 0, false, 4),
   ('2.000 Diamantes', 'Para los que viven en la sala de voz.',                  135000::bigint,   2000, 16.00::numeric, 'epico',       -1, 0, true,  5),
   ('6.000 Diamantes', 'El premio gordo. Honra al clan y el clan te paga.',      380000::bigint,   6000, 48.00::numeric, 'legendario',  -1, 0, true,  6),
   ('Premio 100 USD',  'Cien dólares. El techo. Un millón de Elite Coin.',       1000000::bigint,  NULL, 100.00::numeric,'legendario',  -1, 0, true,  7)
