@@ -192,5 +192,11 @@ export async function onRequestGet(context) {
     DISCORD_WEBHOOK_URL: ver('DISCORD_WEBHOOK_URL'),
     // Los nombres que SI llegan, para cazar una variable mal escrita.
     nombres_visibles: Object.keys(e).filter((k) => typeof e[k] === 'string').sort(),
+    // Que despliegue esta sirviendo el dominio. No son secretos: identifican el
+    // proyecto y la rama, que es justo lo que hace falta para saber en que
+    // lista de variables hay que escribir.
+    proyecto: e.CF_PAGES_URL || null,
+    rama: e.CF_PAGES_BRANCH || null,
+    commit: (e.CF_PAGES_COMMIT_SHA || '').slice(0, 7) || null,
   })
 }
