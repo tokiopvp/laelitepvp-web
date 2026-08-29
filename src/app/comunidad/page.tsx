@@ -12,6 +12,7 @@ import TopCoins from '@/components/comunidad/TopCoins'
 import TiendaCoins from '@/components/comunidad/TiendaCoins'
 import Tareas from '@/components/comunidad/Tareas'
 import GraficoMercado from '@/components/comunidad/GraficoMercado'
+import ComoGano from '@/components/comunidad/ComoGano'
 
 /**
  * Comunidad: el ranking, la tienda, las tareas y el mercado.
@@ -109,7 +110,7 @@ export default function ComunidadPage() {
             <span className="text-elite-primary font-semibold">La Elite PvP</span>.
           </p>
 
-          {isAuthed && (
+          {isAuthed ? (
             <div className="inline-flex items-center gap-2 mt-5 px-4 py-2 rounded-full bg-white/[0.04] border border-white/10">
               <Coins className="w-4 h-4 text-elite-gold" />
               <span className="font-mono font-bold text-elite-gold tabular-nums">
@@ -117,6 +118,23 @@ export default function ComunidadPage() {
               </span>
               <span className="text-white/40 text-sm">Elite Coin</span>
             </div>
+          ) : (
+            /* Arriba y grande, no escondido al final de la página: sin cuenta
+               enlazada nada de lo que hay debajo se puede cobrar, así que este
+               es LA acción de la pantalla para quien llega nuevo. */
+            <button
+              onClick={signIn}
+              className="mt-6 inline-flex items-center gap-3 rounded-xl px-6 py-3.5 font-display font-bold text-base text-white transition-transform hover:scale-[1.03] active:scale-100"
+              style={{
+                background: 'linear-gradient(135deg,#5865F2,#4148c4)',
+                boxShadow: '0 10px 30px rgba(88,101,242,.35)',
+              }}
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M20.317 4.369A19.79 19.79 0 0 0 15.885 3c-.213.382-.46.898-.63 1.307a18.27 18.27 0 0 0-5.51 0A12.6 12.6 0 0 0 9.11 3 19.74 19.74 0 0 0 4.677 4.37C1.83 8.59 1.05 12.7 1.47 16.75a19.9 19.9 0 0 0 6.04 3.04c.49-.66.927-1.36 1.302-2.096-.716-.27-1.4-.6-2.043-.998.171-.125.338-.256.5-.39a14.2 14.2 0 0 0 12.142 0c.164.136.33.267.5.39-.644.4-1.327.73-2.044.999.375.736.81 1.436 1.302 2.096a19.86 19.86 0 0 0 6.046-3.04c.47-4.67-.787-8.74-3.135-12.381ZM8.52 14.33c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.955 2.42-2.157 2.42Zm6.96 0c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.946 2.42-2.157 2.42Z" />
+              </svg>
+              Únete con Discord y empieza a ganar
+            </button>
           )}
         </motion.header>
 
@@ -135,18 +153,12 @@ export default function ComunidadPage() {
           </motion.div>
         )}
 
-        {/* ARRIBA: el mercado y el ranking, juntos.
-            El gráfico es lo que hace que la página parezca viva al abrirla, y
-            el top responde de inmediato a "¿quién va ganando?". Van lado a lado
-            porque cuentan la misma historia: el gráfico sube cuando esos
-            nombres ganan coins. */}
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,340px)] gap-6 mb-6">
-          <GraficoMercado />
-          <TopCoins filas={top} yo={user?.id} cargando={cargando} />
-        </div>
-
-        {/* ABAJO: qué se lleva y cómo se consigue, en paralelo. */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        {/* 1. LO PRIMERO: el premio.
+            Quien entra por primera vez tiene que ver QUE se lleva antes que
+            nada; el ranking al lado responde a "¿quién va ganando?". El
+            gráfico, por bonito que sea, no explica nada que haga falta para
+            empezar, así que baja al final. */}
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,320px)] gap-6 mb-6">
           <TiendaCoins
             items={tienda}
             saldo={saldo}
@@ -155,6 +167,17 @@ export default function ComunidadPage() {
             onCanje={tras}
             onEntrar={signIn}
           />
+          <TopCoins filas={top} yo={user?.id} cargando={cargando} />
+        </div>
+
+        {/* 2. EL CIRCUITO, en cuatro pasos. Une la tienda de arriba con las
+            tareas de abajo: sin esto son dos bloques sueltos. */}
+        <div className="mb-6">
+          <ComoGano />
+        </div>
+
+        {/* 3. LAS TAREAS: el "cómo" concreto. */}
+        <div className="mb-6">
           <Tareas
             tareas={tareas}
             progreso={progreso}
@@ -165,13 +188,11 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {!isAuthed && (
-          <div className="mt-8 text-center">
-            <button onClick={signIn} className="btn-primary">
-              Entrar con Discord y empezar a ganar
-            </button>
-          </div>
-        )}
+        {/* 4. EL ESPEJO: el mercado moviéndose con lo que hace la comunidad.
+            Va al final porque es adorno, no instrucción. */}
+        <GraficoMercado />
+
+
       </div>
     </div>
   )

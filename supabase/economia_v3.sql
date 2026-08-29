@@ -266,3 +266,41 @@ SELECT market_tick();
 
 SELECT nombre, coins FROM house_account;
 SELECT count(*) AS velas_generadas FROM market_candles;
+
+-- ============================================================
+-- 6) MAS RECORRIDO PARA LA COMUNIDAD
+--
+-- Los topes de arranque (240 coins/dia de voz, 40 de mensajes) fueron
+-- deliberadamente prudentes, pero dejaban al que no es del clan con muy poco
+-- que hacer: tres tareas diarias y a esperar. El objetivo ahora es el
+-- contrario, que el servidor este lleno a todas horas, asi que se abre la mano
+-- donde la actividad es REAL (estar en voz con gente, escribir) y se mantiene
+-- el freno donde empieza el abuso.
+--
+-- Sigue habiendo tope: sin el, dejar el micro abierto toda la noche imprime
+-- coins y los premios dejan de significar nada. Lo que sube es el techo, no
+-- desaparece.
+-- ============================================================
+UPDATE settings SET value = '720' WHERE key = 'eco.discord_voz_max_dia';   -- 12 h pagadas
+UPDATE settings SET value = '150' WHERE key = 'eco.discord_msg_max_dia';   -- ~75 mensajes
+UPDATE settings SET value = '45'  WHERE key = 'eco.discord_msg_cooldown';  -- algo mas suelto
+
+-- Escalera de voz: recompensa creciente por seguir conectado el mismo dia.
+-- Es lo que convierte "me paso un rato" en "me quedo": cada tramo que se cierra
+-- deja el siguiente a la vista.
+INSERT INTO tasks (titulo, descripcion, metrica, objetivo, coins, periodo, publico, nivel, icono, orden)
+SELECT * FROM (VALUES
+  ('Primer round',     'Pasa 10 minutos en un canal de voz.',            'discord_voz_min',  10,   12,   'diaria',  'todos', 1, '🎧', 7),
+  ('En caliente',      'Llega a 1 hora de voz hoy.',                     'discord_voz_min',  60,   60,   'diaria',  'todos', 2, '🔥', 8),
+  ('Sesión larga',     'Llega a 3 horas de voz hoy.',                    'discord_voz_min',  180,  200,  'diaria',  'todos', 3, '🌙', 9),
+  ('Maratón',          'Llega a 6 horas de voz hoy.',                    'discord_voz_min',  360,  450,  'diaria',  'todos', 5, '☕', 10),
+  ('Conversador',      'Escribe 25 mensajes hoy.',                       'discord_msgs',     25,   40,   'diaria',  'todos', 2, '🗣️', 11),
+  ('Alma de la sala',  'Escribe 60 mensajes hoy.',                       'discord_msgs',     60,   90,   'diaria',  'todos', 3, '🎤', 12),
+  ('Fijo del server',  'Acumula 10 horas de voz en la semana.',          'discord_voz_min',  600,  500,  'semanal', 'todos', 5, '🏆', 13),
+  ('Inquilino',        'Acumula 25 horas de voz en la semana.',          'discord_voz_min',  1500, 1500, 'semanal', 'todos', 7, '👑', 14),
+  ('Voz del clan',     'Escribe 500 mensajes en la semana.',             'discord_msgs',     500,  600,  'semanal', 'todos', 6, '📣', 15)
+) AS v(titulo, descripcion, metrica, objetivo, coins, periodo, publico, nivel, icono, orden)
+WHERE NOT EXISTS (SELECT 1 FROM tasks WHERE titulo = 'Primer round');
+
+SELECT titulo, coins, periodo, objetivo FROM tasks
+ WHERE publico = 'todos' AND activa ORDER BY orden;

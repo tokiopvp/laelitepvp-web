@@ -7,7 +7,7 @@ import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, C
 import { Product, ProductCategory } from '@/lib/types'
 import { getProducts, createOrder, logActivity, notifyDiscord, getPaymentMethods, getSetting, getRates, getMetodosPago } from '@/lib/data'
 import { formatUSD, cn } from '@/lib/utils'
-import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais } from '@/lib/paises'
+import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais, banderaDe } from '@/lib/paises'
 import type { PaymentMethod } from '@/lib/types'
 import type { MetodoPago } from '@/lib/data'
 import PantallaPago from '@/components/store/PantallaPago'
@@ -39,7 +39,6 @@ export default function PagoStorePage() {
   // un cliente rapido alcanzaba a leer una cifra que no existe.
   const [products, setProducts] = useState<Product[]>([])
   const [cargandoProductos, setCargandoProductos] = useState(true)
-  const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
   const [cart, setCart] = useState<Cart>({})
   const rehidratado = useRef(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -49,7 +48,6 @@ export default function PagoStorePage() {
   const [ultimoTotal, setUltimoTotal] = useState(0)
   const [metodosPago, setMetodosPago] = useState<MetodoPago[]>([])
   const [form, setForm] = useState({ name: '', ffid: '', discord: '', method: FALLBACK_METHODS[0] })
-  const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [country, setCountry] = useState<string>('ALL')
@@ -132,11 +130,13 @@ export default function PagoStorePage() {
   // una conversion: un precio local mal calculado se cobra mal.
   const fmt = (usd: number) => formatearLocal(usd, pais, tasa)
 
-  const filtered = products.filter(
-    (p) =>
-      p.category === activeCat &&
-      (search.trim() === '' || p.name.toLowerCase().includes(search.trim().toLowerCase()))
-  )
+  // Aqui solo se venden diamantes. Las pestañas de categoria y el buscador
+  // ocupaban media pantalla para filtrar sobre una sola categoria con siete
+  // productos: no elegian nada y empujaban el catalogo por debajo del pliegue.
+  //
+  // Se sigue filtrando por categoria en el DATO -no en la interfaz- por si en
+  // el panel se crea algo que no es una recarga: no debe colarse en la tienda.
+  const filtered = products.filter((p) => p.category === 'diamonds')
 
   // Cada cambio del carrito se guarda: recargar, tocar atras o que el movil
   // descargue la pestaña ya no vacia la compra.
@@ -265,29 +265,28 @@ export default function PagoStorePage() {
       </div>
 
       <div className="section-container">
-        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-primary/10 border border-elite-primary/30 mb-4">
-            <ShoppingCart className="w-4 h-4 text-elite-primary" />
-            <span className="text-sm font-medium text-elite-primary">PAGOSTORE PREMIUM</span>
-          </div>
-          <h1 className="font-display font-bold text-4xl sm:text-5xl gradient-text mb-2">Tienda de Diamantes</h1>
-          <p className="text-white/60">Entrega automática por el bot • Mejor precio • Soporte 24/7</p>
+        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
+          <h1 className="font-display font-bold text-3xl sm:text-4xl gradient-text mb-1">Tienda de Diamantes</h1>
+          <p className="text-white/50 text-sm">Entrega rápida • Mejor precio • Soporte 24/7</p>
         </motion.div>
 
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-6">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-elite-border px-3 py-2 bg-elite-card">
-            <span className="text-white/50 text-sm">País:</span>
+        {/* Una sola fila: bandera, país y la tasa. Es todo lo que hay que
+            elegir aquí, porque lo único que se vende son diamantes. */}
+        <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 mb-6 text-sm">
+          <div className="inline-flex items-center gap-1.5 rounded-lg border border-elite-border px-2.5 py-1.5 bg-elite-card">
+            <span className="text-base leading-none" aria-hidden>{banderaDe(pais.code)}</span>
             <select
               value={country}
               onChange={(e) => {
                 setCountry(e.target.value)
                 if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
               }}
-              className="bg-transparent text-sm font-bold text-white focus:outline-none"
+              className="bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer"
+              aria-label="Elige tu país"
             >
               {countries.map((c) => (
                 <option key={c} value={c} className="bg-elite-dark">
-                  {COUNTRY_LABEL[c] ?? c}
+                  {banderaDe(c)}  {COUNTRY_LABEL[c] ?? c}
                 </option>
               ))}
             </select>
@@ -304,37 +303,6 @@ export default function PagoStorePage() {
           {currency === 'USD' && (
             <span className="text-white/50 text-xs">Precios en USD</span>
           )}
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-3 mb-10">
-          {(Object.keys(categoryConfig) as ProductCategory[]).map((cat) => {
-            const cfg = categoryConfig[cat]
-            const Icon = cfg.icon
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCat(cat)}
-                className={cn(
-                  'flex items-center gap-2 px-5 py-3 rounded-xl font-medium transition-all',
-                  activeCat === cat
-                    ? 'bg-gradient-to-r from-elite-primary to-elite-secondary text-white shadow-lg shadow-elite-primary/25'
-                    : 'bg-elite-card border border-elite-border text-white/70 hover:border-elite-primary/50'
-                )}
-              >
-                <Icon className="w-4 h-4" />
-                {cfg.label}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="flex justify-center mb-8">
-          <input
-            className="input max-w-md w-full"
-            placeholder="🔍 Buscar producto..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
         </div>
 
         {/* Va ANTES del catalogo: quien vuelve con una compra a medias tiene

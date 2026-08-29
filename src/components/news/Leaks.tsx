@@ -26,7 +26,33 @@ function haceCuanto(ts: number): string {
   return d === 1 ? 'ayer' : `hace ${d} días`
 }
 
+/**
+ * Si dos textos son el mismo titular con adornos distintos.
+ *
+ * Se normaliza acentos, mayusculas, puntuacion y el sufijo del medio
+ * ("… - Vandal"), porque la repeticion casi nunca es literal.
+ */
+function mismoTexto(a: string, b: string): boolean {
+  const limpiar = (t: string) =>
+    t
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/\s+[-|–]\s+[^-|–]{2,20}$/, '')
+      .replace(/[^a-z0-9]/g, '')
+  const x = limpiar(a)
+  const y = limpiar(b)
+  if (!x || !y) return false
+  // Uno contenido en el otro tambien cuenta: a veces el resumen es el titular
+  // mas dos palabras.
+  return x === y || x.startsWith(y) || y.startsWith(x)
+}
+
 export default function Leaks() {
+  // Portadas que dieron error al cargar. Se guardan por enlace para
+  // dibujar el respaldo en su sitio sin descuadrar la rejilla.
+  const [rotas, setRotas] = useState<Set<string>>(new Set())
+
   const [items, setItems] = useState<Leak[]>([])
   const [cargando, setCargando] = useState(true)
 
@@ -92,16 +118,19 @@ export default function Leaks() {
             whileHover={{ y: -4 }}
             className="card group overflow-hidden flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
           >
-            {it.imagen ? (
+            {it.imagen && !rotas.has(it.link) ? (
               <div className="relative h-40 shrink-0 overflow-hidden bg-black/40">
-                {/* Portada del propio medio. Si no carga, la tarjeta sigue
-                    entendiendose: el titular manda, la imagen acompaña. */}
+                {/* Portada del propio medio. */}
                 <img
                   src={it.imagen}
                   alt=""
                   loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none' }}
+                  // Si la portada no carga se marca y se dibuja el respaldo.
+                  // Antes se ocultaba el contenedor entero: la tarjeta se
+                  // encogia y la rejilla quedaba dentada, que es peor que una
+                  // tarjeta sin foto.
+                  onError={() => setRotas((r) => new Set(r).add(it.link))}
                 />
                 <div
                   className="absolute inset-0 pointer-events-none"
@@ -109,17 +138,31 @@ export default function Leaks() {
                 />
               </div>
             ) : (
-              /* Sin portada: una banda con el emblema en vez de un hueco. No
-                 todos los medios exponen imagen, y dejar el espacio vacio hace
-                 que la tarjeta parezca rota en vez de simplemente distinta. */
+              /* Respaldo con LA MISMA ALTURA que una portada real.
+                 No todos los medios exponen imagen; lo que hacia que la tarjeta
+                 pareciera rota no era la falta de foto, sino que midiera la
+                 mitad que sus vecinas. Con la misma altura se lee como una
+                 variante deliberada, no como un fallo. */
               <div
-                className="relative h-24 shrink-0 flex items-center justify-center overflow-hidden"
+                className="relative h-40 shrink-0 flex flex-col items-center justify-center gap-2 overflow-hidden"
                 style={{
                   background:
-                    'radial-gradient(120% 140% at 50% 0%, rgba(225,29,60,0.22), transparent 70%)',
+                    'radial-gradient(120% 140% at 50% 0%, rgba(225,29,60,0.20), transparent 70%)',
                 }}
               >
-                <Radar className="w-8 h-8 text-elite-primary/35" />
+                {/* Rejilla tenue: da textura al hueco en vez de dejar un plano. */}
+                <div
+                  className="absolute inset-0 opacity-[0.18]"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px)',
+                    backgroundSize: '22px 22px',
+                  }}
+                />
+                <Radar className="relative w-9 h-9 text-elite-primary/45" />
+                <span className="relative text-[10px] uppercase tracking-[0.2em] text-white/30">
+                  {it.fuente}
+                </span>
               </div>
             )}
 
@@ -137,7 +180,10 @@ export default function Leaks() {
                 {it.titulo}
               </h3>
 
-              {it.resumen && (
+              {/* Varios medios no dan resumen y el agregador acaba repitiendo
+                  el titular debajo del titular. Eso se lee como un error de la
+                  pagina, asi que se compara y se omite si es lo mismo. */}
+              {it.resumen && !mismoTexto(it.resumen, it.titulo) && (
                 <p className="text-[13px] text-white/50 leading-relaxed line-clamp-3 mb-3">
                   {it.resumen}
                 </p>

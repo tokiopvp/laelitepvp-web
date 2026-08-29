@@ -80,3 +80,18 @@ export function formatearLocal(usd: number, pais: Pais, tasa: number | null): st
     maximumFractionDigits: decimales,
   })}`
 }
+
+/**
+ * Bandera del país a partir de su código ISO.
+ *
+ * Los emoji de bandera son dos "indicadores regionales": las letras del código
+ * desplazadas a un bloque propio de Unicode. Derivarla evita mantener una
+ * lista paralela de emoji que se olvidaría de actualizar al añadir un país.
+ *
+ * Para el código internacional -que no es un país- se usa un globo.
+ */
+export function banderaDe(code: string): string {
+  const c = (code || '').toUpperCase()
+  if (!/^[A-Z]{2}$/.test(c)) return '🌎'
+  return String.fromCodePoint(...c.split('').map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
+}

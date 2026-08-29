@@ -9,15 +9,19 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useGama } from '@/components/layout/Resplandor'
 
 const links = [
-  // Siete enlaces no caben sin apretujarse. Torneos y Comunidad van juntos
-  // porque son lo mismo para el visitante: la vida social del clan.
-  { href: '/', label: 'Inicio' },
-  { href: '/miembros', label: 'Miembros' },
-  { href: '/tops', label: 'Tops' },
+  // COMUNIDAD apuntaba a /torneos: quien pulsaba "Comunidad" acababa en la
+  // pagina de torneos y nunca veia las Elite Coin. Ahora cada enlace va a lo
+  // que dice, y Torneos deja el menu (sigue accesible desde el pie).
+  //
+  // Van en mayuscula porque son etiquetas de marcador, no frases: es el mismo
+  // registro que los titulares del sitio.
+  { href: '/', label: 'INICIO' },
+  { href: '/miembros', label: 'MIEMBROS' },
+  { href: '/tops', label: 'RANKING' },
   { href: '/ia', label: 'TOKIO IA', destacado: true },
-  { href: '/pagostore', label: 'PagoStore' },
-  { href: '/noticias', label: 'Noticias' },
-  { href: '/torneos', label: 'Comunidad', tambien: ['/comunidad'] },
+  { href: '/pagostore', label: 'PAGOSTORE' },
+  { href: '/comunidad', label: 'COMUNIDAD' },
+  { href: '/noticias', label: 'NOTICIAS' },
 ]
 
 export default function SiteNav() {
@@ -26,10 +30,10 @@ export default function SiteNav() {
   const [open, setOpen] = useState(false)
   const { isAuthed, role } = useAuth()
 
-  const isActive = (href: string, tambien: string[] = []) =>
+  const isActive = (href: string) =>
     href === '/'
       ? pathname === '/'
-      : pathname.startsWith(href) || tambien.some((r) => pathname.startsWith(r))
+      : pathname.startsWith(href)
 
   return (
     <nav
@@ -74,14 +78,14 @@ export default function SiteNav() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`relative px-4 py-2 rounded-lg font-medium transition-colors ${
-                  isActive(l.href, l.tambien)
+                className={`relative px-3 py-2 rounded-lg font-display font-semibold text-sm tracking-wide transition-colors ${
+                  isActive(l.href)
                     ? 'text-elite-primary'
                     : 'text-white/70 hover:text-white'
                 }`}
               >
                 {l.label}
-                {isActive(l.href, l.tambien) && (
+                {isActive(l.href) && (
                   <motion.span
                     layoutId="nav-active"
                     className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-elite-primary to-elite-secondary"
@@ -135,7 +139,7 @@ export default function SiteNav() {
                   href={l.href}
                   onClick={() => setOpen(false)}
                   className={`px-4 py-3 rounded-lg font-medium ${
-                    isActive(l.href, l.tambien) ? 'bg-elite-primary/10 text-elite-primary' : 'text-white/80'
+                    isActive(l.href) ? 'bg-elite-primary/10 text-elite-primary' : 'text-white/80'
                   }`}
                 >
                   {l.label}
