@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getVelas, getOperaciones, precioTexto, coinsCorto } from '@/lib/economia'
+import { subscribeToTable } from '@/lib/data'
 import type { Vela, Operacion } from '@/lib/economia'
 
 /**
@@ -59,14 +60,23 @@ export default function GraficoMercado() {
 
   useEffect(() => {
     cargar()
-    // Se refresca cada minuto. Más a menudo no aporta nada: las velas son de
-    // cinco minutos y cada consulta es una petición desde el móvil de alguien.
+
+    // Cuando alguien cobra una tarea, su vela tiene que aparecer AHORA. Ese
+    // instante —ver tu propia vela verde salir— es el gancho entero del
+    // gráfico; con un minuto de retraso ya nadie lo relaciona con lo que hizo.
+    const offOperaciones = subscribeToTable('market_trades', cargar)
+
+    // Red de seguridad: el intervalo cierra las velas cuando NO hay actividad
+    // (ahí no llega ningún evento) y cubre una conexión de realtime caída.
     const t = setInterval(cargar, 60_000)
+
     // Al volver a la pestaña se refresca ya: nadie quiere mirar un precio de
     // hace media hora.
     const alVolver = () => document.visibilityState === 'visible' && cargar()
     document.addEventListener('visibilitychange', alVolver)
+
     return () => {
+      offOperaciones()
       clearInterval(t)
       document.removeEventListener('visibilitychange', alVolver)
     }

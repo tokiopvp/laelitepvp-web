@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Trophy, Coins } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { getMyProfile } from '@/lib/data'
-import { getTop, getTareas, getTareasCobradas, getTienda, coinsCorto } from '@/lib/economia'
-import type { FilaTop, Tarea, ItemTienda } from '@/lib/economia'
+import { getMyProfile, subscribeToTable } from '@/lib/data'
+import { getTop, getTareas, getProgreso, getTienda, coinsCorto } from '@/lib/economia'
+import type { FilaTop, Tarea, ItemTienda, Progreso } from '@/lib/economia'
 import type { Profile } from '@/lib/types'
 import TopCoins from '@/components/comunidad/TopCoins'
 import TiendaCoins from '@/components/comunidad/TiendaCoins'
@@ -32,7 +32,7 @@ export default function ComunidadPage() {
 
   const [top, setTop] = useState<FilaTop[]>([])
   const [tareas, setTareas] = useState<Tarea[]>([])
-  const [cobradas, setCobradas] = useState<Set<string>>(new Set())
+  const [progreso, setProgreso] = useState<Map<string, Progreso>>(new Map())
   const [tienda, setTienda] = useState<ItemTienda[]>([])
   const [perfil, setPerfil] = useState<Profile | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -43,13 +43,13 @@ export default function ComunidadPage() {
       getTop(50),
       getTareas(),
       getTienda(),
-      isAuthed ? getTareasCobradas() : Promise.resolve(new Set<string>()),
+      isAuthed ? getProgreso() : Promise.resolve(new Map<string, Progreso>()),
       isAuthed ? getMyProfile() : Promise.resolve(null),
     ])
     setTop(t)
     setTareas(ts)
     setTienda(sh)
-    setCobradas(cb)
+    setProgreso(cb)
     setPerfil(pf)
     setCargando(false)
   }, [isAuthed])
@@ -57,6 +57,19 @@ export default function ComunidadPage() {
   useEffect(() => {
     cargar()
   }, [cargar])
+
+  /**
+   * El top se mueve solo.
+   *
+   * Sin esto, alguien que deja la pestaña abierta ve un ranking congelado y la
+   * página parece muerta justo cuando más gente está jugando. Se escucha el
+   * canal de Supabase y se recarga solo el ranking: recargarlo todo traería de
+   * vuelta la tienda y las tareas sin motivo, y en móvil eso se nota.
+   */
+  useEffect(() => {
+    const off = subscribeToTable('profiles', async () => setTop(await getTop(50)))
+    return off
+  }, [])
 
   // El aviso se va solo. Un mensaje que hay que cerrar a mano acaba tapando la
   // tienda justo después de canjear, que es cuando se quiere seguir mirando.
@@ -139,7 +152,7 @@ export default function ComunidadPage() {
         <div className="mb-6">
           <Tareas
             tareas={tareas}
-            cobradas={cobradas}
+            progreso={progreso}
             autenticado={isAuthed}
             esMiembro={esMiembro}
             onCobro={tras}

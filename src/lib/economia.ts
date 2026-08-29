@@ -85,6 +85,13 @@ export interface Casa {
   coins: number
 }
 
+export interface Progreso {
+  task_id: string
+  progreso: number
+  objetivo: number
+  cobrada: boolean
+}
+
 export interface FilaTop {
   id: string
   nombre: string
@@ -110,40 +117,30 @@ export async function getTareas(): Promise<Tarea[]> {
   return data as Tarea[]
 }
 
-/** Qué tareas ya cobró el usuario en el periodo vigente. */
-export async function getTareasCobradas(): Promise<Set<string>> {
+/**
+ * Progreso del usuario en cada tarea, resuelto por el servidor.
+ *
+ * Una sola llamada para las veinte tareas, y con la MISMA lógica que usa
+ * `claim_task` para pagar. Si la barra y el cobro se calcularan por separado
+ * acabarían discrepando, y una barra al 100% que al pulsar dice "todavía no
+ * llegas" destruye la confianza en toda la página.
+ */
+export async function getProgreso(): Promise<Map<string, Progreso>> {
   const sb = client()
-  if (!sb) return new Set()
-  const { data: u } = await sb.auth.getUser()
-  if (!u.user) return new Set()
-  const { data } = await sb
-    .from('task_completions')
-    .select('task_id, periodo_key')
-    .eq('profile_id', u.user.id)
-  if (!data) return new Set()
-
-  // Las claves de periodo se recalculan igual que en SQL: una tarea diaria
-  // cobrada ayer tiene que volver a aparecer disponible hoy, no quedarse gris.
-  const hoy = clavePeriodo('diaria')
-  const semana = clavePeriodo('semanal')
-  const vigentes = new Set([hoy, semana, 'unica'])
-  return new Set(
-    (data as { task_id: string; periodo_key: string }[])
-      .filter((r) => vigentes.has(r.periodo_key))
-      .map((r) => r.task_id)
+  if (!sb) return new Map()
+  const { data, error } = await sb.rpc('my_task_progress')
+  if (error || !Array.isArray(data)) return new Map()
+  return new Map(
+    (data as any[]).map((p) => [
+      p.task_id,
+      {
+        task_id: p.task_id,
+        progreso: Number(p.progreso) || 0,
+        objetivo: Number(p.objetivo) || 1,
+        cobrada: !!p.cobrada,
+      },
+    ])
   )
-}
-
-/** Misma fórmula que `claim_task` en Postgres. Si una cambia, cambian las dos. */
-export function clavePeriodo(periodo: Periodo, d = new Date()): string {
-  if (periodo === 'unica') return 'unica'
-  if (periodo === 'diaria') return d.toISOString().slice(0, 10)
-  // ISO 8601: la semana del jueves de esa semana, igual que `IYYY-"W"IW`.
-  const j = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
-  j.setUTCDate(j.getUTCDate() + 4 - (j.getUTCDay() || 7))
-  const inicio = new Date(Date.UTC(j.getUTCFullYear(), 0, 1))
-  const semana = Math.ceil(((j.getTime() - inicio.getTime()) / 86400000 + 1) / 7)
-  return `${j.getUTCFullYear()}-W${String(semana).padStart(2, '0')}`
 }
 
 export async function getTienda(): Promise<ItemTienda[]> {
