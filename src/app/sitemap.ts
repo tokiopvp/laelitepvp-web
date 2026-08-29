@@ -28,6 +28,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ['/torneos', 0.6, 'weekly'],
     ['/unirse', 0.6, 'monthly'],
     ['/ia', 0.6, 'monthly'],
+    ['/privacidad', 0.3, 'monthly'],
+    ['/terminos', 0.3, 'monthly'],
+    ['/cookies', 0.3, 'monthly'],
   ]
   return rutas.map(([ruta, priority, changeFrequency]) => ({
     url: BASE + ruta,
