@@ -57,3 +57,96 @@ export function detectarGama(): Capacidades {
   }
   return { gama: 'medio', particulas: 18, webgl: false, quieto: false }
 }
+
+
+// ─────────────────────────────────────────────────────────────────────────
+// MEDIR EN VEZ DE ADIVINAR
+// ─────────────────────────────────────────────────────────────────────────
+//
+// La deteccion de arriba solo mira nucleos, memoria y pantalla. Eso NO ve la
+// GPU, que es lo que decide si un desenfoque animado va suave o a tirones. Un
+// PC de sobremesa con 8 nucleos y grafica integrada se clasifica como 'alto' y
+// recibe todos los efectos: es exactamente el equipo donde la web se ve
+// lagueada mientras en el de al lado vuela.
+//
+// Asi que despues de cargar se miden los fotogramas de verdad y, si no llegan,
+// se baja de gama en caliente. Adivinar falla en el caso raro; medir no.
+
+const CLAVE_MEDIDA = 'elite_gama_medida'
+
+/** Baja un escalon. 'ahorro' es decision del visitante y no se toca. */
+function degradar(c: Capacidades): Capacidades {
+  if (c.gama === 'alto') return { gama: 'medio', particulas: 18, webgl: false, quieto: false }
+  if (c.gama === 'medio') return { gama: 'bajo', particulas: 0, webgl: false, quieto: false }
+  return { gama: 'bajo', particulas: 0, webgl: false, quieto: false }
+}
+
+/**
+ * Mide los fotogramas y avisa si hay que bajar de gama.
+ *
+ * Se mide DESPUES de la carga (la primera decima de segundo siempre va a
+ * trompicones por el arranque, y castigar por eso seria injusto con equipos
+ * que luego van finos). Se usa la MEDIANA y no la media: un unico fotograma
+ * largo por el recolector de basura no debe decidir nada.
+ *
+ * El resultado se guarda para la sesion: no tiene sentido volver a medir en
+ * cada pagina, y ademas evita que los efectos aparezcan y desaparezcan al
+ * navegar.
+ */
+export function medirYAjustar(
+  actual: Capacidades,
+  alBajar: (nueva: Capacidades) => void
+): () => void {
+  if (typeof window === 'undefined' || actual.quieto) return () => {}
+
+  // Ya se midio en esta sesion: se aplica y no se vuelve a medir.
+  try {
+    const guardado = sessionStorage.getItem(CLAVE_MEDIDA)
+    if (guardado) {
+      const g = JSON.parse(guardado) as Capacidades
+      if (g.gama !== actual.gama) alBajar(g)
+      return () => {}
+    }
+  } catch {
+    // Sin sessionStorage se mide otra vez; no es grave.
+  }
+
+  let raf = 0
+  let temporizador = 0
+  const tiempos: number[] = []
+  let anterior = 0
+
+  const tic = (ahora: number) => {
+    if (anterior) tiempos.push(ahora - anterior)
+    anterior = ahora
+    if (tiempos.length < 90) {
+      raf = requestAnimationFrame(tic)
+      return
+    }
+    tiempos.sort((a, b) => a - b)
+    const mediana = tiempos[Math.floor(tiempos.length / 2)]
+
+    // 22 ms ≈ 45 fps. Por encima de ahi ya se nota el tiron al desplazarse.
+    // No se exige 60: hay pantallas de 50 Hz y equipos que van justos pero
+    // bien, y quitarles los efectos sin necesidad seria pasarse.
+    if (mediana > 22) {
+      const nueva = degradar(actual)
+      try {
+        sessionStorage.setItem(CLAVE_MEDIDA, JSON.stringify(nueva))
+      } catch { /* da igual */ }
+      alBajar(nueva)
+    } else {
+      try {
+        sessionStorage.setItem(CLAVE_MEDIDA, JSON.stringify(actual))
+      } catch { /* da igual */ }
+    }
+  }
+
+  // Un segundo de margen para que termine el arranque.
+  temporizador = window.setTimeout(() => { raf = requestAnimationFrame(tic) }, 1000)
+
+  return () => {
+    clearTimeout(temporizador)
+    cancelAnimationFrame(raf)
+  }
+}

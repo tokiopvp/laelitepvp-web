@@ -126,7 +126,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
         {/* HUD principal (datos reales) */}
         <motion.div className="relative card-glow p-1" style={{ z: 50 }}>
           <div
-            className="relative h-full bg-elite-card/90 backdrop-blur-2xl border border-elite-border rounded-2xl p-6 overflow-hidden"
+            className="relative h-full bg-elite-card/95 cristal border border-elite-border rounded-2xl p-6 overflow-hidden"
             onMouseEnter={() => setPausa(true)}
             onMouseLeave={() => setPausa(false)}
           >

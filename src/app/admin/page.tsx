@@ -1,9 +1,12 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Users, Trophy, Gem, FileText, Settings, Shield, LogOut, Lock, UserPlus, CreditCard } from 'lucide-react'
+import { Users, Trophy, Gem, FileText, Settings, Shield, LogOut, Lock, UserPlus, CreditCard, Coins } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useEffect, useState } from 'react'
+import { supabaseBrowser } from '@/lib/supabase/client'
+import { subscribeToTable } from '@/lib/data'
 
 const adminCards = [
   { href: '/admin/miembros', label: 'Miembros', icon: Users, desc: 'Gestionar squad oficial' },
@@ -14,9 +17,53 @@ const adminCards = [
   { href: '/admin/postulaciones', label: 'Postulaciones', icon: UserPlus, desc: 'Solicitudes de ingreso' },
   { href: '/admin/noticias', label: 'Noticias', icon: FileText, desc: 'Publicar anuncios' },
   { href: '/admin/pagos', label: 'Pagos & Soporte', icon: CreditCard, desc: 'Métodos y WhatsApp' },
+  { href: '/admin/economia', label: 'Economía Elite Coin', icon: Coins, desc: 'Tareas, tienda y mercado' },
 ]
 
+/**
+ * Cuantas cosas esperan atencion en cada seccion.
+ *
+ * Antes el panel eran ocho tarjetas identicas sin un solo dato: para saber si
+ * habia un pedido sin atender habia que entrar a mirar. Ahora el numero se ve
+ * desde la entrada, y se actualiza solo cuando entra un pedido.
+ */
+function usePendientes(): Record<string, number> {
+  const [n, setN] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    let vivo = true
+    const cargar = async () => {
+      const sb = supabaseBrowser()
+      if (!sb) return
+      // `head: true` pide solo la cuenta, no las filas: es una consulta barata
+      // que puede repetirse cada vez que cambia algo sin coste real.
+      const [ped, post, canj] = await Promise.all([
+        sb.from('orders').select('id', { count: 'exact', head: true })
+          .not('status', 'in', '(delivered,cancelled)'),
+        sb.from('applications').select('id', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+        sb.from('redemptions').select('id', { count: 'exact', head: true })
+          .eq('estado', 'pendiente'),
+      ])
+      if (!vivo) return
+      setN({
+        '/admin/pedidos': ped.count ?? 0,
+        '/admin/postulaciones': post.count ?? 0,
+        '/admin/economia': canj.count ?? 0,
+      })
+    }
+    cargar()
+    const off = subscribeToTable('orders', cargar)
+    const off2 = subscribeToTable('applications', cargar)
+    const off3 = subscribeToTable('redemptions', cargar)
+    return () => { vivo = false; off(); off2(); off3() }
+  }, [])
+
+  return n
+}
+
 export default function AdminPage() {
+  const pendientes = usePendientes()
   const { user, role, loading, isAuthed, signIn, signOut } = useAuth()
 
   if (loading) {
@@ -94,10 +141,21 @@ export default function AdminPage() {
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -5 }}
               >
-                <Link href={card.href} className="card-glow p-6 block group">
+                <Link href={card.href} className="card-glow p-6 block group relative">
                   <Icon className="w-10 h-10 text-elite-primary mb-4 group-hover:scale-110 transition-transform" />
+                  {/* Solo aparece si hay algo que hacer: un "0" permanente en
+                      cada tarjeta es ruido que se deja de mirar. */}
+                  {(pendientes[card.href] ?? 0) > 0 && (
+                    <span className="absolute top-5 right-5 min-w-7 h-7 px-2 rounded-full bg-yellow-400/15 border border-yellow-400/40 text-yellow-400 font-display font-bold text-sm flex items-center justify-center">
+                      {pendientes[card.href]}
+                    </span>
+                  )}
                   <h3 className="font-display font-bold text-xl mb-1">{card.label}</h3>
-                  <p className="text-white/50 text-sm">{card.desc}</p>
+                  <p className="text-white/50 text-sm">
+                    {(pendientes[card.href] ?? 0) > 0
+                      ? `${pendientes[card.href]} esperando atención`
+                      : card.desc}
+                  </p>
                 </Link>
               </motion.div>
             )

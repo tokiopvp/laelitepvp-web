@@ -43,3 +43,7 @@ next-env.d.ts
 scripts/__pycache__/
 scripts/*.log
 
+
+# copias de seguridad y config local del editor
+*.bak
+.claude/

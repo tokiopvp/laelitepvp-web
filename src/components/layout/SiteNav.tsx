@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { useGama } from '@/components/layout/Resplandor'
 
 const links = [
   // Siete enlaces no caben sin apretujarse. Torneos y Comunidad van juntos
@@ -20,6 +21,7 @@ const links = [
 ]
 
 export default function SiteNav() {
+  const { gama } = useGama()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const { isAuthed, role } = useAuth()
@@ -30,7 +32,23 @@ export default function SiteNav() {
       : pathname.startsWith(href) || tambien.some((r) => pathname.startsWith(r))
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-elite-dark/80 backdrop-blur-2xl border-b border-elite-border">
+    <nav
+      className={
+        'fixed top-0 left-0 right-0 z-50 border-b border-elite-border ' +
+        // El cristal esmerilado se paga en CADA fotograma de scroll: el
+        // navegador tiene que desenfocar de nuevo todo lo que pasa por detras
+        // de la barra. En una grafica dedicada es gratis; en una integrada es
+        // lo que hace que desplazarse vaya a tirones en TODAS las paginas,
+        // porque la barra esta siempre.
+        //
+        // Asi que el cristal es un lujo para quien puede pagarlo. Al resto se
+        // le sirve un negro casi opaco: se lee igual de bien, tapa igual el
+        // contenido de detras, y no cuesta nada.
+        (gama === 'alto'
+          ? 'bg-elite-dark/80 cristal'
+          : 'bg-elite-dark/95')
+      }
+    >
       <div className="section-container">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/" className="flex items-center gap-3" aria-label="La Elite PvP">
@@ -41,7 +59,10 @@ export default function SiteNav() {
               </div>
               <motion.div
                 className="absolute -top-1 -right-1 w-3 h-3 bg-elite-gold rounded-full"
-                animate={{ scale: [1, 1.3, 1] }}
+                // En gama baja el punto se queda quieto. Sigue estando; lo
+                // unico que se pierde es el latido, y a cambio no hay JavaScript
+                // corriendo en cada fotograma detras de una barra fija.
+                animate={gama === 'bajo' ? undefined : { scale: [1, 1.3, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               />
             </div>

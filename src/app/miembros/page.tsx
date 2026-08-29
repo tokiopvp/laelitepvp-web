@@ -10,6 +10,7 @@ import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 import { RankEmblem } from '@/components/RankEmblem'
 import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
+import Resplandor from '@/components/layout/Resplandor'
 
 const RANK_COLORS: Record<string, string> = {
   Bronze: '#cd7f32',
@@ -69,11 +70,7 @@ export default function MiembrosPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-elite-primary/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
+        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#e11d3c" />
       </div>
 
       <div className="section-container">
@@ -117,10 +114,15 @@ export default function MiembrosPage() {
                 transition={{ delay: i * 0.05 }}
                 whileHover={{ y: -8 }}
               >
-                {/* halo de rango */}
+                {/* Halo de rango, como degradado y no como desenfoque.
+                    Era un circulo de color con `blur-2xl` (40 px). Uno por
+                    tarjeta y 36 tarjetas son 36 desenfoques que el navegador
+                    rasteriza y guarda en memoria. Un degradado radial se ve
+                    igual -es a lo que se PARECE un circulo desenfocado- y no
+                    cuesta practicamente nada. */}
                 <div
-                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-2xl opacity-30 pointer-events-none"
-                  style={{ background: color }}
+                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-30 pointer-events-none"
+                  style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
                 />
                 <div
                   className="-mx-6 -mt-6 mb-5 h-2 rounded-t-2xl"
@@ -193,8 +195,14 @@ export default function MiembrosPage() {
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   {(['kd', 'wins', 'headshots', 'booyahs', 'kills', 'winrate'] as const).map((k) => {
                     const s = STAT_CATEGORIES.find((x) => x.key === k)!
+                    // Sin `backdrop-blur-md`: esta ficha vive DENTRO de una
+                    // tarjeta que ya tiene fondo propio, asi que el desenfoque
+                    // no tenia nada translucido que desenfocar y no se veia. Lo
+                    // que si hacia era cobrar: seis fichas por tarjeta y 36
+                    // tarjetas son 216 `backdrop-filter` que el navegador
+                    // rehace en cada fotograma al desplazarse.
                     return (
-                      <div key={k} className="rounded-lg p-3 bg-white/[0.06] backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors">
+                      <div key={k} className="rounded-lg p-3 bg-white/[0.06] border border-white/10 hover:border-white/20 transition-colors">
                         <p className="text-white/50 text-xs flex items-center gap-1">
                           {k === 'headshots' && <Flame className="w-3 h-3" />}
                           {k === 'wins' && <Trophy className="w-3 h-3" />}

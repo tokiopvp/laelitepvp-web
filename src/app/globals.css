@@ -73,8 +73,18 @@
       rgba(8, 8, 10, 0.55) 100%
     );
     border-color: rgba(255, 255, 255, 0.09);
-    backdrop-filter: blur(18px) saturate(1.25);
-    -webkit-backdrop-filter: blur(18px) saturate(1.25);
+    /* El cristal sale de una VARIABLE, no de un valor fijo.
+     *
+     * Se intento apagarlo con reglas mas especificas y hasta con !important, y
+     * no habia forma: `.card-glow` se genera con `@apply card` y Tailwind emite
+     * su version despues. Se comprobo midiendo en el navegador: los selectores
+     * CASABAN y el estilo calculado seguia con blur(18px).
+     *
+     * Con una variable no hay pelea de cascada. El componente lee lo que haya
+     * en :root, y la gama del equipo decide que hay. Vale `none`, que no
+     * cuesta nada, y no `blur(0px)`, que seguiria creando la capa. */
+    backdrop-filter: var(--cristal-tarjeta);
+    -webkit-backdrop-filter: var(--cristal-tarjeta);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.13),
       inset 0 -1px 0 rgba(0, 0, 0, 0.4),
@@ -199,7 +209,8 @@
   position: relative;
   border-radius: 1rem;
   background: rgba(16, 16, 20, 0.66);
-  backdrop-filter: blur(14px);
+  backdrop-filter: var(--cristal-premium);
+  -webkit-backdrop-filter: var(--cristal-premium);
   overflow: hidden;
 }
 .card-premium::before {
@@ -220,4 +231,99 @@
 
 .input {
   @apply w-full px-4 py-2.5 bg-elite-dark/60 border border-elite-border rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-elite-primary/50;
+}
+
+
+/*
+ * Latido del resplandor de fondo.
+ *
+ * Solo toca `transform` y `opacity`: las dos unicas propiedades que el
+ * navegador resuelve en el compositor, sin repintar ni recalcular el diseño.
+ * Por eso corre suave incluso en graficas integradas, al reves que el
+ * `blur` animado que habia antes.
+ *
+ * Va en CSS y no en framer-motion a proposito: una animacion de CSS la lleva
+ * el navegador por su cuenta, mientras que framer-motion ejecuta JavaScript en
+ * cada fotograma. Con quince animaciones infinitas en la web, esa diferencia
+ * es la que se nota en un equipo justo.
+ */
+@keyframes elite-latido {
+  0%, 100% { transform: translateZ(0) scale(1); }
+  50%      { transform: translateZ(0) scale(1.18); }
+}
+
+/* Si el visitante pidio menos movimiento, no se mueve nada. */
+@media (prefers-reduced-motion: reduce) {
+  [style*="elite-latido"] { animation: none !important; }
+}
+
+
+
+/* En gama baja se para TODA animacion en bucle. Las de entrada (que ocurren
+ * una vez y terminan) se dejan: no cuestan nada y dan sensacion de vida. */
+:root[data-gama="bajo"] .animate-aurora-a,
+:root[data-gama="bajo"] .animate-aurora-b,
+:root[data-gama="bajo"] .animate-aurora-c,
+:root[data-gama="bajo"] .animate-grid,
+:root[data-gama="bajo"] .gradient-text-shimmer {
+  animation: none;
+}
+
+/* El texto con brillo pierde el degradado animado pero no el color. */
+:root[data-gama="bajo"] .gradient-text-shimmer {
+  background-position: 0 center;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * EL CRISTAL, SEGUN LO QUE AGUANTE EL EQUIPO
+ *
+ * `backdrop-filter` es lo mas caro de esta web: el navegador tiene que
+ * renderizar lo que hay DETRAS del elemento, desenfocarlo y componerlo, y
+ * rehacerlo al desplazarse porque el fondo cambia. Con decenas de tarjetas en
+ * pantalla son decenas de desenfoques por fotograma. En una grafica dedicada
+ * ni se nota; en una integrada es la diferencia entre "vuela" y "va a tirones".
+ *
+ * `AjusteRendimiento` escribe data-gama en el <html> DESPUES de medir los
+ * fotogramas de verdad, asi que esto no depende de adivinar el equipo.
+ *
+ * Al quitar el cristal la tarjeta conserva su degradado propio; solo se le
+ * sube la opacidad para que siga tapando igual. Sobre el fondo negro del sitio
+ * la diferencia no se aprecia.
+ * ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --cristal-tarjeta: blur(18px) saturate(1.25);
+  --cristal-premium: blur(14px);
+}
+
+:root[data-gama="medio"],
+:root[data-gama="bajo"],
+:root[data-quieto="si"] {
+  --cristal-tarjeta: none;
+  --cristal-premium: none;
+}
+
+:root[data-gama="medio"] .card,
+:root[data-gama="bajo"] .card,
+:root[data-quieto="si"] .card,
+:root[data-gama="medio"] .card-glow,
+:root[data-gama="bajo"] .card-glow,
+:root[data-quieto="si"] .card-glow {
+  /* Sin cristal detras, el fondo tiene que tapar por si solo. */
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.055) 0%,
+    rgba(255, 255, 255, 0.018) 42%,
+    rgba(8, 8, 10, 0.82) 100%
+  );
+}
+
+
+/* Cristal para elementos sueltos (la tarjeta del heroe, la barra de la IA...).
+ * Usa la MISMA variable que las tarjetas, asi el interruptor de gama los apaga
+ * a todos a la vez. Sustituye a `backdrop-blur-2xl` de Tailwind, que fija el
+ * valor y no hay forma de apagarlo desde fuera. */
+.cristal {
+  backdrop-filter: var(--cristal-tarjeta);
+  -webkit-backdrop-filter: var(--cristal-tarjeta);
 }

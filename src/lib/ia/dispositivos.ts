@@ -82,8 +82,8 @@ const FICHAS: { patron: RegExp; ficha: FichaDispositivo }[] = [
   // ─────────────────────────── Motorola
   { patron: /moto\s*g\s*(7[0-9]|8[0-9]|9[0-9])/i, ficha: { nombre: 'Moto G (gama media)', pulgadas: 6.5, proporcion: [20, 9], panel: 'AMOLED', refresco: 120, tactil: 240, resolucion: '2400×1080' } },
   { patron: /moto\s*g/i, ficha: { nombre: 'Moto G', pulgadas: 6.5, proporcion: [20, 9], panel: 'IPS', refresco: 90, tactil: 120, resolucion: '1600×720' } },
-  { patron: /moto\s*e/i, ficha: { nombre: 'Moto E', pulgadas: 6.5, proporcion: [20, 9], panel: 'IPS', refresco: 60, tactil: 60, resolucion: '1600×720' } },
   { patron: /moto\s*(edge|razr)/i, ficha: { nombre: 'Motorola Edge', pulgadas: 6.7, proporcion: [20, 9], panel: 'AMOLED', refresco: 144, tactil: 360, resolucion: '2400×1080' } },
+  { patron: /moto\s*e/i, ficha: { nombre: 'Moto E', pulgadas: 6.5, proporcion: [20, 9], panel: 'IPS', refresco: 60, tactil: 60, resolucion: '1600×720' } },
 
   // ─────────────────────────── Otros
   { patron: /realme\s*(gt|c\d)/i, ficha: { nombre: 'Realme', pulgadas: 6.6, proporcion: [20, 9], panel: 'AMOLED', refresco: 120, tactil: 240, resolucion: '2400×1080' } },

@@ -164,6 +164,31 @@ export async function createOrder(order: NewOrder): Promise<{ error: string | nu
   return { error: error?.message ?? null }
 }
 
+/**
+ * Estado actual de unos pedidos, por su numero de referencia.
+ *
+ * Lo usa la tienda para que el cliente que vuelve vea en que va su compra sin
+ * escribirle a nadie. Se consulta por referencia y no por cliente porque la
+ * tienda no exige cuenta: el numero de pedido es lo unico que identifica una
+ * compra, y solo lo tiene quien la hizo.
+ */
+export async function getEstadoPedidos(
+  referencias: string[]
+): Promise<Record<string, string>> {
+  const sb = client()
+  if (!sb || referencias.length === 0) return {}
+  const { data, error } = await sb
+    .from('orders')
+    .select('order_number,status')
+    .in('order_number', referencias.slice(0, 50))
+  if (error || !data) return {}
+  const out: Record<string, string> = {}
+  for (const r of data as { order_number: string; status: string }[]) {
+    out[r.order_number] = r.status
+  }
+  return out
+}
+
 export async function logActivity(
   action: string,
   meta?: Record<string, unknown>
@@ -193,8 +218,18 @@ export async function getActivityLogs(limit = 50): Promise<any[]> {
   return data
 }
 
-// Notifica una venta/actividad a Discord via Cloud Function (webhook oculto)
-export async function notifyDiscord(payload: Record<string, unknown>): Promise<void> {
+/**
+ * Avisa de una venta o actividad.
+ *
+ * La funcion `/api/notify` reparte a Discord y a Telegram desde el servidor:
+ * el webhook y el token del bot nunca llegan al navegador, porque cualquiera
+ * con ellos puede publicar en tus canales.
+ *
+ * Es deliberadamente silenciosa. Si el aviso falla, la compra YA esta guardada
+ * en la base de datos; hacer estallar la interfaz por una notificacion le diria
+ * al cliente que su pedido no entro cuando si entro.
+ */
+export async function notificar(payload: Record<string, unknown>): Promise<void> {
   try {
     await fetch('/api/notify', {
       method: 'POST',
@@ -205,6 +240,9 @@ export async function notifyDiscord(payload: Record<string, unknown>): Promise<v
     // silencioso
   }
 }
+
+/** Nombre anterior, cuando el unico destino era Discord. */
+export const notifyDiscord = notificar
 
 // ---- Metodos de pago (administrables) ----
 export async function getPaymentMethods(country?: string): Promise<PaymentMethod[]> {

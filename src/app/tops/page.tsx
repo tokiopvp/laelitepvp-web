@@ -8,6 +8,7 @@ import { useMembers } from '@/lib/hooks'
 import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
 import { TopListSkeleton } from '@/components/Skeletons'
+import Resplandor from '@/components/layout/Resplandor'
 
 const rankColors = ['#e8b33c', '#c0c0c0', '#cd7f32', '#e11d3c', '#ff4d68']
 
@@ -25,11 +26,7 @@ export default function TopsPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-elite-secondary/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
+        <Resplandor className="bottom-1/4 right-1/4 w-96 h-96" color="#7a0b1b" />
       </div>
 
       <div className="section-container">

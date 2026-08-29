@@ -28,11 +28,18 @@ export default function WeaponParallax() {
     <div className="pointer-events-none absolute inset-0 overflow-hidden -z-0">
       {/* Halo que sigue el cursor */}
       <motion.div
-        className="absolute w-[480px] h-[480px] rounded-full blur-[120px] opacity-40"
+        // El `blur-[120px]` que habia aqui sobraba: debajo ya hay un degradado
+        // radial, y desenfocar un degradado solo da otro degradado mas suave.
+        // Lo que si hacia era cobrarse caro, porque este halo SIGUE AL CURSOR:
+        // cada movimiento del raton obligaba a rehacer un desenfoque de 120 px
+        // sobre 480 px. Ahora las paradas del degradado hacen ese trabajo.
+        className="absolute w-[480px] h-[480px] rounded-full opacity-40"
         style={{
           left: glowX,
           top: '30%',
-          background: 'radial-gradient(circle, #e11d3c 0%, #ff4d68 55%, transparent 72%)',
+          background:
+            'radial-gradient(circle, rgba(225,29,60,0.85) 0%, rgba(255,77,104,0.45) 38%, ' +
+            'rgba(255,77,104,0.12) 62%, transparent 80%)',
         }}
       />
 

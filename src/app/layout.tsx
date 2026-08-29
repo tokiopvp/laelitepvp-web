@@ -6,7 +6,9 @@ import { AuthProvider } from '@/components/auth/AuthProvider'
 import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
+import AjusteRendimiento from '@/components/layout/AjusteRendimiento'
 import WhatsAppSupport from '@/components/layout/WhatsAppSupport'
+import AvisoVisita from '@/components/layout/AvisoVisita'
 
 // Cuerpo: Barlow. Buena legibilidad en pantallas chicas y de gama baja, con
 // mas caracter que las sans neutras de siempre.
@@ -100,8 +102,22 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         ) : null}
+        {/* La gama se marca ANTES del primer pintado.
+            Si esperamos a que React hidrate, el navegador ya ha pintado una vez
+            con todos los efectos caros puestos: justo en los equipos lentos, que
+            son los que mas tardan en hidratar, esa primera pintada con decenas
+            de `backdrop-filter` es la que se nota. Este guion va en el <head>,
+            corre antes de nada y no depende de que cargue el JavaScript.
+            Despues `AjusteRendimiento` lo corrige si la medida de fotogramas
+            dice otra cosa. */}
+        <script dangerouslySetInnerHTML={{ __html: `!function(){try{var d=document.documentElement,n=navigator,g=sessionStorage.getItem('elite_gama_medida');if(g){g=JSON.parse(g).gama}else{if(matchMedia('(prefers-reduced-motion: reduce)').matches||(n.connection&&n.connection.saveData)){d.dataset.quieto='si';g='ahorro'}else{var c=n.hardwareConcurrency||4,m=n.deviceMemory||8,w=(screen&&screen.width)||1024,t=matchMedia('(pointer: coarse)').matches;g=(c<4||m<4)?'bajo':((c>=8&&!t&&w>=1280)?'alto':'medio')}}d.dataset.gama=g;if(g==='ahorro')d.dataset.quieto='si'}catch(e){}}();` }} />
       </head>
       <body className="min-h-screen flex flex-col">
+        {/* Mide el equipo y marca la gama en el <html>: de ahi cuelgan
+            las reglas que apagan lo caro en maquinas justas. */}
+        <AjusteRendimiento />
+        {/* Te avisa al telefono cuando entra un visitante (una vez por sesion). */}
+        <AvisoVisita />
         <AnimatedBackground />
         <AuthProvider>
           <SiteNav />

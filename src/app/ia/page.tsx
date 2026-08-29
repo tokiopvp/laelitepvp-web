@@ -294,7 +294,7 @@ export default function TokioIA() {
         {/* Entrada */}
         <form
           onSubmit={(e) => { e.preventDefault(); preguntar(entrada) }}
-          className="sticky bottom-0 pt-2 pb-3 bg-elite-dark/80 backdrop-blur"
+          className="sticky bottom-0 pt-2 pb-3 bg-elite-dark/95 cristal"
         >
           <div className="flex gap-2">
             <input

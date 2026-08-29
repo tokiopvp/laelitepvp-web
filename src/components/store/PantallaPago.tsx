@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Copy, Check, MessageCircle, Clock } from 'lucide-react'
 import type { MetodoPago } from '@/lib/data'
 import type { Pais } from '@/lib/paises'
+import { enlaceWhatsApp } from '@/lib/contacto'
 
 /**
  * Pantalla de PAGO, no de "pedido recibido".
@@ -173,11 +174,12 @@ export default function PantallaPago({
         </div>
 
         <div className="flex flex-col gap-2">
-          {whatsapp && (
+          {(
             <a
-              href={`https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
-                `Hola, acabo de pagar el pedido ${referencia} (${importe}). Aquí va mi comprobante:`
-              )}`}
+              href={enlaceWhatsApp(
+                `Hola, acabo de pagar el pedido ${referencia} (${importe}). Aquí va mi comprobante:`,
+                whatsapp
+              )}
               target="_blank"
               rel="noreferrer"
               className="btn-primary w-full justify-center inline-flex items-center gap-2"

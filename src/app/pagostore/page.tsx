@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Gem, ShoppingCart, Zap, Crown, Star, Package, Ticket, X, Plus, Minus, CheckCircle2, Trash2, Activity, MessageCircle } from 'lucide-react'
 import { Product, ProductCategory } from '@/lib/types'
@@ -10,6 +10,14 @@ import { PAISES, PAIS_INTERNACIONAL, paisPorCodigo, formatearLocal, adivinarPais
 import type { PaymentMethod } from '@/lib/types'
 import type { MetodoPago } from '@/lib/data'
 import PantallaPago from '@/components/store/PantallaPago'
+import { WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
+import PedidosPendientes from '@/components/store/PedidosPendientes'
+import Resplandor from '@/components/layout/Resplandor'
+import {
+  guardarCarrito, leerCarrito, reconstruirCarrito,
+  agregarPendientes, guardarDatos, leerDatos,
+  type PedidoPendiente,
+} from '@/lib/carrito'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
   diamonds: { label: 'Diamantes', icon: Gem, color: '#e11d3c' },
@@ -31,6 +39,7 @@ export default function PagoStorePage() {
   const [cargandoProductos, setCargandoProductos] = useState(true)
   const [activeCat, setActiveCat] = useState<ProductCategory>('diamonds')
   const [cart, setCart] = useState<Cart>({})
+  const rehidratado = useRef(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [success, setSuccess] = useState<string[] | null>(null)
   // El carrito se vacia al confirmar, asi que el total hay que
@@ -44,15 +53,37 @@ export default function PagoStorePage() {
   const [country, setCountry] = useState<string>('ALL')
   const [rates, setRates] = useState<Record<string, number>>({})
   const [methods, setMethods] = useState<PaymentMethod[]>([])
-  const [whatsapp, setWhatsapp] = useState<string | null>(null)
+  // Respaldo con el numero del clan: si el ajuste no esta guardado, el
+  // cliente sigue teniendo por donde escribir. Antes se quedaba sin boton.
+  const [whatsapp, setWhatsapp] = useState<string>(WHATSAPP)
 
   useEffect(() => {
     getProducts()
-      .then(setProducts)
-      .finally(() => setCargandoProductos(false))
+      .then((ps) => {
+        setProducts(ps)
+        // El carrito se rehidrata contra el catalogo RECIEN cargado, nunca con
+        // los precios que quedaron guardados: cambian a diario y cobrar uno
+        // viejo porque estaba en el navegador del cliente seria un error caro.
+        const guardado = leerCarrito()
+        if (guardado.length > 0) {
+          const { carrito } = reconstruirCarrito(guardado, ps)
+          if (Object.keys(carrito).length > 0) setCart(carrito)
+        }
+      })
+      .finally(() => {
+        setCargandoProductos(false)
+        // A partir de aqui el carrito en pantalla ya refleja lo guardado, asi
+        // que guardarlo es seguro. Se levanta tambien si el catalogo fallo:
+        // sin catalogo no hay nada que añadir, y no debe quedarse bloqueado.
+        rehidratado.current = true
+      })
+    // Nombre e ID de Free Fire del cliente habitual: teclear 9 cifras desde el
+    // movil es donde mas gente abandona.
+    const datos = leerDatos()
+    if (datos) setForm((f) => ({ ...f, name: datos.name, ffid: datos.ffid, discord: datos.discord }))
     getPaymentMethods().then(setMethods)
     getMetodosPago().then(setMetodosPago)
-    getSetting('whatsapp_number').then(setWhatsapp)
+    getSetting('whatsapp_number').then((v) => { if (v && v.trim()) setWhatsapp(v.trim()) })
     const saved = typeof window !== 'undefined' ? localStorage.getItem('store_country') : null
     // Sin eleccion previa, conjeturamos por zona horaria para que el
     // visitante vea SU moneda ya en el primer render.
@@ -105,6 +136,22 @@ export default function PagoStorePage() {
       (search.trim() === '' || p.name.toLowerCase().includes(search.trim().toLowerCase()))
   )
 
+  // Cada cambio del carrito se guarda: recargar, tocar atras o que el movil
+  // descargue la pestaña ya no vacia la compra.
+  //
+  // El guardia importa. Sin el, este efecto corre en el PRIMER render -cuando
+  // el carrito todavia esta vacio porque el catalogo no ha llegado- y borra lo
+  // guardado justo antes de poder recuperarlo. El sintoma es cruel: parece que
+  // la persistencia no existe.
+  useEffect(() => {
+    if (!rehidratado.current) return
+    guardarCarrito(
+      Object.values(cart).map(({ product, qty }) => ({
+        id: product.id, qty, nombre: product.name, precio: product.price_usd,
+      }))
+    )
+  }, [cart])
+
   const cartCount = useMemo(() => Object.values(cart).reduce((s, i) => s + i.qty, 0), [cart])
   const cartTotal = useMemo(
     () => Object.values(cart).reduce((s, i) => s + i.qty * i.product.price_usd, 0),
@@ -140,6 +187,7 @@ export default function PagoStorePage() {
     setUltimoTotal(cartTotal)
     let ok = 0
     const orders: string[] = []
+    const pendientes: PedidoPendiente[] = []
     for (const it of items) {
       const order_number = `ELITE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`
       const { error } = await createOrder({
@@ -158,6 +206,17 @@ export default function PagoStorePage() {
       if (!error) {
         ok++
         orders.push(order_number)
+        // Se guarda lo justo para reconocerlo al volver: que compro, cuanto y
+        // con que referencia. Ningun dato sensible.
+        pendientes.push({
+          referencia: order_number,
+          creado: Date.now(),
+          totalUSD: +(it.qty * it.product.price_usd).toFixed(2),
+          totalLocal: currency === 'USD' ? null : fmt(it.qty * it.product.price_usd),
+          metodo: form.method,
+          detalle: `${it.qty}x ${it.product.name}`,
+          estado: 'pending',
+        })
       }
     }
     await logActivity('purchase', {
@@ -179,12 +238,19 @@ export default function PagoStorePage() {
       total_local: currency === 'USD' ? null : fmt(cartTotal),
       moneda: currency,
       whatsapp: form.discord.trim() || null,
+      // Que compro exactamente: sin esto hay que abrir el panel para saber
+      // cuantos diamantes hay que mandar, que es el dato que urge.
+      detalle: items.map((it) => `${it.qty}x ${it.product.name}`).join(' · '),
       orders,
     })
     setSubmitting(false)
     if (ok > 0) {
       setSuccess(orders)
       setCart({})
+      // El carrito se vacia, pero la compra NO desaparece: queda como pendiente
+      // para que al volver pueda mandar su comprobante sin explicar nada.
+      agregarPendientes(pendientes)
+      guardarDatos({ name: form.name.trim(), ffid: form.ffid.trim(), discord: form.discord.trim() })
     } else {
       setFormError('No se pudo enviar el pedido. Inténtalo de nuevo o contáctanos por Discord.')
     }
@@ -193,11 +259,7 @@ export default function PagoStorePage() {
   return (
     <div className="min-h-screen pt-24 pb-24">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-elite-primary/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 8, repeat: Infinity }}
-        />
+        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#e11d3c" />
       </div>
 
       <div className="section-container">
@@ -273,6 +335,10 @@ export default function PagoStorePage() {
           />
         </div>
 
+        {/* Va ANTES del catalogo: quien vuelve con una compra a medias tiene
+            que verla sin buscarla. Si no hay nada pendiente no ocupa espacio. */}
+        <PedidosPendientes whatsapp={whatsapp} />
+
         {/* Cargando: esqueletos, no precios inventados. */}
         {cargandoProductos && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -292,7 +358,7 @@ export default function PagoStorePage() {
             </p>
             {whatsapp && (
               <a
-                href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`}
+                href={enlaceWhatsApp('Hola, la tienda no carga. ¿Me ayudas con una compra?', whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary inline-block"
@@ -464,7 +530,22 @@ export default function PagoStorePage() {
                   <div className="space-y-3 mb-4">
                     <input className="input" placeholder="Tu nombre *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                     <input className="input" placeholder="ID de Free Fire *" value={form.ffid} onChange={(e) => setForm({ ...form, ffid: e.target.value })} />
-                    <input className="input" placeholder="Discord (opcional)" value={form.discord} onChange={(e) => setForm({ ...form, discord: e.target.value })} />
+                    {/* Pide WHATSAPP, no Discord.
+                        El campo se llamaba "Discord (opcional)", pero su valor
+                        viaja como numero de WhatsApp al aviso de venta y es el
+                        que usa el panel para escribirle al cliente. Quien
+                        escribia "tokio#1234" quedaba ilocalizable justo cuando
+                        habia que confirmarle el pago.
+                        La columna sigue llamandose customer_discord por no
+                        tocar la base con pedidos vivos dentro. */}
+                    <input
+                      className="input"
+                      type="tel"
+                      inputMode="tel"
+                      placeholder="Tu WhatsApp (para avisarte)"
+                      value={form.discord}
+                      onChange={(e) => setForm({ ...form, discord: e.target.value })}
+                    />
                     <select className="input" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
                       {methodNames.map((m) => <option key={m} value={m}>{m}</option>)}
                     </select>
@@ -476,7 +557,7 @@ export default function PagoStorePage() {
                     {submitting ? 'Enviando…' : 'Finalizar compra'} <Zap className="w-4 h-4" />
                   </button>
                   <p className="text-white/40 text-xs mt-3 text-center">
-                    Al finalizar recibirás un número de pedido. Te contactamos por Discord para coordinar el pago y entrega.
+                    Al finalizar verás los datos para pagar y tu número de pedido. Te escribimos por WhatsApp para confirmar la entrega.
                   </p>
                 </>
               )}

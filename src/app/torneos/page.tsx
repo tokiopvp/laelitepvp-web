@@ -6,6 +6,7 @@ import { Tournament, Member } from '@/lib/types'
 import { useTournaments, useMembers, useCompetidores } from '@/lib/hooks'
 import { formatDate } from '@/lib/utils'
 import { TournamentListSkeleton } from '@/components/Skeletons'
+import Resplandor from '@/components/layout/Resplandor'
 
 const modeColors: Record<string, string> = {
   Solo: '#e11d3c',
@@ -64,11 +65,7 @@ export default function TorneosPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <motion.div
-          className="absolute top-1/3 left-1/3 w-96 h-96 bg-elite-gold/10 rounded-full blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 9, repeat: Infinity }}
-        />
+        <Resplandor className="top-1/3 left-1/3 w-96 h-96" color="#d4a24c" />
       </div>
 
       <div className="section-container">

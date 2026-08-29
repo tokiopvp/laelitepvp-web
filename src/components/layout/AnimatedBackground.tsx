@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { detectarGama, type Capacidades } from '@/lib/device'
+import { useEffect, useRef } from 'react'
+import { useGama } from '@/components/layout/Resplandor'
 
 /**
  * Fondo del sitio: negro con chispas carmesi subiendo.
@@ -92,12 +92,13 @@ function Chispas({ cantidad }: { cantidad: number }) {
 export default function AnimatedBackground() {
   // Arranca en la gama mas baja y sube si el dispositivo da: asi el primer
   // pintado nunca promete un efecto que despues haya que retirar.
-  const [cap, setCap] = useState<Capacidades>({
-    gama: 'bajo', particulas: 0, webgl: false, quieto: false,
-  })
-  useEffect(() => setCap(detectarGama()), [])
-
+  // `useGama` empieza en la gama baja, sube a la estimada al hidratar, y la
+  // corrige a la baja si la sonda de fotogramas ve que el equipo no da. Antes
+  // se llamaba a `detectarGama()` una sola vez y ya no habia vuelta atras: un
+  // PC con muchos nucleos y grafica integrada se quedaba con todos los efectos.
+  const cap = useGama()
   const quieto = cap.quieto
+  const alto = cap.gama === 'alto'
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-elite-dark" aria-hidden>
@@ -113,26 +114,39 @@ export default function AnimatedBackground() {
 
       {/* Halos de calor. Se mueven muy lento; en modo ahorro quedan quietos. */}
       <div className="absolute inset-0 bg-aurora" />
-      <div
-        className={`absolute -left-1/4 top-0 h-[60vh] w-[60vh] rounded-full bg-elite-primary/15 blur-[130px] ${
-          quieto ? '' : 'animate-aurora-a'
-        }`}
-      />
-      <div
-        className={`absolute right-0 top-1/3 h-[55vh] w-[55vh] rounded-full bg-elite-secondary/12 blur-[130px] ${
-          quieto ? '' : 'animate-aurora-b'
-        }`}
-      />
-      <div
-        className={`absolute bottom-0 left-1/3 h-[50vh] w-[50vh] rounded-full bg-elite-gold/8 blur-[130px] ${
-          quieto ? '' : 'animate-aurora-c'
-        }`}
-      />
+      {/* Los tres halos de calor.
+          Eran `div` de 50-60vh con `blur-[130px]` a los que se les animaba
+          `translate` Y `scale`. Un desenfoque de 130 px sobre un elemento de
+          650 px ya es caro de rasterizar una vez; al cambiarle la escala hay
+          que rehacerlo entero en cada fotograma. Tres a la vez, siempre, en
+          todas las paginas: eso es lo que arrodilla a una grafica integrada.
+
+          Ahora son degradados radiales, que es a lo que se PARECE un circulo
+          desenfocado. El navegador los pinta una vez y luego moverlos es
+          trabajo del compositor, o sea gratis. Se ve igual. */}
+      {[
+        { c: 'rgba(225,29,60,0.15)', pos: '-left-1/4 top-0 h-[60vh] w-[60vh]', anim: 'animate-aurora-a' },
+        { c: 'rgba(122,11,27,0.12)', pos: 'right-0 top-1/3 h-[55vh] w-[55vh]', anim: 'animate-aurora-b' },
+        { c: 'rgba(212,162,76,0.08)', pos: 'bottom-0 left-1/3 h-[50vh] w-[50vh]', anim: 'animate-aurora-c' },
+      ].map((h) => (
+        <div
+          key={h.anim}
+          className={`absolute rounded-full ${h.pos} ${quieto ? '' : h.anim}`}
+          style={{
+            background: `radial-gradient(closest-side, ${h.c} 0%, transparent 100%)`,
+            transform: 'translateZ(0)',
+          }}
+        />
+      ))}
 
       {!quieto && <Chispas cantidad={cap.particulas} />}
 
       {/* Rejilla en perspectiva: el suelo de la arena. */}
-      <div className={`absolute inset-x-0 bottom-0 h-[40vh] bg-grid ${quieto ? '' : 'animate-grid'}`} />
+      {/* La rejilla anima `background-position`, que NO lo resuelve el
+          compositor: obliga a repintar la franja entera en cada fotograma.
+          Se queda quieta salvo en equipos que van sobrados. Quieta se ve
+          practicamente igual: es un suelo, no tiene que correr. */}
+      <div className={`absolute inset-x-0 bottom-0 h-[40vh] bg-grid ${alto && !quieto ? 'animate-grid' : ''}`} />
 
       {/* Viñeta para que el texto siempre tenga contraste encima. */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(8,8,10,0.9)_100%)]" />
