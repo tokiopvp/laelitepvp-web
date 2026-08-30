@@ -29,7 +29,7 @@ CREATE TABLE members (
   user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   nickname TEXT NOT NULL,
   free_fire_id TEXT,
-  role_in_clan TEXT CHECK (role_in_clan IN ('leader','co-leader','elder','member')),
+  role_in_clan TEXT CHECK (role_in_clan IN ('leader','interim_leader','elder','member')),
   rank TEXT,
   level INT DEFAULT 1,
   kd_ratio DECIMAL(4,2) DEFAULT 0,

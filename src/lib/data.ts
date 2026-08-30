@@ -22,12 +22,17 @@ export async function getMembers(): Promise<Member[]> {
     .from('members')
     .select('*')
     .eq('is_active', true)
-    // Ordenamos por kills de mayor a menor: es la cifra que el jugador presume,
-    // no el K/D. nullsFirst:false evita que los sin datos aparezcan primero.
-    .order('kills', { ascending: false, nullsFirst: false })
   if (error) return []
   if (!data || data.length === 0) return []
-  return data as Member[]
+  // Orden: líder primero, luego interino, luego decanos, luego por kills
+  const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
+  const sorted = [...(data as Member[])].sort((a, b) => {
+    const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
+    const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
+    if (ra !== rb) return ra - rb
+    return (b.kills ?? 0) - (a.kills ?? 0)
+  })
+  return sorted
 }
 
 export async function getTournaments(): Promise<Tournament[]> {
@@ -608,9 +613,15 @@ export async function getMembersLigero(): Promise<Member[]> {
   if (!sb) return demoMembers
   const { data, error } = await sb
     .from('members')
-    .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at')
+    .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at,role_in_clan')
     .eq('is_active', true)
-    .order('kills', { ascending: false, nullsFirst: false })
   if (error || !data) return []
-  return data as unknown as Member[]
+  const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
+  const sorted = [...(data as unknown as Member[])].sort((a, b) => {
+    const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
+    const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
+    if (ra !== rb) return ra - rb
+    return (b.kills ?? 0) - (a.kills ?? 0)
+  })
+  return sorted
 }

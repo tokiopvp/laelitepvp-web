@@ -14,9 +14,32 @@ import Resplandor from '@/components/layout/Resplandor'
 
 const ROLE_ICONS: Record<string, any> = {
   leader: Crown,
-  'co-leader': Flame,
+  interim_leader: Flame,
   elder: Star,
   member: Skull,
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  leader: 'Líder',
+  interim_leader: 'Líder Interino',
+  elder: 'Decano',
+  member: 'Miembro',
+}
+
+// Estilos de borde/glow por rol
+const ROLE_STYLE: Record<string, { border: string; glow?: string; anim?: string }> = {
+  leader: {
+    border: 'border-2 border-amber-400/80',
+    glow: 'shadow-[0_0_20px_rgba(251,191,36,0.4)]',
+    anim: 'animate-pulse-gold',
+  },
+  interim_leader: {
+    border: 'border-2 border-amber-400/50',
+    glow: 'shadow-[0_0_12px_rgba(251,191,36,0.25)]',
+  },
+  elder: {
+    border: 'border border-amber-400/30',
+  },
 }
 
 interface BadgeDef {
@@ -96,16 +119,11 @@ export default function MiembrosPage() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {members.map((member, i) => {
-            const RoleIcon = ROLE_ICONS[member.role_in_clan || 'member'] || Skull
+            const role = member.role_in_clan || 'member'
+            const RoleIcon = ROLE_ICONS[role] || Skull
+            const roleStyle = ROLE_STYLE[role]
             const badges = getBadges(member)
-            // Los puntos de temporada llegan dentro de stats_json (el bot los
-            // exporta ahi junto a las demas metricas), asi que se pueden
-            // enseñar sin esperar a ninguna columna nueva en la base.
             const puntosBR = member.puntos_br ?? member.stats_json?.puntos_br ?? null
-            // El filo va celeste cuando hay dato de rango de verdad (imagen o
-            // puntos) y apagado cuando no lo hay. NO se usa `rank` para el
-            // color: al valer "Heroic" para los 44, pintaria todas las tarjetas
-            // iguales y el color dejaria de significar nada.
             const color = member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b'
 
             return (
@@ -115,8 +133,9 @@ export default function MiembrosPage() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
-                className="ff-panel p-5 group relative cursor-pointer
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
+                className={`ff-panel p-5 group relative cursor-pointer
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary
+                           ${roleStyle?.border || ''} ${roleStyle?.glow || ''} ${roleStyle?.anim || ''}`}
                 /*
                   La entrada se hace en SITIO, sin desplazamiento.
 
@@ -167,7 +186,7 @@ export default function MiembrosPage() {
                       {member.nickname}
                     </h3>
                     <p className="text-white/40 text-xs capitalize tracking-wide">
-                      {member.role_in_clan || 'member'}
+                      {ROLE_LABELS[role] || 'Miembro'}
                       {member.level ? <span className="text-white/25"> · Nvl {member.level}</span> : null}
                     </p>
                   </div>

@@ -277,6 +277,15 @@
   [style*="elite-latido"] { animation: none !important; }
 }
 
+/* Glow pulsante para el líder del clan. */
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 12px rgba(251,191,36,0.25); }
+  50%      { box-shadow: 0 0 24px rgba(251,191,36,0.5); }
+}
+.animate-pulse-gold {
+  animation: pulse-gold 2s ease-in-out infinite;
+}
+
 
 
 /* En gama baja se para TODA animacion en bucle. Las de entrada (que ocurren

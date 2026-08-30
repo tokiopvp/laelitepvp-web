@@ -11,7 +11,7 @@ export interface Member {
   user_id: string | null
   nickname: string
   free_fire_id: string | null
-  role_in_clan: 'leader' | 'co-leader' | 'elder' | 'member' | null
+  role_in_clan: 'leader' | 'interim_leader' | 'elder' | 'member' | null
   rank: Rank | null
   level: number
   kd_ratio: number

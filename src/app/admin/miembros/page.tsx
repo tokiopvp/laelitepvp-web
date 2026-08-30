@@ -52,7 +52,10 @@ function MiembrosAdmin() {
           <input className="input" placeholder="Nickname" value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} />
           <input className="input" placeholder="Free Fire ID" value={form.free_fire_id} onChange={(e) => setForm({ ...form, free_fire_id: e.target.value })} />
           <select className="input" value={form.role_in_clan} onChange={(e) => setForm({ ...form, role_in_clan: e.target.value })}>
-            <option value="leader">leader</option><option value="co-leader">co-leader</option><option value="elder">elder</option><option value="member">member</option>
+            <option value="leader">👑 Líder</option>
+            <option value="interim_leader">🔥 Líder Interino</option>
+            <option value="elder">⭐ Decano</option>
+            <option value="member">Miembro</option>
           </select>
           <select className="input" value={form.rank} onChange={(e) => setForm({ ...form, rank: e.target.value })}>
             {['Bronze','Silver','Gold','Platinum','Diamond','Master','Grandmaster'].map(r => <option key={r} value={r}>{r}</option>)}

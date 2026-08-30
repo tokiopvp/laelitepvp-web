@@ -6,7 +6,7 @@
 -- MEMBERS
 INSERT INTO members (nickname, role_in_clan, rank, level, kd_ratio, headshots, wins, booyahs, is_active) VALUES
   ('TokioCEO', 'leader', 'Grandmaster', 80, 12.5, 15420, 3200, 890, true),
-  ('ShadowKiller', 'co-leader', 'Grandmaster', 78, 11.2, 13200, 2980, 810, true),
+  ('ShadowKiller', 'interim_leader', 'Grandmaster', 78, 11.2, 13200, 2980, 810, true),
   ('NightmareOP', 'elder', 'Master', 75, 10.8, 11800, 2750, 760, true),
   ('GhostAim', 'member', 'Master', 72, 9.5, 9800, 2400, 680, true),
   ('VenomPro', 'member', 'Diamond', 68, 8.7, 8200, 2100, 590, true),
