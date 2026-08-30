@@ -26,20 +26,11 @@ const ROLE_LABELS: Record<string, string> = {
   member: 'Miembro',
 }
 
-// Estilos de borde/glow por rol
-const ROLE_STYLE: Record<string, { border: string; glow?: string; anim?: string }> = {
-  leader: {
-    border: 'border-2 border-amber-400/80',
-    glow: 'shadow-[0_0_20px_rgba(251,191,36,0.4)]',
-    anim: 'animate-pulse-gold',
-  },
-  interim_leader: {
-    border: 'border-2 border-amber-400/50',
-    glow: 'shadow-[0_0_12px_rgba(251,191,36,0.25)]',
-  },
-  elder: {
-    border: 'border border-amber-400/30',
-  },
+// Clases CSS para los efectos de cada rol
+const ROLE_CLASS: Record<string, string> = {
+  leader: 'member-leader',
+  interim_leader: 'member-interim',
+  elder: 'member-elder',
 }
 
 interface BadgeDef {
@@ -121,7 +112,7 @@ export default function MiembrosPage() {
           {members.map((member, i) => {
             const role = member.role_in_clan || 'member'
             const RoleIcon = ROLE_ICONS[role] || Skull
-            const roleStyle = ROLE_STYLE[role]
+            const roleClass = ROLE_CLASS[role] || ''
             const badges = getBadges(member)
             const puntosBR = member.puntos_br ?? member.stats_json?.puntos_br ?? null
             const color = member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b'
@@ -134,8 +125,7 @@ export default function MiembrosPage() {
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
                 className={`ff-panel p-5 group relative cursor-pointer
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary
-                           ${roleStyle?.border || ''} ${roleStyle?.glow || ''} ${roleStyle?.anim || ''}`}
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary ${roleClass}`}
                 /*
                   La entrada se hace en SITIO, sin desplazamiento.
 

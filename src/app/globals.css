@@ -275,15 +275,117 @@
 /* Si el visitante pidio menos movimiento, no se mueve nada. */
 @media (prefers-reduced-motion: reduce) {
   [style*="elite-latido"] { animation: none !important; }
+  .member-leader::before,
+  .member-leader::after,
+  .member-interim::before,
+  .member-interim::after { animation: none !important; opacity: 0.5 !important; }
 }
 
-/* Glow pulsante para el líder del clan. */
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 12px rgba(251,191,36,0.25); }
-  50%      { box-shadow: 0 0 24px rgba(251,191,36,0.5); }
+/* ============================================
+   BANNERS DE JERARQUÍA DEL CLAN
+   ============================================ */
+
+/* LÍDER: Borde azul eléctrico + aura con chispas aleatorias */
+.member-leader {
+  position: relative;
+  border: 2px solid rgba(91, 157, 255, 0.6) !important;
+  box-shadow: 0 0 15px rgba(91, 157, 255, 0.3), inset 0 0 15px rgba(91, 157, 255, 0.05);
 }
-.animate-pulse-gold {
-  animation: pulse-gold 2s ease-in-out infinite;
+
+/* Aura eléctrica - pseudo-elemento detrás del banner */
+.member-leader::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(91, 157, 255, 0.15) 50%, 
+    transparent 70%);
+  background-size: 200% 200%;
+  animation: electric-aura 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Chispas eléctricas - pseudo-elemento encima */
+.member-leader::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(91, 157, 255, 0.8) 0%, transparent 3%),
+    radial-gradient(circle at 80% 15%, rgba(130, 200, 255, 0.7) 0%, transparent 2%),
+    radial-gradient(circle at 90% 80%, rgba(91, 157, 255, 0.6) 0%, transparent 4%),
+    radial-gradient(circle at 10% 85%, rgba(130, 200, 255, 0.7) 0%, transparent 2%),
+    radial-gradient(circle at 50% 5%, rgba(200, 230, 255, 0.9) 0%, transparent 1.5%),
+    radial-gradient(circle at 95% 50%, rgba(91, 157, 255, 0.5) 0%, transparent 3%);
+  animation: electric-sparks 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+@keyframes electric-aura {
+  0%, 100% { 
+    background-position: 0% 50%;
+    opacity: 0.5;
+  }
+  50% { 
+    background-position: 100% 50%;
+    opacity: 1;
+  }
+}
+
+@keyframes electric-sparks {
+  0%, 40%, 100% { opacity: 0; }
+  10%, 30% { opacity: 1; }
+  20% { opacity: 0.3; }
+  50%, 90% { opacity: 0; }
+  60%, 80% { opacity: 0.7; }
+  70% { opacity: 0.2; }
+}
+
+/* LÍDER INTERINO: 35% de intensidad del líder */
+.member-interim {
+  position: relative;
+  border: 2px solid rgba(91, 157, 255, 0.35) !important;
+  box-shadow: 0 0 8px rgba(91, 157, 255, 0.15);
+}
+
+.member-interim::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(45deg, 
+    transparent 40%, 
+    rgba(91, 157, 255, 0.08) 50%, 
+    transparent 60%);
+  background-size: 200% 200%;
+  animation: electric-aura 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.member-interim::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(91, 157, 255, 0.4) 0%, transparent 2%),
+    radial-gradient(circle at 75% 75%, rgba(91, 157, 255, 0.3) 0%, transparent 2%);
+  animation: electric-sparks 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+/* DECANO: Borde dorado sutil, sin animación */
+.member-elder {
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
 }
 
 
@@ -294,7 +396,11 @@
 :root[data-gama="bajo"] .animate-aurora-b,
 :root[data-gama="bajo"] .animate-aurora-c,
 :root[data-gama="bajo"] .animate-grid,
-:root[data-gama="bajo"] .gradient-text-shimmer {
+:root[data-gama="bajo"] .gradient-text-shimmer,
+:root[data-gama="bajo"] .member-leader::before,
+:root[data-gama="bajo"] .member-leader::after,
+:root[data-gama="bajo"] .member-interim::before,
+:root[data-gama="bajo"] .member-interim::after {
   animation: none;
 }
 
