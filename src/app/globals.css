@@ -288,164 +288,146 @@
    JERARQUIA DEL CLAN
    ============================================
 
-   POR QUE SE TIRARON LOS RAYOS Y LAS ESTRELLAS
-   --------------------------------------------
-   Salian por fuera de la tarjeta y se metian encima de las vecinas. Al estar
-   quietos -que es como los ve cualquiera con "reducir movimiento"- parecian
-   garabatos sueltos por el fondo, no un aura. Y el resplandor de color tenia
-   otro problema peor: al tenir el fondo de la tarjeta, las cifras de dentro
-   perdian contraste justo en las tarjetas que mas se miran.
+   DOS INTENTOS FALLIDOS ANTES DE ESTE
+   -----------------------------------
+   1) Rayos y estrellas por encima. Se salian de la tarjeta, se metian sobre
+      las vecinas y, quietos -que es como los ve cualquiera con "reducir
+      movimiento"-, parecian garabatos sueltos.
 
-   Un adorno que invade a los vecinos y ensucia el fondo no distingue: molesta.
+   2) Un marco propio en ::before/::after. Se veia como un rectangulo blanco
+      pegado, y con razon: `.ff-panel` YA USA esos dos pseudoelementos, uno
+      para el borde y otro para el relleno. Al declarar los mios encima, la
+      tarjeta del lider perdia su chaflan y su fondo y se quedaba con un
+      rectangulo recto de otro color. No era feo por gusto: estaba roto.
 
    LO QUE SE HACE AHORA
    --------------------
-   La jerarquia se marca con la ESTRUCTURA de la tarjeta, no pintando por
-   encima. Cuatro cosas, todas dentro del rectangulo:
+   No se declaran pseudoelementos nuevos. Se REDEFINE SOLO EL COLOR de los que
+   `.ff-panel` ya pinta. El `clip-path`, el `inset` y el `z-index` siguen
+   viniendo de `.ff-panel`, asi que el borde del lider tiene exactamente la
+   misma forma achaflanada que el de cualquier otra tarjeta: cambia el color,
+   no la geometria. Eso es lo que hace que parezca parte del sistema y no una
+   pegatina.
 
-     1. MARCO. Un filo de luz que recorre el borde por dentro. El del lider da
-        la vuelta entera; el del interino cubre la mitad; el del decano, solo
-        la esquina superior. La cantidad de borde encendido ES el rango.
+   Encima de eso, tres cosas:
 
-     2. GALON. Una barra vertical pegada al canto izquierdo. Tres alturas.
-        Es lo que se ve primero al bajar por la rejilla, porque los ojos
-        siguen la columna izquierda.
-
-     3. CHAPA. El rectangulo del nombre del cargo, con su propio tono.
-
-     4. INCLINACION. La tarjeta se gira un poco siguiendo al raton. Solo las
-        de mando: al moverse mientras las demas estan fijas, la vista va sola.
-
-   POR QUE ESTO SI FUNCIONA Y EL BRILLO NO
-   ---------------------------------------
-   Todo pasa DENTRO del rectangulo de la tarjeta. Ninguna invade a su vecina,
-   ninguna aclara el fondo, y todo se sigue viendo con las animaciones
-   desactivadas, porque no depende de que nada se mueva.
+     - GALON, una barra vertical en el canto izquierdo con tres alturas. Es un
+       elemento hijo de verdad, no un pseudoelemento, justo para no volver a
+       chocar con los del panel.
+     - CHAPA del cargo. Los miembros de a pie siguen en texto plano: si todo
+       llevara chapa, la chapa no significaria nada.
+     - INCLINACION 3D al pasar el raton, solo en las de mando.
 
    RENDIMIENTO
    -----------
-   El marco y el galon son degradados estaticos: se pintan una vez y ya. La
-   inclinacion es un `transform` sobre un elemento que ya existe, resuelto por
-   el compositor; no hay `blur`, ni sombras animadas, ni filtros, ni un solo
-   elemento nuevo en el HTML.
+   Un degradado estatico por tarjeta y un `transform` que resuelve el
+   compositor. Ni un blur, ni una sombra animada, ni un filtro. Y solo lo
+   llevan tres o cuatro tarjetas de las cuarenta y tantas.
 */
 
-.member-leader  { --i: 1;   --luz: rgba(219, 233, 255, 0.95); --tono: rgba(167, 139, 250, 0.85); }
-.member-interim { --i: 0.4; --luz: rgba(199, 219, 255, 0.75); --tono: rgba(129, 140, 248, 0.6); }
-.member-elder   { --i: 0.2; --luz: rgba(184, 205, 240, 0.55); --tono: rgba(100, 130, 200, 0.45); }
+.member-leader  { --i: 1;   --luz: rgba(226, 236, 255, 0.98); --tono: rgba(167, 139, 250, 0.75); }
+.member-interim { --i: 0.4; --luz: rgba(198, 218, 255, 0.72); --tono: rgba(129, 140, 248, 0.5); }
+.member-elder   { --i: 0.2; --luz: rgba(176, 199, 236, 0.5);  --tono: rgba(100, 130, 200, 0.36); }
 
 .member-leader,
 .member-interim,
 .member-elder {
-  position: relative;
-  /* El fondo se deja EN PAZ.
-     Teñirlo le quitaba contraste a las cifras, que es lo unico que la gente
-     viene a leer aqui. El rango se marca por el borde, no por el relleno. */
-  transform-style: preserve-3d;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.3s ease;
+  /* Elevacion: la tarjeta de un mando se despega un poco del fondo. Es una
+     sombra estatica, no animada, asi que no cuesta nada. */
+  filter: drop-shadow(0 10px calc(22px * var(--i)) rgba(70, 110, 190, calc(0.45 * var(--i))));
 }
 
-/* --- 1) EL MARCO ------------------------------------------------------- */
+/* --- EL BORDE ---------------------------------------------------------
+   Solo se toca el `background`. Forma, posicion y capa las sigue poniendo
+   `.ff-panel::before`, que es justo lo que se quiere: el mismo chaflan que
+   todas las demas tarjetas, encendido en el color del rango.
+
+   La luz no da la vuelta entera por igual: entra fuerte por la esquina
+   superior izquierda -por donde se empieza a leer- y se va apagando. Un borde
+   de brillo uniforme se lee como "seleccionado", no como jerarquia. */
+.member-leader::before {
+  background: linear-gradient(
+    135deg,
+    var(--luz) 0%,
+    var(--tono) 30%,
+    rgba(91, 157, 255, 0.4) 62%,
+    rgba(91, 157, 255, 0.22) 100%) !important;
+}
+.member-interim::before {
+  background: linear-gradient(
+    135deg,
+    var(--luz) 0%,
+    var(--tono) 26%,
+    rgba(91, 157, 255, 0.22) 58%,
+    rgba(91, 157, 255, 0.22) 100%) !important;
+}
+.member-elder::before {
+  background: linear-gradient(
+    135deg,
+    var(--luz) 0%,
+    var(--tono) 18%,
+    rgba(91, 157, 255, 0.22) 42%,
+    rgba(91, 157, 255, 0.22) 100%) !important;
+}
+
+/* El relleno: un punto mas claro por la esquina de arriba, para que la
+   tarjeta tenga algo de luz propia. Muy poco: teñir el fondo le quita
+   contraste a las cifras, que es lo unico que la gente viene a leer. */
 .member-leader::after,
 .member-interim::after,
 .member-elder::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  /* z-index positivo pero por debajo del contenido: se ve el filo sobre el
-     fondo del panel y nunca sobre las cifras. */
-  z-index: 0;
-  padding: 1.5px;
-  /* La mascara deja solo el filo: el centro se vacia. Sin esto seria un
-     rectangulo de color tapando la tarjeta. */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  background:
+    radial-gradient(120% 80% at 0% 0%,
+      rgba(167, 139, 250, calc(0.16 * var(--i))) 0%,
+      transparent 55%),
+    linear-gradient(160deg,
+      rgba(91, 157, 255, 0.07) 0%,
+      rgba(10, 16, 23, 0.92) 55%,
+      rgba(4, 7, 12, 0.96) 100%) !important;
 }
 
-/* Lider: la luz da la vuelta entera. */
-.member-leader::after {
-  background: conic-gradient(
-    from 210deg,
-    var(--luz) 0deg,
-    var(--tono) 70deg,
-    rgba(91, 157, 255, 0.35) 150deg,
-    var(--tono) 230deg,
-    var(--luz) 300deg,
-    var(--luz) 360deg);
-}
-/* Interino: media vuelta encendida; la otra media se apaga. */
-.member-interim::after {
-  background: conic-gradient(
-    from 210deg,
-    var(--luz) 0deg,
-    var(--tono) 90deg,
-    transparent 175deg,
-    transparent 320deg,
-    var(--luz) 360deg);
-}
-/* Decano: solo la esquina de arriba. Un acento, no un marco. */
-.member-elder::after {
-  background: conic-gradient(
-    from 215deg,
-    var(--luz) 0deg,
-    var(--tono) 55deg,
-    transparent 110deg,
-    transparent 360deg);
-}
-
-/* --- 2) EL GALON ------------------------------------------------------- */
-.member-leader::before,
-.member-interim::before,
-.member-elder::before {
-  content: '';
+/* --- EL GALON ---------------------------------------------------------
+   Elemento hijo de verdad. La ALTURA es el rango: se lee bajando por la
+   columna izquierda, que es por donde va la vista en una rejilla, sin tener
+   que pararse a leer la etiqueta de cada tarjeta. */
+.galon-rango {
   position: absolute;
   left: 0;
-  top: 14px;
+  top: 16px;
   width: 3px;
+  height: calc(28px + 82px * var(--i));
   border-radius: 0 3px 3px 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 2;
   background: linear-gradient(180deg, var(--luz), var(--tono) 55%, transparent);
-  /* La ALTURA es el rango. Se lee de un vistazo bajando por la columna, sin
-     tener que fijarse en la etiqueta de cada tarjeta. */
-  height: calc(26px + 74px * var(--i));
+  box-shadow: 0 0 10px var(--tono);
 }
 
-/* --- 3) LA CHAPA DEL CARGO -------------------------------------------- */
+/* --- LA CHAPA DEL CARGO ----------------------------------------------- */
 .chapa-rango {
   display: inline-flex;
   align-items: center;
   gap: 0.32rem;
-  padding: 0.08rem 0.46rem;
+  padding: 0.1rem 0.5rem;
   border-radius: 4px;
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: #eef4ff;
-  background: linear-gradient(180deg, var(--tono), rgba(91, 157, 255, 0.16));
+  color: #f2f6ff;
+  background: linear-gradient(180deg, var(--tono), rgba(91, 157, 255, 0.14));
   box-shadow: inset 0 0 0 1px var(--luz);
-  /* Chaflan en la esquina: el mismo corte que el resto de paneles del sitio,
-     para que se lea como parte de la identidad y no como una etiqueta pegada. */
+  /* El mismo corte en esquina que el resto de paneles del sitio, para que se
+     lea como parte de la identidad y no como una etiqueta pegada encima. */
   clip-path: polygon(0 0, 100% 0, 100% 62%, calc(100% - 6px) 100%, 0 100%);
 }
 
-/* --- 4) LA INCLINACION ------------------------------------------------- */
-/*
-  Se gira siguiendo al raton. Las variables --rx y --ry las escribe la propia
-  tarjeta al moverse el puntero por encima.
-
-  Solo las de mando. Si se inclinaran las cuarenta y cuatro, no distinguiria a
-  nadie y ademas serian cuarenta y cuatro elementos con transformacion viva.
-*/
+/* --- LA INCLINACION ---------------------------------------------------
+   Las variables --rx y --ry las escribe la propia tarjeta al moverse el
+   puntero por encima. Solo las de mando: si se inclinaran las cuarenta y
+   cuatro no distinguiria a nadie. */
 @media (hover: hover) and (pointer: fine) {
   .member-leader:hover,
   .member-interim:hover,
@@ -453,14 +435,13 @@
     transform:
       perspective(900px)
       rotateX(calc(var(--rx, 0) * 1deg * var(--i)))
-      rotateY(calc(var(--ry, 0) * 1deg * var(--i)))
-      translateZ(0);
+      rotateY(calc(var(--ry, 0) * 1deg * var(--i)));
   }
 }
 
-/* Con "reducir movimiento" no se inclina. Todo lo demas -marco, galon y
-   chapa- se sigue viendo igual, porque nada de eso depende del movimiento.
-   Esa es justamente la ventaja de marcar el rango con la estructura. */
+/* Con "reducir movimiento" no se inclina. Borde, relleno, galon y chapa se
+   siguen viendo igual: ninguno depende de que nada se mueva, que es toda la
+   gracia de marcar el rango con la estructura y no con una animacion. */
 @media (prefers-reduced-motion: reduce) {
   .member-leader,
   .member-interim,
@@ -468,6 +449,363 @@
   .member-leader:hover,
   .member-interim:hover,
   .member-elder:hover { transform: none; }
+}
+
+
+/* ============================================================
+ * SISTEMA DE PANELES Y ADORNOS  (recuperado)
+ *
+ * Este bloque se perdio por accidente al reemplazar por rango otro trozo del
+ * fichero: el corte se llevo por delante .ff-panel, .cristal, .card-glow,
+ * .ff-cut, .ff-tab, .neon y compania, o sea catorce clases que usan cinco
+ * paginas. Las tarjetas quedaron sin chaflan, sin cristal y sin relieve, que
+ * es buena parte de por que el sitio "se veia simple".
+ *
+ * Aviso para la proxima: cortar CSS por indices de texto es comodo pero
+ * silencioso. Si se vuelve a hacer, comprobar despues que no ha desaparecido
+ * ninguna clase (basta comparar los selectores de antes y de despues).
+ * ============================================================ */
+
+/* Cristal para elementos sueltos (la tarjeta del heroe, la barra de la IA...).
+ * Usa la MISMA variable que las tarjetas, asi el interruptor de gama los apaga
+ * a todos a la vez. Sustituye a `backdrop-blur-2xl` de Tailwind, que fija el
+ * valor y no hay forma de apagarlo desde fuera. */
+.cristal {
+  backdrop-filter: var(--cristal-tarjeta);
+  -webkit-backdrop-filter: var(--cristal-tarjeta);
+}
+
+
+/* ============================================================
+ * TIPOGRAFIA DE TITULARES
+ *
+ * Oswald es condensada, y a tamaño grande el espaciado por defecto la deja
+ * suelta: los titulares se leian como texto grande, no como un marcador. Se
+ * aprieta la letra y se cierra el interlineado, que es lo que le da el registro
+ * de tablero de estadio que busca la marca.
+ *
+ * Va por CSS global y no clase a clase para que valga en TODA la web sin tocar
+ * treinta componentes, y para que lo nuevo salga bien sin acordarse.
+ * ============================================================ */
+.font-display {
+  letter-spacing: -0.015em;
+}
+
+h1.font-display,
+h2.font-display {
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+
+/* Las cifras -saldos, precios, K/D- van con ancho fijo SIEMPRE.
+ * Sin esto, un contador que pasa de 999 a 1.000 desplaza todo lo que tiene al
+ * lado, y en una tabla las columnas bailan al actualizarse. */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================================
+ * CABECERAS DE SECCION
+ *
+ * Un marcador de brasa a la izquierda del titulo. Es un detalle pequeño, pero
+ * es lo que separa "un texto encima de una lista" de "un bloque con identidad":
+ * el ojo encuentra donde empieza cada seccion sin leer.
+ *
+ * Solo en las cabeceras que ya tienen borde inferior, para no meterlo donde no
+ * hace falta.
+ * ============================================================ */
+.card-glow > header {
+  position: relative;
+}
+
+.card-glow > header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  bottom: 1rem;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #5b9dff, rgba(91, 157, 255, 0));
+  opacity: 0.85;
+}
+
+/* ============================================================
+ * RENDIMIENTO DE LAS LISTAS CON SCROLL
+ *
+ * `content-visibility` le dice al navegador que no calcule el diseño de lo que
+ * esta fuera de vista. En las listas largas -veinte tareas, cincuenta puestos
+ * del ranking- eso quita trabajo real en cada repintado, que es justo donde se
+ * nota en un movil de gama baja.
+ *
+ * `contain-intrinsic-size` reserva el alto estimado para que la barra de scroll
+ * no pegue saltos al ir apareciendo el contenido.
+ * ============================================================ */
+.card-glow li,
+.card-glow article {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 56px;
+}
+
+/* El scroll interno de los bloques, discreto: la barra por defecto de Windows
+ * es ancha y clara, y rompe el tono oscuro del sitio. */
+.card-glow ul::-webkit-scrollbar,
+.card-glow ol::-webkit-scrollbar,
+.card-glow > div::-webkit-scrollbar {
+  width: 6px;
+}
+.card-glow ul::-webkit-scrollbar-thumb,
+.card-glow ol::-webkit-scrollbar-thumb,
+.card-glow > div::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+.card-glow ul::-webkit-scrollbar-track,
+.card-glow ol::-webkit-scrollbar-track,
+.card-glow > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
+/* ============================================================
+ * LENGUAJE VISUAL DE FREE FIRE
+ *
+ * Tres cosas hacen que un panel "se sienta" del juego, y ninguna es el color:
+ *
+ *  1. LOS BORDES NO SON REDONDOS, SON CORTADOS. Free Fire bisela las esquinas
+ *     en diagonal (chaflan). Es lo primero que el ojo reconoce.
+ *  2. LA LUZ ENTRA POR UN LADO. Los paneles del juego tienen una linea
+ *     brillante en un borde, no un contorno uniforme.
+ *  3. HAY ALGO BARRIENDO. Un reflejo que cruza de vez en cuando: la pantalla
+ *     esta "encendida", no impresa.
+ *
+ * Todo esto se hace con clip-path, degradados y transform. Nada de sombras
+ * desenfocadas animadas, que es lo que hunde el rendimiento en gama baja.
+ * ============================================================ */
+
+/* 1) CHAFLAN. La esquina cortada del juego. */
+.ff-cut {
+  clip-path: polygon(
+    18px 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    0 100%,
+    0 18px
+  );
+  border-radius: 0;
+}
+
+.ff-cut-sm {
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 10px
+  );
+  border-radius: 0;
+}
+
+/* 2) FILO DE LUZ. Una linea celeste en el borde superior y en el izquierdo,
+ *    como el reflejo de los paneles del juego. */
+.ff-edge {
+  position: relative;
+}
+.ff-edge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(91, 157, 255, 0.85), transparent 42%) top / 100% 2px no-repeat,
+    linear-gradient(90deg, rgba(91, 157, 255, 0.6), transparent 55%) left / 2px 100% no-repeat;
+  opacity: 0.75;
+  transition: opacity 0.35s ease;
+}
+.ff-edge:hover::after { opacity: 1; }
+
+/* 3) BARRIDO DE ESCANER. Un reflejo que cruza al pasar el raton.
+ *    Solo `transform`: lo resuelve el compositor y no repinta nada.
+ *
+ *    OJO: usa `::before`, igual que `.ff-panel`. No se pueden poner las dos
+ *    clases en el mismo elemento -la segunda pisa a la primera y se queda sin
+ *    marco-. En un panel, ponlo en un hijo. */
+.ff-scan {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ff-scan::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42%;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(91, 157, 255, 0.13) 45%,
+    rgba(255, 255, 255, 0.09) 55%,
+    transparent
+  );
+  transform: translateY(-140%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.ff-scan:hover::before {
+  opacity: 1;
+  animation: ff-scan-run 1.6s ease-in-out;
+}
+@keyframes ff-scan-run {
+  from { transform: translateY(-140%); }
+  to   { transform: translateY(320%); }
+}
+
+/* TEXTO NEON. El resplandor va en `text-shadow`, que no fuerza al navegador a
+ * crear una capa nueva (a diferencia de `filter: drop-shadow`). */
+.neon {
+  color: #ffffff;
+  text-shadow:
+    0 0 6px rgba(91, 157, 255, 0.85),
+    0 0 18px rgba(91, 157, 255, 0.45),
+    0 0 42px rgba(91, 157, 255, 0.2);
+}
+.neon-celeste {
+  color: #5b9dff;
+  text-shadow:
+    0 0 8px rgba(91, 157, 255, 0.7),
+    0 0 26px rgba(91, 157, 255, 0.35);
+}
+
+/* BORDE NEON QUE RECORRE. El degradado se mueve, no el elemento. */
+.neon-border {
+  position: relative;
+  isolation: isolate;
+}
+.neon-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    rgba(91, 157, 255, 0) 0%,
+    rgba(91, 157, 255, 0.9) 18%,
+    rgba(255, 255, 255, 0.95) 30%,
+    rgba(91, 157, 255, 0.9) 42%,
+    rgba(91, 157, 255, 0) 60%,
+    rgba(91, 157, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-run 4s linear infinite;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.neon-border:hover::before { opacity: 1; }
+
+/* PANEL DE JUEGO. La combinacion completa, para lo que tenga que verse
+ * claramente "sacado de Free Fire": chaflan + filo de luz + fondo de panel.
+ *
+ * EL CHAFLAN VA EN UNA CAPA DE FONDO, NO RECORTANDO EL PANEL
+ * ----------------------------------------------------------
+ * Recortar el panel con `clip-path` recorta TAMBIEN a sus hijos. Funciona,
+ * pero deja el borde de la tarjeta cortando cualquier cosa que se acerque a la
+ * esquina (un nick largo, un emblema) y ata el aspecto del marco a que ningun
+ * hijo se salga.
+ *
+ * Dibujando la piel en dos pseudo-elementos DETRAS del contenido
+ * (::before = borde, ::after = relleno, 1 px por dentro), el chaflan se ve
+ * igual, el contenido nunca se recorta, y el marco es independiente de lo que
+ * lleve dentro.
+ *
+ * Los `.ff-cut` sueltos -fichas, insignias, chips- si recortan el elemento: son
+ * hojas, no contienen nada que pueda salirse. */
+.ff-panel {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  border: 0;
+  transition: filter 0.3s ease;
+  /*
+    OJO CON PONER overflow:hidden AQUI.
+
+    Se puso para arreglar el movil: el halo del rango se salia 56 px por la
+    derecha y la pagina se podia arrastrar de lado. Pero recortar el panel
+    tambien recorta los RAYOS del aura, que tienen que salir hacia fuera; sin
+    eso se leen como un marco decorado y no como un aura.
+
+    Asi que el panel deja pasar lo que se sale, y el desbordamiento se ataja
+    en los dos sitios donde toca: el halo ya no se desplaza fuera de la
+    tarjeta, y el body corta el arrastre horizontal pase lo que pase.
+  */
+  overflow: visible;
+}
+.ff-panel::before,
+.ff-panel::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(
+    18px 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    0 100%,
+    0 18px
+  );
+  transition: background 0.3s ease;
+}
+/* borde */
+.ff-panel::before {
+  inset: 0;
+  z-index: -2;
+  background: rgba(91, 157, 255, 0.22);
+}
+/* relleno, 1 px por dentro: lo que asoma del ::before es el borde */
+.ff-panel::after {
+  inset: 1px;
+  z-index: -1;
+  background:
+    linear-gradient(160deg, rgba(91, 157, 255, 0.07) 0%, rgba(10, 16, 23, 0.92) 55%, rgba(4, 7, 12, 0.96) 100%);
+}
+.ff-panel:hover::before {
+  background: rgba(91, 157, 255, 0.6);
+}
+.ff-panel:hover {
+  filter: drop-shadow(0 0 18px rgba(91, 157, 255, 0.22));
+}
+
+/* CINTA DIAGONAL de cabecera, como las pestañas del juego. */
+.ff-tab {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+
+/* En gama baja se paran los bucles nuevos, igual que los de antes. */
+:root[data-gama="bajo"] .neon-border::before,
+:root[data-quieto="si"] .neon-border::before {
+  animation: none;
+  opacity: 0.5;
+}
+:root[data-gama="bajo"] .ff-scan:hover::before,
+:root[data-quieto="si"] .ff-scan:hover::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-border::before { animation: none; }
+  .ff-scan:hover::before { animation: none; opacity: 0; }
 }
 
 /* ============================================

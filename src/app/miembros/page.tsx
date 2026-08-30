@@ -170,6 +170,12 @@ export default function MiembrosPage() {
                   e.currentTarget.style.setProperty('--ry', '0')
                 }}
               >
+                {/* El galon del rango. Es un elemento hijo de verdad y no un
+                    pseudoelemento a proposito: `.ff-panel` ya usa ::before y
+                    ::after para su borde y su relleno, y declarar otros encima
+                    dejaba la tarjeta del lider sin chaflan y sin fondo. */}
+                {INTENSIDAD_ROL[role] != null && <div className="galon-rango" />}
+
                 {/* El rango NO se pinta por encima de la tarjeta.
                     Los rayos se salian por los bordes y se metian sobre las
                     vecinas; quietos parecian garabatos sueltos. Ahora lo
