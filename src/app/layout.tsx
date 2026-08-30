@@ -97,8 +97,8 @@ export default function RootLayout({
             movil con datos son varias decimas de segundo antes de ver nada. */}
         <link rel="preconnect" href="https://thlbxskhcrxyejpvhpyn.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://thlbxskhcrxyejpvhpyn.supabase.co" />
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
         <link rel="manifest" href="/manifest.json" />
         {/* AdSense. Solo se carga si hay editor configurado: sin IDs no se
             pide nada a Google, ni script ni cookies. Va con async para que
