@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Coins, Shield, ArrowRight, Check } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 /**
  * Las dos cosas que la gente confunde, puestas una al lado de la otra.
@@ -87,7 +86,6 @@ export default function DosCaminos() {
             Entrar con Discord
           </button>
         )}
-        {!isAuthed && <AvisoCorreoDiscord className="mt-4" />}
       </motion.div>
 
       {/* CAMINO 2: el clan. Requiere que te acepten. */}

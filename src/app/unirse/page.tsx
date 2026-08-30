@@ -10,7 +10,6 @@ import { notificar } from '@/lib/data'
 import DosCaminos from '@/components/unirse/DosCaminos'
 import Link from 'next/link'
 import { useAuth } from '@/components/auth/AuthProvider'
-import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 export default function UnirsePage() {
   const { isAuthed, signIn } = useAuth()
@@ -108,8 +107,6 @@ export default function UnirsePage() {
               Entrar con Discord y empezar a ganar
             </button>
           )}
-
-          {!isAuthed && <AvisoCorreoDiscord className="mt-4" />}
 
           <button
             onClick={() => setSubmitted(false)}

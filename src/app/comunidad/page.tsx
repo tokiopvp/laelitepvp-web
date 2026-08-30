@@ -15,7 +15,6 @@ import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
 import Duelos from '@/components/comunidad/Duelos'
 import TopCoins from '@/components/comunidad/TopCoins'
-import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 /**
  * ELITE COIN: la pagina principal donde se gana, cobra y ve el progreso.
@@ -119,7 +118,6 @@ export default function ComunidadPage() {
               </svg>
               Únete con Discord y empieza a ganar
             </button>
-            <AvisoCorreoDiscord className="mt-3 max-w-xs" />
             </div>
           )}
         </motion.header>

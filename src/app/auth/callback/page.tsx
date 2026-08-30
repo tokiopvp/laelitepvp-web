@@ -57,9 +57,7 @@ const TRADUCCIONES: { patron: RegExp; texto: string }[] = [
   {
     patron: /email/i,
     texto:
-      'Discord no nos dio tu correo. Suele ser porque lo tienes sin verificar: ' +
-      'abre Discord → Ajustes de usuario → Mi cuenta y confirma tu email. ' +
-      'Luego vuelve a intentarlo.',
+      'No pudimos completar el acceso con Discord. Vuelve a pulsar el botón de entrar.',
   },
   {
     patron: /access_denied|cancel/i,
@@ -154,7 +152,7 @@ function CallbackInner() {
       sb.auth.signInWithOAuth({
         provider: 'discord',
         options: {
-          scopes: 'identify email',
+          scopes: 'identify',
           redirectTo: 'https://www.laelitepvp.com/auth/callback',
         },
       })
@@ -245,10 +243,8 @@ function CallbackInner() {
               Ir al inicio
             </Link>
           </div>
-          {/* Este consejo solo vale cuando el fallo es de sesión perdida. En
-              un error de correo no verificado es ruido que despista: la persona
-              probaría a cambiar de navegador y seguiría sin poder entrar. */}
-          {!/correo|verificar|cancelaste/i.test(fallo) && (
+          {/* Este consejo solo vale cuando el fallo es de sesión perdida. */}
+          {!/cancelaste/i.test(fallo) && (
             <p className="text-white/25 text-xs mt-5 leading-snug">
               Si se repite: abre <strong>www.laelitepvp.com</strong> en tu navegador normal —
               el navegador que abre Discord dentro de la app a veces no guarda la sesión.
