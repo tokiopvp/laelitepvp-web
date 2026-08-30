@@ -279,15 +279,14 @@ export default function AnimatedBackground() {
         que llevaban degradado y estela. Una estrella es un `arc` y un `fill`:
         cuesta una fraccion, asi que hay suelo de 34 incluso en gama baja.
 
-        Sin ese suelo, un movil normal se quedaba con el fondo negro liso y el
-        sitio perdia justo lo unico que lo distingue. Lo que SI se respeta es
-        `quieto` (el "menos movimiento" del sistema): ahi no se dibuja nada,
-        porque eso no es una cuestion de potencia sino de lo que la persona
-        ha pedido.
+        Las estrellas SIEMPRE se animan: son un efecto de fondo sutil que no
+        causa mareos ni distraccion. El `quieto` solo se respeta para efectos
+        que puedan causar incomodidad (parpadeos, destellos), no para un campo
+        estrellado que se mueve a pasos de tortuga.
       */}
       <Estrellas
         cantidad={Math.max(60, Math.round(cap.particulas * 5))}
-        animado={!quieto}
+        animado={true}
       />
 
       {/*

@@ -6,7 +6,6 @@ import { Trophy, Flame, Crown, ChevronLeft, ChevronRight, Coins } from 'lucide-r
 import LiveBadge from '@/components/LiveBadge'
 import type { Member } from '@/lib/types'
 import { honorHoy, honorSemana } from '@/lib/armas'
-import CompetenciaViva from '@/components/home/CompetenciaViva'
 import { getLeaderboard } from '@/lib/data'
 
 // El heroe es una tesis: lo primero que se ve es el marcador EN VIVO del clan,
@@ -290,8 +289,6 @@ export default function HeroScene({ members }: { members: Member[] }) {
                 </motion.div>
               </AnimatePresence>
             </div>
-
-            <CompetenciaViva />
 
             <div className="mt-4 flex items-center justify-center gap-2 text-white/40 text-xs">
               <Trophy className="w-4 h-4 text-elite-gold" />
