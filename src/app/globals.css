@@ -285,225 +285,238 @@
 }
 
 /* ============================================
-   BANNERS DE JERARQUÍA DEL CLAN
-   Efecto tipo tarjeta Pokémon legendaria:
-   - Color de fondo sutil por rol
-   - Brillo/diamond shine que cruza la tarjeta
-   - Líder tiene efecto extra: borde brillante animado
-   ============================================ */
+   JERARQUIA DEL CLAN: EL AURA ELECTRICA
+   ============================================
 
-/* LÍDER: Fondo azulado sutil + brillo diamond + borde animado */
-.member-leader {
-  background: linear-gradient(135deg, 
-    rgba(91, 157, 255, 0.08) 0%, 
-    rgba(91, 157, 255, 0.03) 50%,
-    rgba(130, 200, 255, 0.06) 100%) !important;
-  border: 1px solid rgba(91, 157, 255, 0.3) !important;
-  overflow: hidden;
-}
+   Un SOLO efecto, graduado. El lider lo lleva al 100 %, el interino al 40 %
+   y el decano al 20 %. Se controla con la variable --i, y de ahi salen a la
+   vez la opacidad, la velocidad y el alcance del resplandor.
 
-/* Brillo diamond sweep - el efecto legendario */
-.member-leader::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    to bottom right,
-    transparent 40%,
-    rgba(91, 157, 255, 0.08) 45%,
-    rgba(200, 230, 255, 0.15) 50%,
-    rgba(91, 157, 255, 0.08) 55%,
-    transparent 60%
-  );
-  animation: diamond-shine 4s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
+   Por que una variable y no tres efectos distintos: si cada rango tuviera su
+   propia animacion, se leerian como tres adornos sin relacion. Siendo EL
+   MISMO efecto a distinta potencia, la jerarquia se entiende sin leer una
+   sola etiqueta: se ve quien manda.
 
-/* Líder tiene algo extra: un borde que brilla con Pulso */
-.member-leader::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1px solid rgba(91, 157, 255, 0.4);
-  animation: leader-pulse 3s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 2;
-}
+   EL COLOR
+   --------
+   Un arco electrico entre blanco y azul-violeta (#cfe4ff -> #a78bfa). Es un
+   tono que la paleta ya tiene, asi que no la rompe, pero al ir casi al blanco
+   en el nucleo del rayo destaca por encima de cualquier otro azul de la
+   pagina. El oro NO se usa aqui: esta reservado a lo que se gana.
 
-@keyframes diamond-shine {
-  0% { transform: translateX(-30%) translateY(-30%) rotate(25deg); }
-  50% { transform: translateX(30%) translateY(30%) rotate(25deg); }
-  100% { transform: translateX(-30%) translateY(-30%) rotate(25deg); }
-}
+   COSTE
+   -----
+   Todo son degradados y `transform`. Ningun `blur`, ninguna sombra animada y
+   ningun filtro SVG, que es lo que arrodilla a una grafica integrada. El
+   anillo gira con `rotate`, que resuelve el compositor: mover un elemento ya
+   pintado sale gratis. Ademas solo lo llevan tres o cuatro tarjetas de la
+   pagina, no las cuarenta y cuatro.
+*/
 
-@keyframes leader-pulse {
-  0%, 100% { border-color: rgba(91, 157, 255, 0.2); }
-  50% { border-color: rgba(91, 157, 255, 0.5); }
-}
+.member-leader  { --i: 1;    --vel: 3.2s; }
+.member-interim { --i: 0.4;  --vel: 5s; }
+.member-elder   { --i: 0.2;  --vel: 7s; }
 
-/* LÍDER INTERINO: 40% intensidad - mismo efecto pero más suave */
-.member-interim {
-  background: linear-gradient(135deg, 
-    rgba(91, 157, 255, 0.04) 0%, 
-    rgba(91, 157, 255, 0.015) 50%,
-    rgba(130, 200, 255, 0.03) 100%) !important;
-  border: 1px solid rgba(91, 157, 255, 0.18) !important;
-  overflow: hidden;
-}
-
-.member-interim::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    to bottom right,
-    transparent 42%,
-    rgba(91, 157, 255, 0.04) 46%,
-    rgba(200, 230, 255, 0.07) 50%,
-    rgba(91, 157, 255, 0.04) 54%,
-    transparent 58%
-  );
-  animation: diamond-shine 5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* DECANO: 20% intensidad - solo un toque de color, sin animación */
+.member-leader,
+.member-interim,
 .member-elder {
-  background: linear-gradient(135deg, 
-    rgba(251, 191, 36, 0.04) 0%, 
-    transparent 100%) !important;
-  border: 1px solid rgba(251, 191, 36, 0.15) !important;
-}
-
-/* ============================================
-   AURAS Y ANIMACIONES DE PODER
-   ============================================ */
-
-/* Aura eléctrica - para el líder */
-.member-leader {
   position: relative;
-}
-.member-leader .aura-ring {
-  position: absolute;
-  inset: -4px;
-  border-radius: inherit;
-  border: 2px solid transparent;
-  background: linear-gradient(var(--elite-dark), var(--elite-dark)) padding-box,
-              linear-gradient(135deg, #5b9dff, #36e0ff, #5b9dff, #82c8ff) border-box;
-  background-size: 300% 300%;
-  animation: aura-electric 3s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
+  /* El fondo se tine muy poco: lo que distingue el rango es el AURA, no un
+     rectangulo de color. Un relleno fuerte competiria con las cifras. */
+  background: linear-gradient(
+    135deg,
+    rgba(167, 139, 250, calc(0.10 * var(--i))) 0%,
+    rgba(91, 157, 255, calc(0.04 * var(--i))) 55%,
+    rgba(207, 228, 255, calc(0.08 * var(--i))) 100%) !important;
+  box-shadow: 0 0 calc(30px * var(--i)) rgba(140, 170, 255, calc(0.30 * var(--i)));
 }
 
-/* Thunder flash - parpadeo eléctrico */
-.member-leader .thunder-flash {
+/* --- El anillo: la corriente que recorre el borde --------------------- */
+.aura-ring {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--i);
+  /* Un cono con dos nucleos claros enfrentados. Al girar, esos nucleos
+     recorren el perimetro y se leen como corriente dando la vuelta. */
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(207, 228, 255, 0.95) 18deg,
+    rgba(167, 139, 250, 0.55) 42deg,
+    transparent 90deg,
+    transparent 180deg,
+    rgba(207, 228, 255, 0.85) 200deg,
+    rgba(91, 157, 255, 0.5) 224deg,
+    transparent 270deg,
+    transparent 360deg);
+  /* Solo se ve el BORDE: la mascara vacia el centro y deja un filo de 2 px.
+     Sin esto seria un disco de color tapando la tarjeta entera. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: 2px;
+  animation: aura-girar var(--vel) linear infinite;
+}
+
+@keyframes aura-girar {
+  to { transform: rotate(1turn); }
+}
+
+/* --- El chispazo: el rayo que cruza de vez en cuando ------------------ */
+.thunder-flash {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 30% 20%, rgba(91, 157, 255, 0.15) 0%, transparent 50%),
-              radial-gradient(ellipse at 70% 80%, rgba(54, 224, 255, 0.1) 0%, transparent 50%);
-  animation: thunder-flash 4s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
   opacity: 0;
-}
-
-/* Aura del interino - más suave */
-.member-interim .aura-ring {
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  border: 1.5px solid transparent;
-  background: linear-gradient(var(--elite-dark), var(--elite-dark)) padding-box,
-              linear-gradient(135deg, rgba(91, 157, 255, 0.5), rgba(54, 224, 255, 0.3), rgba(91, 157, 255, 0.5)) border-box;
-  background-size: 300% 300%;
-  animation: aura-electric 5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Aura del decano - dorada sutil */
-.member-elder .aura-ring {
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  border: 1px solid transparent;
-  background: linear-gradient(var(--elite-dark), var(--elite-dark)) padding-box,
-              linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(255, 215, 0, 0.2), rgba(251, 191, 36, 0.3)) border-box;
-  background-size: 300% 300%;
-  animation: aura-electric 6s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
-@keyframes aura-electric {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  background: linear-gradient(
+    100deg,
+    transparent 42%,
+    rgba(207, 228, 255, 0.5) 48%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(167, 139, 250, 0.5) 52%,
+    transparent 58%);
+  /* Casi todo el ciclo esta apagado. Un rayo continuo no es un rayo: es una
+     luz encendida. Lo que impresiona es que no pase nada y de pronto pase. */
+  animation: thunder-flash 4.5s ease-in-out infinite;
 }
 
 @keyframes thunder-flash {
-  0%, 100% { opacity: 0; }
-  5% { opacity: 1; }
-  10% { opacity: 0.3; }
-  15% { opacity: 0.8; }
-  20% { opacity: 0; }
-  50% { opacity: 0; }
-  55% { opacity: 0.6; }
-  60% { opacity: 0; }
+  0%, 86%, 100% { opacity: 0; transform: translateX(-8%); }
+  88%  { opacity: 0.9; }
+  90%  { opacity: 0.15; }
+  92%  { opacity: 1; }
+  96%  { opacity: 0; transform: translateX(8%); }
 }
 
-/* Partículas flotantes - efecto de poder */
-.member-leader .power-particles {
+/* --- Las chispas: solo para el lider ---------------------------------- */
+.power-particles,
+.power-particles::before,
+.power-particles::after {
+  position: absolute;
+  pointer-events: none;
+}
+.power-particles { inset: 0; border-radius: inherit; overflow: hidden; z-index: 0; }
+.power-particles::before,
+.power-particles::after {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cfe4ff;
+  box-shadow: 0 0 6px #cfe4ff, 0 0 14px rgba(167, 139, 250, 0.9);
+}
+.power-particles::before { top: 18%; left: 8%;  animation: float-particle 3.4s ease-in-out infinite; }
+.power-particles::after  { top: 62%; right: 10%; animation: float-particle 4.6s ease-in-out infinite 0.8s; }
+
+@keyframes float-particle {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
+  25% { transform: translateY(-9px) scale(1.3); opacity: 1; }
+  50% { transform: translateY(-4px) scale(0.8); opacity: 0.35; }
+  75% { transform: translateY(-13px) scale(1.1); opacity: 0.85; }
+}
+
+/* El contenido de la tarjeta va por encima de todas estas capas. */
+.member-leader > *:not(.aura-ring):not(.thunder-flash):not(.power-particles),
+.member-interim > *:not(.aura-ring):not(.thunder-flash),
+.member-elder > *:not(.aura-ring) {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   LA MISMA CORRIENTE EN "ELITE COIN" DEL MENU
+   ============================================
+   Antes era una pastilla dorada. El oro es el color de lo que se GANA -el
+   primer puesto, el saldo-, y usarlo tambien para un enlace del menu le
+   quitaba ese significado; ademas el amarillo sobre negro es el color que
+   peor envejece de una paleta.
+
+   Ahora lleva el mismo arco electrico que el lider del clan. Dice lo mismo
+   que se queria decir -aqui hay algo especial- con el vocabulario que el
+   sitio ya usa para "esto es lo importante".
+*/
+.nav-electrico {
+  --i: 0.85;
+  --vel: 3.6s;
+  position: relative;
+  color: #e8efff;
+  border-radius: 999px;
+  padding-left: 0.95rem;
+  padding-right: 0.95rem;
+  background: linear-gradient(
+    180deg,
+    rgba(167, 139, 250, 0.18),
+    rgba(91, 157, 255, 0.07));
+  text-shadow: 0 0 12px rgba(167, 139, 250, 0.55);
+  transition: color 0.2s, transform 0.2s;
+  isolation: isolate;
+}
+.nav-electrico:hover { color: #fff; transform: translateY(-1px); }
+
+/* El anillo de corriente, igual que en la tarjeta del lider. */
+.nav-electrico::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  z-index: -1;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(207, 228, 255, 0.95) 16deg,
+    rgba(167, 139, 250, 0.6) 40deg,
+    transparent 88deg,
+    transparent 180deg,
+    rgba(207, 228, 255, 0.85) 198deg,
+    rgba(91, 157, 255, 0.55) 222deg,
+    transparent 268deg,
+    transparent 360deg);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: aura-girar var(--vel) linear infinite;
+}
+
+/* El chispazo del menu: el mismo gesto, mas corto. */
+.nav-electrico .rayo {
   position: absolute;
   inset: 0;
   border-radius: inherit;
   overflow: hidden;
   pointer-events: none;
-  z-index: 2;
+  z-index: -1;
 }
-.member-leader .power-particles::before,
-.member-leader .power-particles::after {
+.nav-electrico .rayo::before {
   content: '';
   position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #5b9dff;
-  box-shadow: 0 0 6px #5b9dff, 0 0 12px #5b9dff;
-  animation: float-particle 6s ease-in-out infinite;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 40%,
+    rgba(207, 228, 255, 0.45) 47%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(167, 139, 250, 0.45) 53%,
+    transparent 60%);
+  opacity: 0;
+  animation: thunder-flash 5.5s ease-in-out infinite 1.4s;
 }
-.member-leader .power-particles::before {
-  left: 15%;
-  top: 20%;
-  animation-delay: 0s;
-}
-.member-leader .power-particles::after {
-  right: 15%;
-  bottom: 20%;
-  animation-delay: 3s;
-  background: #36e0ff;
-  box-shadow: 0 0 6px #36e0ff, 0 0 12px #36e0ff;
-}
-
-@keyframes float-particle {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
-  25% { transform: translateY(-8px) scale(1.2); opacity: 1; }
-  50% { transform: translateY(-4px) scale(0.8); opacity: 0.4; }
-  75% { transform: translateY(-12px) scale(1.1); opacity: 0.8; }
-}
-
-
 
 /* En gama baja se para TODA animacion en bucle. Las de entrada (que ocurren
  * una vez y terminan) se dejan: no cuestan nada y dan sensacion de vida. */
@@ -929,95 +942,32 @@ h2.font-display {
  * Todo con `background-position`, `opacity` y `transform`: nada que obligue al
  * navegador a recalcular el diseño en cada fotograma.
  * ============================================================ */
-/*
-  ELITE COIN en la barra.
-
-  Antes era texto dorado con un rectangulo en degradado detras. El rectangulo
-  se veia como un borde pegado y encima tapaba el brillo del texto.
-
-  Ahora es una PASTILLA: fondo dorado casi transparente, un filo de luz arriba
-  y un barrido lento que la cruza. El oro se queda para esto y para los
-  primeros puestos; en ningun otro sitio del menu hay dorado, asi que el ojo va
-  aqui sin que haya que subirle el brillo a nada.
-*/
-.nav-electrico {
-  position: relative;
-  color: #ffd98a;
-  border-radius: 999px;
-  padding-left: 0.9rem;
-  padding-right: 0.9rem;
-  background:
-    linear-gradient(180deg, rgba(240, 180, 41, 0.16), rgba(240, 180, 41, 0.05));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 232, 170, 0.35),
-    0 0 0 1px rgba(240, 180, 41, 0.16),
-    0 6px 22px -10px rgba(240, 180, 41, 0.55);
-  text-shadow: 0 0 14px rgba(240, 180, 41, 0.45);
-  transition: color 0.2s, box-shadow 0.25s, transform 0.2s;
-}
-.nav-electrico:hover {
-  color: #fff3cf;
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 240, 200, 0.55),
-    0 0 0 1px rgba(240, 180, 41, 0.35),
-    0 10px 30px -10px rgba(240, 180, 41, 0.8);
-}
-
-@keyframes coin-latido {
-  0%, 100% { filter: brightness(1); }
-  50%      { filter: brightness(1.1); }
-}
-
-/* El chispazo: una banda clara que barre la palabra. */
-.nav-electrico .rayo {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 0.5rem;
-  overflow: hidden;
-}
-.nav-electrico .rayo::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 45%;
-  left: -60%;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    rgba(255, 240, 190, 0.55) 45%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(255, 240, 190, 0.55) 55%,
-    transparent
-  );
-  transform: skewX(-18deg);
-  animation: coin-chispazo 4.5s ease-in-out infinite;
-}
-.nav-electrico:hover .rayo::before {
-  animation-duration: 1.4s;
-}
-
-@keyframes coin-chispazo {
-  0%, 62%  { left: -60%; opacity: 0; }
-  66%      { opacity: 1; }
-  86%      { left: 115%; opacity: 0; }
-  100%     { left: 115%; opacity: 0; }
-}
-
-/* Gama baja y "menos movimiento": se queda el oro, se va la animacion. */
-:root[data-gama="bajo"] .nav-electrico,
-:root[data-quieto="si"] .nav-electrico {
+/* Gama baja y "menos movimiento".
+ *
+ * El anillo NO se apaga: se queda quieto. Es lo que distingue a ELITE COIN del
+ * resto del menu, y quitarlo dejaria el enlace igual que los demas justo en
+ * los equipos donde mas falta hace que se note. Lo que se va es el giro y el
+ * chispazo, que es el movimiento. */
+:root[data-gama="bajo"] .nav-electrico::after,
+:root[data-quieto="si"] .nav-electrico::after,
+:root[data-gama="bajo"] .aura-ring,
+:root[data-quieto="si"] .aura-ring {
   animation: none;
 }
 :root[data-gama="bajo"] .nav-electrico .rayo::before,
-:root[data-quieto="si"] .nav-electrico .rayo::before {
+:root[data-quieto="si"] .nav-electrico .rayo::before,
+:root[data-gama="bajo"] .thunder-flash,
+:root[data-quieto="si"] .thunder-flash,
+:root[data-gama="bajo"] .power-particles,
+:root[data-quieto="si"] .power-particles {
   animation: none;
   opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-electrico { animation: none; }
-  .nav-electrico .rayo::before { animation: none; opacity: 0; }
+  .nav-electrico::after,
+  .aura-ring { animation: none; }
+  .nav-electrico .rayo::before,
+  .thunder-flash,
+  .power-particles { animation: none; opacity: 0; }
 }

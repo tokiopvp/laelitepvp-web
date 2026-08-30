@@ -98,9 +98,45 @@ def _existing_ids(table):
         log.error("No pude listar ids de %s: %s", table, e)
         return []
 
+def desactivar_ausentes(keep_ids):
+    """
+    Los miembros que no salieron en esta pasada se marcan is_active=false. NO
+    se borran.
+
+    POR QUE NO SE BORRAN
+    --------------------
+    Habia aqui un `reconcile` que hacia DELETE de toda fila ausente, y eso se
+    llevaba por delante lo unico de la tabla que NO viene del juego: el rol del
+    clan que se asigna a mano en el panel, y el WhatsApp.
+
+    Basta con que una pasada no lea a un jugador -porque el juego se colgo en su
+    perfil, porque estaba en partida, porque su nick cambio- para que su fila
+    desaparezca. A la pasada siguiente vuelve como fila nueva con role_in_clan
+    en NULL, o sea "member". De ahi que los 49 miembros estuvieran TODOS como
+    member y que el rango asignado en el panel pareciera evaporarse.
+
+    Un dato que costo un clic de una persona no puede depender de que un
+    barrido automatico salga perfecto. Desactivar es reversible; borrar, no.
+    """
+    if not keep_ids:
+        return
+    keep = set(keep_ids)
+    ausentes = [i for i in _existing_ids("members") if i not in keep]
+    for oid in ausentes:
+        try:
+            supabase("members", "PATCH", params=f"?id=eq.{oid}",
+                     payload={"is_active": False})
+        except Exception as e:
+            log.error("desactivar members id=%s fallo: %s", oid, e)
+    if ausentes:
+        log.info("miembros ausentes desactivados (no borrados): %d", len(ausentes))
+
+
 def reconcile(table, keep_ids):
     """Elimina filas cuya id NO este en keep_ids (hace al sync autoritativo).
-    Borra de a una con id=eq. para evitar fallos del filtro in.() de 1 valor."""
+    Borra de a una con id=eq. para evitar fallos del filtro in.() de 1 valor.
+
+    OJO: no usar con `members`. Ver desactivar_ausentes()."""
     if not keep_ids:
         return
     keep = set(keep_ids)
@@ -743,7 +779,9 @@ def run_once():
     n_m = upsert("members", members, "id")
     n_t = upsert("tournaments", tournaments, "id")
     n_p = upsert("tournament_participants", participants, "id")
-    reconcile("members", {m["id"] for m in members})
+    # members NO pasa por reconcile: borrar se lleva el rol del clan y el
+    # WhatsApp, que son lo unico que no se puede recuperar del juego.
+    desactivar_ausentes({m["id"] for m in members})
     reconcile("tournaments", {t["id"] for t in tournaments})
     reconcile("tournament_participants", {p["id"] for p in participants})
 
