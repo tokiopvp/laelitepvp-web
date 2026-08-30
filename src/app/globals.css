@@ -534,8 +534,13 @@
 :root[data-quieto="si"] .nav-electrico::after {
   animation: none;
   /* Quietos pero VISIBLES: sin esto se quedarian en la opacidad 0 con la que
-     arranca el fotograma inicial de su animacion, o sea invisibles igual. */
-  opacity: 0.9;
+     arranca el fotograma inicial de su animacion, o sea invisibles igual.
+     
+     Al 0.45 y no al 0.9: cuando saltan, los rayos se ven de uno en uno y por
+     un instante. Quietos se ven los nueve A LA VEZ y para siempre, asi que a
+     plena opacidad la tarjeta queda emborronada. A media, se lee como un aura
+     encendida, que es lo mas parecido al efecto animado sin movimiento. */
+  opacity: 0.45;
   left: auto;
 }
 
@@ -547,7 +552,7 @@
   .nav-electrico .rayo::after,
   .nav-electrico::after {
     animation: none;
-    opacity: 0.9;
+    opacity: 0.45;
     left: auto;
   }
 }
