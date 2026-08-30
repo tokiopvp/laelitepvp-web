@@ -165,15 +165,6 @@ export default function Home() {
             <HeroScene members={todos} />
           </div>
 
-          {/* Scroll Indicator */}
-          <motion.div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40"
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <MousePointer2 className="w-6 h-6" />
-            <span className="text-xs">Scroll para descubrir</span>
-          </motion.div>
         </div>
       </section>
 
