@@ -97,8 +97,22 @@ export default function RootLayout({
             movil con datos son varias decimas de segundo antes de ver nada. */}
         <link rel="preconnect" href="https://thlbxskhcrxyejpvhpyn.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://thlbxskhcrxyejpvhpyn.supabase.co" />
-        <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
+        {/* El ?v= es lo UNICO que hace que un navegador vuelva a pedir el
+            icono. Un favicon se cachea con una agresividad que no tiene
+            ningun otro recurso -meses, y sobrevive a recargas forzadas-, asi
+            que cambiar el fichero sin cambiar la URL no sirve de nada: el
+            aguila ya estaba subida y las pestanas seguian con la estrella
+            roja porque /favicon.ico?v=2 era byte a byte la misma direccion.
+
+            SI SE CAMBIA EL ICONO, HAY QUE SUBIR ESTE NUMERO. Aqui y en
+            manifest.json. */}
+        <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
+        {/* Los PNG antes que el .ico: casi todos los navegadores modernos
+            prefieren el PNG si se les ofrece, y se ve mas limpio que el
+            reescalado del .ico. */}
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png?v=3" />
+        <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png?v=3" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
         <link rel="manifest" href="/manifest.json" />
         {/* AdSense. Solo se carga si hay editor configurado: sin IDs no se
             pide nada a Google, ni script ni cookies. Va con async para que
