@@ -57,15 +57,9 @@ export default function SiteNav() {
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link href="/" className="flex items-center gap-3" aria-label="La Elite PvP">
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center">
-                {/* El emblema del clan, no la corona generica de lucide. */}
-                <img src="/icon-192.png" alt="" width={28} height={28} className="w-7 h-7" />
-              </div>
+              <img src="/icon-192.png" alt="La Elite PvP" width={40} height={40} className="w-10 h-10 rounded-xl object-cover" />
               <motion.div
                 className="absolute -top-1 -right-1 w-3 h-3 bg-elite-gold rounded-full"
-                // En gama baja el punto se queda quieto. Sigue estando; lo
-                // unico que se pierde es el latido, y a cambio no hay JavaScript
-                // corriendo en cada fotograma detras de una barra fija.
                 animate={gama === 'bajo' ? undefined : { scale: [1, 1.3, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               />
