@@ -104,9 +104,8 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-               <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6">
-                 <span className="block">La Elite</span>
-                 <span className="block gradient-text-shimmer">PvP</span>
+               <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6 mt-8">
+                 <span className="gradient-text-shimmer">La Elite PvP</span>
                </h1>
               <p className="text-xl sm:text-2xl text-white/70 mb-8 max-w-xl leading-relaxed">
                 El clan más letal de Free Fire. Dominamos ranked y arrasamos torneos.
