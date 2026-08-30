@@ -15,7 +15,6 @@ import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
 import HeroScene from '@/components/home/HeroScene'
 import OutfitAmbiente from '@/components/home/OutfitAmbiente'
-import CompetenciaViva from '@/components/home/CompetenciaViva'
 
 const features = [
   {
@@ -80,32 +79,8 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-x-hidden">
 
-      {/* ═══════════════════════════════════════════════════════════════
-          TOP EN VIVO — Primero en móvil, sutil en desktop.
-          En el movil es lo primero que ve quien abre la pagina: el
-          marcador en vivo de quien va ganando. En desktop queda como
-          un widget discreto arriba a la derecha del hero.
-         ═══════════════════════════════════════════════════════════════ */}
-      <section className="order-1 md:order-none pt-20 md:pt-0 pb-4 md:pb-0">
-        <div className="section-container">
-          <div className="md:flex md:justify-end">
-            <div className="ff-panel p-4 md:p-5 md:w-80">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 bg-elite-primary rounded-full animate-pulse" />
-                <span className="text-xs font-semibold uppercase tracking-widest text-elite-primary">Top en Vivo</span>
-              </div>
-              <CompetenciaViva />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          HERO SECTION — Reordenado para movil.
-          En movil: badge + titulo + descripcion + botones + scrims.
-          El HeroScene 3D solo se ve en desktop (ocupa mucho y pesa).
-         ═══════════════════════════════════════════════════════════════ */}
-      <section id="inicio" className="order-4 md:order-none relative min-h-[auto] md:min-h-screen flex items-center pt-8 md:pt-20 overflow-hidden">
+      {/* Hero Section */}
+      <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20 overflow-hidden">
         <WeaponParallax />
         <OutfitAmbiente members={todos} />
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -153,8 +128,8 @@ export default function Home() {
                  <span className="block gradient-text-shimmer">PvP</span>
                </h1>
               <p className="text-xl sm:text-2xl text-white/70 mb-8 max-w-xl leading-relaxed">
-                El clan más letal de Free Fire. Dominamos ranked, arrasamos torneos y vendemos diamantes
-                al mejor precio. ¿Te atreves a entrar?
+                El clan más letal de Free Fire. Dominamos ranked y arrasamos torneos.
+                ¿Te atreves a entrar?
               </p>
 
               <div className="flex flex-wrap items-center gap-4 mb-12">
@@ -186,15 +161,13 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Hero Visual 3D — Solo en desktop */}
-            <div className="hidden lg:block">
-              <HeroScene members={todos} />
-            </div>
+            {/* Hero Visual 3D */}
+            <HeroScene members={todos} />
           </div>
 
-          {/* Scroll Indicator — Solo en desktop */}
+          {/* Scroll Indicator */}
           <motion.div
-            className="hidden md:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-white/40"
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40"
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -204,10 +177,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          STATS BAR — Segundo en movil.
-         ═══════════════════════════════════════════════════════════════ */}
-      <section className="order-2 md:order-none py-16 border-y border-elite-border">
+      {/* Stats Bar */}
+      <section className="py-16 border-y border-elite-border">
         <div className="section-container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, i) => (
@@ -228,10 +199,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          FEATURES — Tercero en movil: "Somos la élite"
-         ═══════════════════════════════════════════════════════════════ */}
-      <section id="features" className="order-3 md:order-none py-24">
+      {/* Features */}
+      <section id="features" className="py-24">
         <div className="section-container">
           <motion.div
             className="text-center mb-16"
@@ -264,10 +233,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          CTA SECTION — Ultimo en movil: "Mi Cuenta" + "Quiero Ser Elite"
-         ═══════════════════════════════════════════════════════════════ */}
-      <section className="order-5 md:order-none py-24 relative">
+      {/* CTA Section */}
+      <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-elite-primary/10 via-transparent to-elite-secondary/10" />
         <div className="section-container relative">
           <motion.div
