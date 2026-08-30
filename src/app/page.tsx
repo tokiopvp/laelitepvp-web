@@ -5,8 +5,9 @@ import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
   Trophy, Users, Zap, Flame, Crown,
-  ShoppingCart, ArrowRight, MousePointer2,
+  MousePointer2, ArrowRight,
   Sparkles, Shield, Sword, Star, Target,
+  Crosshair,
 } from 'lucide-react'
 import { getMembersLigero, getTournaments } from '@/lib/data'
 import type { Member } from '@/lib/types'
@@ -14,6 +15,7 @@ import { demoMembers, demoTournaments } from '@/lib/demo-data'
 import WeaponParallax from '@/components/home/WeaponParallax'
 import HeroScene from '@/components/home/HeroScene'
 import OutfitAmbiente from '@/components/home/OutfitAmbiente'
+import CompetenciaViva from '@/components/home/CompetenciaViva'
 
 const features = [
   {
@@ -34,7 +36,7 @@ const features = [
   {
     icon: Star,
     title: 'PagoStore Premium',
-    desc: 'Diamantes al mejor precio, entrega instantánea, soporte 24/7.',
+    desc: 'Diamantes al mejor precio, entrega instantánea, soporte 24/7. 5% descuento miembros.',
   },
 ]
 
@@ -51,18 +53,11 @@ export default function Home() {
     let alive = true
     ;(async () => {
       const [members, tournaments] = await Promise.all([
-        // Version ligera: la portada no pinta telemetria, y `getMembers()`
-        // arrastraba 230 KB de `stats_json` en la primera pantalla que ve
-        // alguien que llega de cero.
         getMembersLigero().catch(() => demoMembers),
         getTournaments().catch(() => demoTournaments),
       ])
       if (!alive) return
       const totalMembers = members.length
-      // El bot crea los torneos con placement=null (los marca EN CURSO) y
-      // nunca los cierra, asi que 'ganados' era siempre 0: un cero que no
-      // significaba nada mas que un campo sin llenar, en la portada.
-      // Contamos participaciones, que si es un dato real hoy.
       const torneosGanados = tournaments.filter((t) => t.placement === 1).length
       const torneosTotales = tournaments.length
       const topKd = members.reduce((a, m) => ((m.kd_ratio || 0) > a ? (m.kd_ratio as number) : a), 0)
@@ -75,10 +70,6 @@ export default function Home() {
         { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#a78bfa' },
         { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#f0b429' },
       ])
-      // Se pasan los miembros enteros: el marcador del hero rota entre varios
-      // tops (kills, K/D, headshots, honor de hoy) en vez de enseñar siempre
-      // el mismo. Las kills van primero porque es la cifra que el jugador
-      // presume, no el K/D.
       setTodos(members)
     })()
     return () => {
@@ -89,8 +80,32 @@ export default function Home() {
   return (
     <div className="min-h-screen relative overflow-x-hidden">
 
-      {/* Hero Section */}
-      <section id="inicio" className="relative min-h-screen flex items-center pt-16 md:pt-20 overflow-hidden">
+      {/* ═══════════════════════════════════════════════════════════════
+          TOP EN VIVO — Primero en móvil, sutil en desktop.
+          En el movil es lo primero que ve quien abre la pagina: el
+          marcador en vivo de quien va ganando. En desktop queda como
+          un widget discreto arriba a la derecha del hero.
+         ═══════════════════════════════════════════════════════════════ */}
+      <section className="order-1 md:order-none pt-20 md:pt-0 pb-4 md:pb-0">
+        <div className="section-container">
+          <div className="md:flex md:justify-end">
+            <div className="ff-panel p-4 md:p-5 md:w-80">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-elite-primary rounded-full animate-pulse" />
+                <span className="text-xs font-semibold uppercase tracking-widest text-elite-primary">Top en Vivo</span>
+              </div>
+              <CompetenciaViva />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          HERO SECTION — Reordenado para movil.
+          En movil: badge + titulo + descripcion + botones + scrims.
+          El HeroScene 3D solo se ve en desktop (ocupa mucho y pesa).
+         ═══════════════════════════════════════════════════════════════ */}
+      <section id="inicio" className="order-4 md:order-none relative min-h-[auto] md:min-h-screen flex items-center pt-8 md:pt-20 overflow-hidden">
         <WeaponParallax />
         <OutfitAmbiente members={todos} />
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -148,9 +163,9 @@ export default function Home() {
                   Unirse al Clan
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link href="/pagostore" className="btn-secondary group inline-flex items-center gap-2 text-lg px-8 py-4">
-                  <ShoppingCart className="w-5 h-5" />
-                  PagoStore Premium
+                <Link href="/ia" className="btn-secondary group inline-flex items-center gap-2 text-lg px-8 py-4">
+                  <Crosshair className="w-5 h-5" />
+                  Sensibilidad Perfecta IA
                   <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
                 </Link>
               </div>
@@ -171,13 +186,15 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Hero Visual 3D */}
-            <HeroScene members={todos} />
+            {/* Hero Visual 3D — Solo en desktop */}
+            <div className="hidden lg:block">
+              <HeroScene members={todos} />
+            </div>
           </div>
 
-          {/* Scroll Indicator */}
+          {/* Scroll Indicator — Solo en desktop */}
           <motion.div
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/40"
+            className="hidden md:flex absolute bottom-10 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-white/40"
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
@@ -187,8 +204,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="py-16 border-y border-elite-border">
+      {/* ═══════════════════════════════════════════════════════════════
+          STATS BAR — Segundo en movil.
+         ═══════════════════════════════════════════════════════════════ */}
+      <section className="order-2 md:order-none py-16 border-y border-elite-border">
         <div className="section-container">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, i) => (
@@ -200,10 +219,6 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                {/* El color lo lleva el icono; la cifra se lee limpia. Cuatro
-                    numeros en degradado a la vez era gastar el acento en todo,
-                    y ademas cuesta leerlos. Tabulares para que las cuatro
-                    columnas queden alineadas. */}
                 <stat.icon className="w-10 h-10 mx-auto mb-3" style={{ color: stat.color }} />
                 <p className="font-display font-bold text-4xl sm:text-5xl tabular-nums">{stat.value}</p>
                 <p className="text-white/60 mt-1">{stat.label}</p>
@@ -213,8 +228,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24">
+      {/* ═══════════════════════════════════════════════════════════════
+          FEATURES — Tercero en movil: "Somos la élite"
+         ═══════════════════════════════════════════════════════════════ */}
+      <section id="features" className="order-3 md:order-none py-24">
         <div className="section-container">
           <motion.div
             className="text-center mb-16"
@@ -247,8 +264,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 relative">
+      {/* ═══════════════════════════════════════════════════════════════
+          CTA SECTION — Ultimo en movil: "Mi Cuenta" + "Quiero Ser Elite"
+         ═══════════════════════════════════════════════════════════════ */}
+      <section className="order-5 md:order-none py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-r from-elite-primary/10 via-transparent to-elite-secondary/10" />
         <div className="section-container relative">
           <motion.div

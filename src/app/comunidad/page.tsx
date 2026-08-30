@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { Trophy, Coins } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { getMyProfile } from '@/lib/data'
-import { getTareas, getTienda, getProgreso, coinsCorto } from '@/lib/economia'
+import { getTareas, getTienda, getProgreso, coinsCorto, getTop, type FilaTop } from '@/lib/economia'
 import type { Tarea, ItemTienda, Progreso } from '@/lib/economia'
 import type { Profile } from '@/lib/types'
 import TiendaCoins from '@/components/comunidad/TiendaCoins'
@@ -14,34 +14,20 @@ import Tareas from '@/components/comunidad/Tareas'
 import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
 import Duelos from '@/components/comunidad/Duelos'
+import TopCoins from '@/components/comunidad/TopCoins'
 import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
 
 /**
  * ELITE COIN: la pagina principal donde se gana, cobra y ve el progreso.
- * 
- * Antes: Comunidad (ranking + tareas + tienda + mercado)
- * Ahora: ELITE COIN (todo lo que veras y tocara para ganar coins)
- * 
- * El titulo y la identidad visual ahora dice ELITE COIN con animacion de rayos
- * que parpadean al entrar, para llamar la atencion sobre quien manda en la
- * economia y que premio se lleva.
+ *
+ * ORDEN (movil primero):
+ *   1. Tienda Elite — lo que la gente quiere COMPRAR/CANJEAR
+ *   2. Duelos PvP — historial de lo que han jugado
+ *   3. Grafico Trading — el mercado en tiempo real
+ *   4. ComoGano — explicacion para nuevos
+ *   5. Tareas — misiones diarias
+ *   6. Top Elite Coin — ranking
  */
-
-/*
-  AQUI HABIA "RayosNeon" Y SE HA QUITADO.
-  ---------------------------------------
-  Era una capa `fixed` a z-40, o sea POR ENCIMA del contenido, con tres
-  circulos y un cuadrado de 128 px animados. En el movil el cuadrado caia justo
-  sobre el titular y los circulos cruzaban el texto: no se podia leer la
-  pagina.
-
-  Ademas su animacion iba de opacidad 0 a 0 (`animate` usaba `encendido` para
-  aparecer, pero el valor de reposo tambien era 0), asi que lo que se veia era
-  un parpadeo y nada mas.
-
-  El ambiente ya lo pone el campo de estrellas del fondo, que va DETRAS del
-  contenido y no tapa nada. Adornar por encima del texto no es adornar.
-*/
 
 export default function ComunidadPage() {
   const { user, isAuthed, signIn } = useAuth()
@@ -49,20 +35,23 @@ export default function ComunidadPage() {
   const [tareas, setTareas] = useState<Tarea[]>([])
   const [progreso, setProgreso] = useState<Map<string, Progreso>>(new Map())
   const [tienda, setTienda] = useState<ItemTienda[]>([])
+  const [topCoins, setTopCoins] = useState<FilaTop[]>([])
   const [perfil, setPerfil] = useState<Profile | null>(null)
   const [cargando, setCargando] = useState(true)
   const [aviso, setAviso] = useState<{ texto: string; ok: boolean } | null>(null)
 
   const cargar = useCallback(async () => {
-    const [ts, sh, cb, pf] = await Promise.all([
+    const [ts, sh, cb, tc, pf] = await Promise.all([
       getTareas(),
       getTienda(),
       isAuthed ? getProgreso() : Promise.resolve(new Map<string, Progreso>()),
+      getTop(),
       isAuthed ? getMyProfile() : Promise.resolve(null),
     ])
     setTareas(ts)
     setTienda(sh)
     setProgreso(cb)
+    setTopCoins(tc)
     setPerfil(pf)
     setCargando(false)
   }, [isAuthed])
@@ -71,8 +60,6 @@ export default function ComunidadPage() {
     cargar()
   }, [cargar])
 
-  // El aviso se va solo. Un mensaje que hay que cerrar a mano acaba tapando la
-  // tienda justo después de canjear, que es cuando se quiere seguir mirar.
   useEffect(() => {
     if (!aviso) return
     const t = setTimeout(() => setAviso(null), 4500)
@@ -152,29 +139,18 @@ export default function ComunidadPage() {
           </motion.div>
         )}
 
-        {/* ORDEN DE LA PAGINA
-            1. Cómo se gana + qué se lleva + cómo. Los tres bloques que
-               convierten a alguien que llega nuevo, arriba y compactos.
-            2. Quién va ganando y qué está pasando ahora mismo.
-            3. El gráfico, al final: es el espejo de todo lo anterior, no una
-               instrucción, y ocupa mucho alto.
+        {/* ═══════════════════════════════════════════════════════════
+            ORDEN DE LA PAGINA (movil primero):
+            1. Tienda Elite — lo que la gente quiere canjear
+            2. Duelos PvP — historial de partidas jugadas
+            3. Grafico Trading — mercado en tiempo real
+            4. ComoGano — explicacion para nuevos
+            5. Tareas — misiones diarias
+            6. Top Elite Coin — ranking
+           ═══════════════════════════════════════════════════════════ */}
 
-            Los bloques largos llevan tope de altura y scroll propio: sin él,
-            siete premios y veinte tareas empujaban el ranking fuera de la
-            pantalla y había que deslizar muchísimo para llegar a lo importante. */}
+        {/* 1. Tienda Elite */}
         <div className="mb-5">
-          <ComoGano />
-        </div>
-
-        <div className="grid lg:grid-cols-2 gap-5 mb-5">
-          <Tareas
-            tareas={tareas}
-            progreso={progreso}
-            autenticado={isAuthed}
-            esMiembro={esMiembro}
-            onCobro={tras}
-            onEntrar={signIn}
-          />
           <TiendaCoins
             items={tienda}
             saldo={saldo}
@@ -185,31 +161,52 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* Ranking de Elite Coin - AHORA es el foco principal, no un enlace oculto.
-            Antes ocupaba media pantalla repitiendo algo que ya tiene su sitio en /tops.
-            Queda el resumen rápido con los tres primeros puestos. */}
+        {/* 2. Duelos PvP + Top Elite Coin */}
         <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Duelos />
-          <Link
-            href="/tops"
-            className="ff-panel flex flex-col items-center justify-center gap-2 p-8 text-center
-                       group transition-transform hover:-translate-y-1"
-          >
-            <Trophy className="w-8 h-8 text-elite-gold" />
-            <span className="font-display font-bold text-xl uppercase text-elite-ice">
-              Top Elite Coin
-            </span>
-            <span className="text-white/40 text-sm">
-              Quién manda en la economía del clan, con el resto de rankings.
-            </span>
-            <span className="mt-1 text-elite-primary text-sm font-semibold
-                             group-hover:translate-x-1 transition-transform">
-              Ver ranking →
-            </span>
-          </Link>
+          <TopCoins filas={topCoins} yo={user?.id} />
         </div>
 
-        <GraficoMercado />
+        {/* 3. Grafico Trading */}
+        <div className="mb-5">
+          <GraficoMercado />
+        </div>
+
+        {/* 4. Como Gano */}
+        <div className="mb-5">
+          <ComoGano />
+        </div>
+
+        {/* 5. Tareas */}
+        <div className="mb-5">
+          <Tareas
+            tareas={tareas}
+            progreso={progreso}
+            autenticado={isAuthed}
+            esMiembro={esMiembro}
+            onCobro={tras}
+            onEntrar={signIn}
+          />
+        </div>
+
+        {/* 6. Top Elite Coin (enlace a /tops) */}
+        <Link
+          href="/tops"
+          className="ff-panel flex flex-col items-center justify-center gap-2 p-8 text-center
+                     group transition-transform hover:-translate-y-1"
+        >
+          <Trophy className="w-8 h-8 text-elite-gold" />
+          <span className="font-display font-bold text-xl uppercase text-elite-ice">
+            Top Elite Coin
+          </span>
+          <span className="text-white/40 text-sm">
+            Quién manda en la economía del clan, con el resto de rankings.
+          </span>
+          <span className="mt-1 text-elite-primary text-sm font-semibold
+                           group-hover:translate-x-1 transition-transform">
+            Ver ranking →
+          </span>
+        </Link>
 
       </div>
     </div>

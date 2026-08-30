@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { useGama } from '@/components/layout/Resplandor'
 
@@ -120,13 +120,25 @@ export default function SiteNav() {
             )}
           </div>
 
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-elite-card transition-colors"
-            onClick={() => setOpen(!open)}
-            aria-label="Menú"
-          >
-            {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="md:hidden flex items-center gap-1">
+            {/* Flecha indicadora: avisa que hay un menu detras. Se oculta cuando
+                el menu esta abierto (ya no hace falta). */}
+            {!open && (
+              <motion.div
+                animate={{ x: [0, 4, 0] }}
+                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <ChevronRight className="w-5 h-5 text-elite-gold" />
+              </motion.div>
+            )}
+            <button
+              className="p-2 rounded-lg hover:bg-elite-card transition-colors"
+              onClick={() => setOpen(!open)}
+              aria-label="Menú"
+            >
+              {open ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -22,11 +22,9 @@ export async function getMembers(): Promise<Member[]> {
     .from('members')
     .select('*')
     .eq('is_active', true)
-    // nullsFirst:false es decisivo. En PostgreSQL, ORDER BY ... DESC pone los
-    // NULL PRIMERO: la pagina de miembros abria con un muro de tarjetas vacias
-    // (los que el bot aun no ha leido) y enterraba abajo a los jugadores con
-    // estadisticas reales.
-    .order('kd_ratio', { ascending: false, nullsFirst: false })
+    // Ordenamos por kills de mayor a menor: es la cifra que el jugador presume,
+    // no el K/D. nullsFirst:false evita que los sin datos aparezcan primero.
+    .order('kills', { ascending: false, nullsFirst: false })
   if (error) return []
   if (!data || data.length === 0) return []
   return data as Member[]
@@ -612,7 +610,7 @@ export async function getMembersLigero(): Promise<Member[]> {
     .from('members')
     .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at')
     .eq('is_active', true)
-    .order('kd_ratio', { ascending: false, nullsFirst: false })
+    .order('kills', { ascending: false, nullsFirst: false })
   if (error || !data) return []
   return data as unknown as Member[]
 }
