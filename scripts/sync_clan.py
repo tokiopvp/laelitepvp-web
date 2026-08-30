@@ -253,11 +253,12 @@ def extract(db_path):
             stats_json.pop("clan_honor_semana", None)
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
+        # role_in_clan NO se sincroniza: se asigna manualmente desde el admin.
+        # Si se incluye aqui, cada sync borra los roles asignados.
         members.append({
             "id": mid_for(key),
             "nickname": r["nick"],
             "free_fire_id": uid,
-            "role_in_clan": "member",
             "level": int(mi["nivel"]) if mi.get("nivel") else None,
             "rank": rank,
             "kd_ratio": round(float(kd), 2) if kd is not None else None,
