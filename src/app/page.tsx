@@ -104,25 +104,6 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-              <motion.div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-primary/10 border border-elite-primary/30 mb-6"
-                initial={{ scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-              >
-                <motion.div
-                  className="w-2 h-2 bg-elite-primary rounded-full"
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                />
-                <span className="text-sm font-medium text-elite-primary">CLAN COMPETITIVO FREE FIRE</span>
-                <motion.div
-                  className="w-2 h-2 bg-elite-primary rounded-full"
-                  animate={{ scale: [1, 1.5, 1] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: 0.5 }}
-                />
-              </motion.div>
-
                <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6">
                  <span className="block">La Elite</span>
                  <span className="block gradient-text-shimmer">PvP</span>
