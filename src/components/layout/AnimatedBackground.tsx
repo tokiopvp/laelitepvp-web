@@ -88,12 +88,16 @@ function Estrellas({ cantidad }: { cantidad: number }) {
       return {
         x: Math.random() * w,
         y: Math.random() * h,
-        r: [0.5, 0.9, 1.4][capa] + Math.random() * 0.35,
+        r: [0.7, 1.1, 1.7][capa] + Math.random() * 0.4,
         // Deriva en diagonal suave, siempre en el mismo sentido: un campo que
         // va en direcciones distintas se lee como ruido, no como movimiento.
-        vx: (0.012 + Math.random() * 0.014) * prof,
-        vy: (-0.006 - Math.random() * 0.008) * prof,
-        base: [0.28, 0.5, 0.78][capa] + Math.random() * 0.16,
+        // Tres veces mas rapido que la primera version. Aquella era tan lenta
+        // que en una pantalla grande el campo parecia una imagen fija; el
+        // movimiento solo se apreciaba mirando treinta segundos seguidos.
+        // Con esto se nota al entrar y sigue sin robar atencion al contenido.
+        vx: (0.038 + Math.random() * 0.042) * prof,
+        vy: (-0.018 - Math.random() * 0.024) * prof,
+        base: [0.42, 0.66, 0.92][capa] + Math.random() * 0.14,
         fase: Math.random() * Math.PI * 2,
         vel: 0.0004 + Math.random() * 0.0011,
         tinte: TINTES[(Math.random() * TINTES.length) | 0],
@@ -101,6 +105,39 @@ function Estrellas({ cantidad }: { cantidad: number }) {
     }
 
     let estrellas: Estrella[] = Array.from({ length: cantidad }, nueva)
+
+    /*
+      METEORITOS
+      ----------
+      Uno cada pocos segundos, nunca dos a la vez. Es el detalle que convierte
+      un fondo bonito en un sitio que parece vivo: no pasa nada durante un rato
+      y de pronto cruza algo.
+
+      Se dibujan como UNA linea con degradado, no como una fila de particulas
+      con estela. Un meteorito cuesta entonces lo mismo que dos estrellas, y
+      por eso caben aunque el equipo sea modesto: el problema de rendimiento
+      que hubo aqui venia de los desenfoques grandes, no del numero de cosas.
+
+      Van en la misma diagonal que la deriva de las estrellas. Si cruzaran en
+      otra direccion se leerian como un error, no como parte del cielo.
+    */
+    type Meteoro = { x: number; y: number; largo: number; vel: number; vida: number; tinte: string }
+    let meteoro: Meteoro | null = null
+    // El primero no sale de inmediato: entrar a la pagina y ver pasar uno en el
+    // primer segundo delata que es un truco.
+    let proximo = 1800 + Math.random() * 3500
+
+    const nuevoMeteoro = (): Meteoro => ({
+      // Nace arriba y a la izquierda del area visible, para entrar cruzando.
+      x: -80 + Math.random() * w * 0.75,
+      y: h * (0.05 + Math.random() * 0.5),
+      largo: 90 + Math.random() * 140,
+      vel: 5.5 + Math.random() * 4.5,
+      vida: 0,
+      // Los mismos tintes del campo: azul palido y violeta, nunca blanco puro,
+      // que se leeria como un rayajo.
+      tinte: Math.random() < 0.5 ? '198,218,255' : '205,196,255',
+    })
 
     const pintar = (t: number) => {
       ctx.clearRect(0, 0, w, h)
@@ -120,13 +157,46 @@ function Estrellas({ cantidad }: { cantidad: number }) {
         ctx.fillStyle = `rgba(${e.tinte},${alfa})`
         ctx.fill()
       }
+      // --- Meteorito ---
+      const dt = t - (ultimo || t)
+      ultimo = t
+      if (meteoro) {
+        const m = meteoro
+        m.x += m.vel
+        m.y += m.vel * 0.42     // misma diagonal que la deriva del campo
+        m.vida += dt
+        // Entra y sale con un fundido: aparecer de golpe se ve como un fallo
+        // de dibujado, no como algo que cruza.
+        const p = Math.min(1, m.vida / 900)
+        const alfa = Math.sin(p * Math.PI) * 0.85
+        const g = ctx.createLinearGradient(m.x, m.y, m.x - m.largo, m.y - m.largo * 0.42)
+        g.addColorStop(0, `rgba(${m.tinte},${alfa})`)
+        g.addColorStop(1, `rgba(${m.tinte},0)`)
+        ctx.strokeStyle = g
+        ctx.lineWidth = 1.6
+        ctx.lineCap = 'round'
+        ctx.beginPath()
+        ctx.moveTo(m.x, m.y)
+        ctx.lineTo(m.x - m.largo, m.y - m.largo * 0.42)
+        ctx.stroke()
+        if (p >= 1 || m.x - m.largo > w || m.y - m.largo > h) meteoro = null
+      } else {
+        proximo -= dt
+        if (proximo <= 0) {
+          meteoro = nuevoMeteoro()
+          proximo = 4200 + Math.random() * 7000
+        }
+      }
+
       raf = requestAnimationFrame(pintar)
     }
+    let ultimo = 0
     raf = requestAnimationFrame(pintar)
 
     const alCambiarTamano = () => {
       resize()
       estrellas = Array.from({ length: cantidad }, nueva)
+      meteoro = null
     }
     window.addEventListener('resize', alCambiarTamano)
 
@@ -182,7 +252,7 @@ export default function AnimatedBackground() {
         porque eso no es una cuestion de potencia sino de lo que la persona
         ha pedido.
       */}
-      {!quieto && <Estrellas cantidad={Math.max(34, Math.round(cap.particulas * 2.6))} />}
+      {!quieto && <Estrellas cantidad={Math.max(60, Math.round(cap.particulas * 5))} />}
 
       {/*
         Vinieta. Oscurece los bordes para que el texto siempre tenga contraste

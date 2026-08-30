@@ -117,9 +117,21 @@ export default function MiembrosPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
                 className="ff-panel p-5 group relative cursor-pointer
                            focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
-                initial={{ y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i, 12) * 0.04 }}
+                /*
+                  La entrada se hace en SITIO, sin desplazamiento.
+
+                  Antes cada tarjeta subia 30 px al aparecer. En escritorio, con
+                  cuatro por fila, se ve elegante. En el movil son 44 tarjetas
+                  en una sola columna subiendo escalonadas mientras intentas
+                  leer: la pagina parece moverse por su cuenta.
+
+                  Y el `initial` no llevaba `opacity: 0` aunque el `animate` si
+                  ponia `opacity: 1`, asi que no habia ni fundido: solo el
+                  brinco. Ahora es un fundido corto y nada mas se mueve.
+                */
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.3 }}
                 whileHover={{ y: -6 }}
               >
                 {/* Halo del rango, como degradado radial y no como desenfoque:

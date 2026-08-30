@@ -27,31 +27,21 @@ import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
  * economia y que premio se lleva.
  */
 
-/** Rayos neon que parpadean al cargar la pagina - solo una vez por sesion. */
-const RayosNeon = () => {
-  const [encendido, setEncendido] = useState(false)
+/*
+  AQUI HABIA "RayosNeon" Y SE HA QUITADO.
+  ---------------------------------------
+  Era una capa `fixed` a z-40, o sea POR ENCIMA del contenido, con tres
+  circulos y un cuadrado de 128 px animados. En el movil el cuadrado caia justo
+  sobre el titular y los circulos cruzaban el texto: no se podia leer la
+  pagina.
 
-  useEffect(() => {
-    setEncendido(true)
-  }, [])
+  Ademas su animacion iba de opacidad 0 a 0 (`animate` usaba `encendido` para
+  aparecer, pero el valor de reposo tambien era 0), asi que lo que se veia era
+  un parpadeo y nada mas.
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: encendido ? 1 : 0, y: 0 }}
-      transition={{ duration: 1.2 }}
-      className="fixed top-0 left-0 right-0 pointer-events-none z-40"
-    >
-      <div className="h-96 w-full overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-t from-elite-primary/30 via-elite-secondary/20 to-transparent rounded-t-xl animate-pulse-slow" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/20 rounded-full opacity-50 animate-spin" />
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 border-4 border-elite-primary/50 rounded-full opacity-70 animate-bounce-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 border-4 border-elite-secondary/50 rounded-full opacity-70 animate-bounce-reverse" />
-        <div className="absolute bottom-1/2 left-1/2 -translate-x-1/2 w-32 h-32 border-2 border-elite-primary opacity-50" />
-      </div>
-    </motion.div>
-  )
-}
+  El ambiente ya lo pone el campo de estrellas del fondo, que va DETRAS del
+  contenido y no tapa nada. Adornar por encima del texto no es adornar.
+*/
 
 export default function ComunidadPage() {
   const { user, isAuthed, signIn } = useAuth()
@@ -99,7 +89,6 @@ export default function ComunidadPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-24">
-      <RayosNeon />
       <div className="section-container">
         {/* Cabecera */}
         <motion.header

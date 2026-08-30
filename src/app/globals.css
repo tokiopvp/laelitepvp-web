@@ -28,6 +28,12 @@
       solo tiene que ser el negro sobre el que todo eso se apoya.
     */
     background: #07080a;
+    /*
+      La pagina NUNCA se arrastra de lado. Un desbordamiento horizontal en el
+      movil se siente como si la web estuviera rota, y es de los fallos que no
+      se ven nunca probando en un escritorio ancho.
+    */
+    overflow-x: hidden;
   }
 
   /* Toda cifra que se alinee en columna. */
@@ -604,6 +610,17 @@ h2.font-display {
   background: transparent;
   border: 0;
   transition: filter 0.3s ease;
+  /*
+    Sin esto, cualquier adorno colocado en absoluto DENTRO del panel se sale
+    por los bordes. La tarjeta de miembro tiene un halo de 160 px desplazado
+    -56 px a la derecha: en escritorio el grid lo disimula, pero en el movil la
+    tarjeta ocupa todo el ancho y ese halo empujaba 56 px fuera de la pantalla.
+
+    El resultado era una pagina que se podia arrastrar de lado, o sea que "se
+    movia sola" mientras se leia. El recorte del chaflan lo hacen ::before y
+    ::after por dentro, asi que recortar aqui no le quita nada a la forma.
+  */
+  overflow: hidden;
 }
 .ff-panel::before,
 .ff-panel::after {
