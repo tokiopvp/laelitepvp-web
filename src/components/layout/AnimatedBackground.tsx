@@ -39,7 +39,7 @@ import { useGama } from '@/components/layout/Resplandor'
  * habia antes. En gama baja no se dibuja ninguna y queda el degradado solo,
  * que sigue siendo digno.
  */
-function Estrellas({ cantidad }: { cantidad: number }) {
+function Estrellas({ cantidad, animado }: { cantidad: number; animado: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -139,6 +139,17 @@ function Estrellas({ cantidad }: { cantidad: number }) {
       tinte: Math.random() < 0.5 ? '198,218,255' : '205,196,255',
     })
 
+    /** Un unico fotograma: el campo quieto, sin titileo ni meteoritos. */
+    const pintarUnaVez = () => {
+      ctx.clearRect(0, 0, w, h)
+      for (const e of estrellas) {
+        ctx.beginPath()
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${e.tinte},${e.base})`
+        ctx.fill()
+      }
+    }
+
     const pintar = (t: number) => {
       ctx.clearRect(0, 0, w, h)
       for (const e of estrellas) {
@@ -191,12 +202,34 @@ function Estrellas({ cantidad }: { cantidad: number }) {
       raf = requestAnimationFrame(pintar)
     }
     let ultimo = 0
+
+    /*
+      CON "REDUCIR MOVIMIENTO" SE PINTA UNA SOLA VEZ.
+
+      Antes, esa preferencia apagaba el fondo ENTERO y dejaba un negro liso.
+      Eso es pasarse: lo que la persona ha pedido es que las cosas no se
+      muevan, no quedarse sin diseno. Y en Windows la opcion de animaciones
+      viene desactivada en muchisimos equipos -sobre todo en los que se tocan
+      para jugar-, asi que a un monton de gente el sitio le llegaba pelado sin
+      que nadie lo hubiera decidido.
+
+      Un fotograma quieto da el cielo estrellado completo, con su profundidad,
+      y no se mueve absolutamente nada. Tampoco hay meteoritos: un destello
+      cruzando la pantalla es justo lo que esa preferencia quiere evitar.
+    */
+    if (!animado) {
+      pintarUnaVez()
+      return () => {
+        window.removeEventListener('resize', alCambiarTamano)
+      }
+    }
     raf = requestAnimationFrame(pintar)
 
     const alCambiarTamano = () => {
       resize()
       estrellas = Array.from({ length: cantidad }, nueva)
       meteoro = null
+      if (!animado) pintarUnaVez()
     }
     window.addEventListener('resize', alCambiarTamano)
 
@@ -213,7 +246,7 @@ function Estrellas({ cantidad }: { cantidad: number }) {
       window.removeEventListener('resize', alCambiarTamano)
       document.removeEventListener('visibilitychange', alVisibilidad)
     }
-  }, [cantidad])
+  }, [cantidad, animado])
 
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" />
 }
@@ -252,7 +285,10 @@ export default function AnimatedBackground() {
         porque eso no es una cuestion de potencia sino de lo que la persona
         ha pedido.
       */}
-      {!quieto && <Estrellas cantidad={Math.max(60, Math.round(cap.particulas * 5))} />}
+      <Estrellas
+        cantidad={Math.max(60, Math.round(cap.particulas * 5))}
+        animado={!quieto}
+      />
 
       {/*
         Vinieta. Oscurece los bordes para que el texto siempre tenga contraste
