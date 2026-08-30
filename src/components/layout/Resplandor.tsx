@@ -50,7 +50,18 @@ export function useGama(): Capacidades {
 export default function Resplandor({
   className = '',
   color = '#5b9dff',
-  intensidad = 0.18,
+  // 0.18 lavaba el negro.
+  //
+  // Estas manchas ocupan 150.000 px cada una y llevan el azul a plena
+  // saturacion en el centro. Al 18 % sobre un fondo de #07080a, dos de ellas
+  // suben el gris de media pantalla lo bastante como para que el fondo deje
+  // de leerse negro. En el movil no se notaba -la pantalla es pequena y las
+  // manchas quedan fuera o muy recortadas-, y en el escritorio se comian el
+  // efecto de espacio que dan las estrellas.
+  //
+  // Al 7 % siguen dando profundidad de color donde tocan y ya no aclaran el
+  // conjunto.
+  intensidad = 0.07,
   animado = true,
 }: {
   /** Posicion y tamaño, en clases de Tailwind. */

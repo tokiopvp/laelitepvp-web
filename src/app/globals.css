@@ -272,11 +272,16 @@
   50%      { transform: translateZ(0) scale(1.18); }
 }
 
-/* Si el visitante pidio menos movimiento, no se mueve nada. */
+/* Si el visitante pidio menos movimiento, no se mueve nada.
+ *
+ * "No se mueve" NO es "no se ve". Aqui habia un `display: none !important`
+ * sobre los rayos que, por el !important y por estar antes en el fichero, se
+ * imponia a todo lo que se escribiera despues: con "reducir movimiento" no
+ * aparecia ni un rayo por mucho que mas abajo se dijera lo contrario.
+ *
+ * Los rayos quietos se tratan mas abajo, junto a los de gama baja. */
 @media (prefers-reduced-motion: reduce) {
   [style*="elite-latido"] { animation: none !important; }
-  .aura-electrica,
-  .nav-electrico .rayo { display: none !important; }
 }
 
 /* ============================================
@@ -393,535 +398,156 @@
 }
 
 /* ============================================
-   LA MISMA CORRIENTE EN "ELITE COIN" DEL MENU
+   "ELITE COIN": ELECTRICIDAD ALREDEDOR DE LAS LETRAS
    ============================================
-   Era una pastilla dorada. El oro es el color de lo que se GANA -el primer
-   puesto, el saldo-, y gastarlo tambien en un enlace del menu le quitaba ese
-   significado.
+   Se pidio que las LETRAS estuvieran rodeadas de electricidad. Lo que habia
+   era una pastilla con fondo y filo, o sea una CAJA con texto dentro: el ojo
+   veia el recuadro, no la corriente. De ahi que se leyera como "un borde
+   horrible".
 
-   Ahora lleva la misma corriente que el lider del clan: dice lo mismo que se
-   queria decir -aqui hay algo especial- con el vocabulario que el sitio ya
-   usa para "esto importa".
+   Fuera la caja entera. El enlace es texto suelto, como los demas del menu, y
+   lo que lo distingue son los arcos que le pasan por encima y por debajo.
 */
 .nav-electrico {
   position: relative;
-  color: #e8efff;
-  border-radius: 999px;
-  padding-left: 0.95rem;
-  padding-right: 0.95rem;
-  background: linear-gradient(
-    180deg,
-    rgba(167, 139, 250, 0.20),
-    rgba(91, 157, 255, 0.07));
-  box-shadow: inset 0 1px 0 rgba(207, 228, 255, 0.25);
-  text-shadow: 0 0 12px rgba(167, 139, 250, 0.55);
-  transition: color 0.2s, transform 0.2s;
-  isolation: isolate;
+  color: #eaf1ff;
+  /* Sin fondo, sin borde, sin sombra interior. Ni caja ni pastilla. */
+  background: none;
+  border: 0;
+  box-shadow: none;
+  /* El resplandor va en el TEXTO, que es lo que tiene que parecer cargado. */
+  text-shadow:
+    0 0 6px rgba(207, 228, 255, 0.55),
+    0 0 18px rgba(167, 139, 250, 0.45);
+  transition: color 0.2s, text-shadow 0.25s;
 }
-.nav-electrico:hover { color: #fff; transform: translateY(-1px); }
+.nav-electrico:hover {
+  color: #fff;
+  text-shadow:
+    0 0 8px rgba(255, 255, 255, 0.9),
+    0 0 24px rgba(167, 139, 250, 0.75);
+}
 
 /*
-  Dos chispazos que cruzan la pastilla, desfasados entre si.
+  Los dos arcos. Rodean la palabra por arriba y por abajo, no la encierran.
 
-  Son `::before` y `::after` del propio enlace: cero elementos añadidos al
-  HTML y cero JavaScript. Cada uno esta apagado casi todo el ciclo, igual que
-  los rayos de las tarjetas, para que sea el mismo lenguaje visual.
+  Son `::before` y `::after` de un solo `span`: cero elementos extra en el
+  HTML, cero JavaScript. La forma quebrada la da `clip-path`; sin el serian
+  dos barritas rectas y parecerian un subrayado.
 */
 .nav-electrico .rayo {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  overflow: hidden;
+  inset: -7px -10px;
   pointer-events: none;
-  z-index: -1;
 }
 .nav-electrico .rayo::before,
 .nav-electrico .rayo::after {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 42%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(207, 228, 255, 0.9) 22%,
+      #ffffff 48%,
+      rgba(167, 139, 250, 0.9) 74%,
+      transparent 100%);
+  /* Zigzag: el mismo perfil quebrado de un arco electrico. */
+  clip-path: polygon(
+    0% 55%, 9% 20%, 17% 62%, 26% 12%, 35% 58%,
+    45% 22%, 54% 66%, 63% 16%, 72% 60%, 81% 24%,
+    90% 64%, 100% 30%,
+    100% 48%, 90% 82%, 81% 42%, 72% 88%, 63% 40%,
+    54% 84%, 45% 44%, 35% 86%, 26% 38%, 17% 90%, 9% 46%, 0% 78%);
   opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent,
-    rgba(190, 215, 255, 0.5) 42%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(167, 139, 250, 0.5) 58%,
-    transparent);
-  transform: skewX(-18deg);
 }
-.nav-electrico .rayo::before { animation: coin-chispazo 3.8s steps(1, end) infinite; }
-.nav-electrico .rayo::after  { animation: coin-chispazo 5.2s steps(1, end) infinite 1.7s; }
-
-@keyframes coin-chispazo {
-  0%, 78%   { left: -50%; opacity: 0; }
-  80%       { left: 20%;  opacity: 1; }
-  82%       { left: 45%;  opacity: 0; }
-  84%       { left: 60%;  opacity: 0.9; }
-  86%       { left: 100%; opacity: 0; }
-  100%      { left: 100%; opacity: 0; }
+.nav-electrico .rayo::before {
+  top: 0;
+  animation: nav-arco 3.4s steps(1, end) infinite;
+}
+.nav-electrico .rayo::after {
+  bottom: 0;
+  /* Espejo y desfase: si los dos arcos saltaran iguales y a la vez se leerian
+     como dos subrayados, no como corriente rodeando la palabra. */
+  transform: scaleY(-1);
+  animation: nav-arco 4.6s steps(1, end) infinite 1.3s;
 }
 
-/* El halo del enlace, que respira muy despacio por debajo del texto. */
+/*
+  Apagado el 80 % del ciclo, con tres chispazos seguidos. Es el mismo ritmo que
+  los rayos de las tarjetas del lider, a proposito: son la misma cosa, y el
+  sitio tiene que decirlo con el mismo gesto.
+*/
+@keyframes nav-arco {
+  0%, 79%   { opacity: 0; }
+  80%       { opacity: 1; }
+  82%       { opacity: 0.1; }
+  84%       { opacity: 0.95; }
+  86%       { opacity: 0.2; }
+  88%       { opacity: 1; }
+  91%, 100% { opacity: 0; }
+}
+
+/* Un halo muy tenue detras del texto, para que la palabra tenga cuerpo aunque
+   los arcos esten apagados (que es casi siempre). */
 .nav-electrico::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  z-index: -2;
+  inset: -6px -12px;
+  z-index: -1;
   pointer-events: none;
-  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.35), transparent 75%);
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.28), transparent 72%);
   animation: coin-respira 3.4s ease-in-out infinite;
 }
 
 @keyframes coin-respira {
-  0%, 100% { opacity: 0.35; }
-  50%      { opacity: 0.8; }
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.95; }
 }
 
-/* En gama baja se para TODA animacion en bucle. Las de entrada (que ocurren
- * una vez y terminan) se dejan: no cuestan nada y dan sensacion de vida. */
-:root[data-gama="bajo"] .animate-aurora-a,
-:root[data-gama="bajo"] .animate-aurora-b,
-:root[data-gama="bajo"] .animate-aurora-c,
-:root[data-gama="bajo"] .animate-grid,
-:root[data-gama="bajo"] .gradient-text-shimmer,
-:root[data-gama="bajo"] .gradient-text-shimmer {
-  animation: none;
-}
-
-/* El texto con brillo pierde el degradado animado pero no el color. */
-:root[data-gama="bajo"] .gradient-text-shimmer {
-  background-position: 0 center;
-}
-
-
-/* ─────────────────────────────────────────────────────────────────────────
- * EL CRISTAL, SEGUN LO QUE AGUANTE EL EQUIPO
- *
- * `backdrop-filter` es lo mas caro de esta web: el navegador tiene que
- * renderizar lo que hay DETRAS del elemento, desenfocarlo y componerlo, y
- * rehacerlo al desplazarse porque el fondo cambia. Con decenas de tarjetas en
- * pantalla son decenas de desenfoques por fotograma. En una grafica dedicada
- * ni se nota; en una integrada es la diferencia entre "vuela" y "va a tirones".
- *
- * `AjusteRendimiento` escribe data-gama en el <html> DESPUES de medir los
- * fotogramas de verdad, asi que esto no depende de adivinar el equipo.
- *
- * Al quitar el cristal la tarjeta conserva su degradado propio; solo se le
- * sube la opacidad para que siga tapando igual. Sobre el fondo negro del sitio
- * la diferencia no se aprecia.
- * ───────────────────────────────────────────────────────────────────────── */
-:root {
-  --cristal-tarjeta: blur(18px) saturate(1.25);
-  --cristal-premium: blur(14px);
-}
-
-:root[data-gama="medio"],
-:root[data-gama="bajo"],
-:root[data-quieto="si"] {
-  --cristal-tarjeta: none;
-  --cristal-premium: none;
-}
-
-:root[data-gama="medio"] .card,
-:root[data-gama="bajo"] .card,
-:root[data-quieto="si"] .card,
-:root[data-gama="medio"] .card-glow,
-:root[data-gama="bajo"] .card-glow,
-:root[data-quieto="si"] .card-glow {
-  /* Sin cristal detras, el fondo tiene que tapar por si solo. */
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.055) 0%,
-    rgba(255, 255, 255, 0.018) 42%,
-    rgba(4, 7, 12, 0.82) 100%
-  );
-}
-
-
-/* Cristal para elementos sueltos (la tarjeta del heroe, la barra de la IA...).
- * Usa la MISMA variable que las tarjetas, asi el interruptor de gama los apaga
- * a todos a la vez. Sustituye a `backdrop-blur-2xl` de Tailwind, que fija el
- * valor y no hay forma de apagarlo desde fuera. */
-.cristal {
-  backdrop-filter: var(--cristal-tarjeta);
-  -webkit-backdrop-filter: var(--cristal-tarjeta);
-}
-
-
-/* ============================================================
- * TIPOGRAFIA DE TITULARES
- *
- * Oswald es condensada, y a tamaño grande el espaciado por defecto la deja
- * suelta: los titulares se leian como texto grande, no como un marcador. Se
- * aprieta la letra y se cierra el interlineado, que es lo que le da el registro
- * de tablero de estadio que busca la marca.
- *
- * Va por CSS global y no clase a clase para que valga en TODA la web sin tocar
- * treinta componentes, y para que lo nuevo salga bien sin acordarse.
- * ============================================================ */
-.font-display {
-  letter-spacing: -0.015em;
-}
-
-h1.font-display,
-h2.font-display {
-  letter-spacing: -0.025em;
-  line-height: 1.05;
-}
-
-/* Las cifras -saldos, precios, K/D- van con ancho fijo SIEMPRE.
- * Sin esto, un contador que pasa de 999 a 1.000 desplaza todo lo que tiene al
- * lado, y en una tabla las columnas bailan al actualizarse. */
-.font-mono,
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1;
-}
-
-/* ============================================================
- * CABECERAS DE SECCION
- *
- * Un marcador de brasa a la izquierda del titulo. Es un detalle pequeño, pero
- * es lo que separa "un texto encima de una lista" de "un bloque con identidad":
- * el ojo encuentra donde empieza cada seccion sin leer.
- *
- * Solo en las cabeceras que ya tienen borde inferior, para no meterlo donde no
- * hace falta.
- * ============================================================ */
-.card-glow > header {
-  position: relative;
-}
-
-.card-glow > header::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 1rem;
-  bottom: 1rem;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, #5b9dff, rgba(91, 157, 255, 0));
-  opacity: 0.85;
-}
-
-/* ============================================================
- * RENDIMIENTO DE LAS LISTAS CON SCROLL
- *
- * `content-visibility` le dice al navegador que no calcule el diseño de lo que
- * esta fuera de vista. En las listas largas -veinte tareas, cincuenta puestos
- * del ranking- eso quita trabajo real en cada repintado, que es justo donde se
- * nota en un movil de gama baja.
- *
- * `contain-intrinsic-size` reserva el alto estimado para que la barra de scroll
- * no pegue saltos al ir apareciendo el contenido.
- * ============================================================ */
-.card-glow li,
-.card-glow article {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 56px;
-}
-
-/* El scroll interno de los bloques, discreto: la barra por defecto de Windows
- * es ancha y clara, y rompe el tono oscuro del sitio. */
-.card-glow ul::-webkit-scrollbar,
-.card-glow ol::-webkit-scrollbar,
-.card-glow > div::-webkit-scrollbar {
-  width: 6px;
-}
-.card-glow ul::-webkit-scrollbar-thumb,
-.card-glow ol::-webkit-scrollbar-thumb,
-.card-glow > div::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
-}
-.card-glow ul::-webkit-scrollbar-track,
-.card-glow ol::-webkit-scrollbar-track,
-.card-glow > div::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-
-/* ============================================================
- * LENGUAJE VISUAL DE FREE FIRE
- *
- * Tres cosas hacen que un panel "se sienta" del juego, y ninguna es el color:
- *
- *  1. LOS BORDES NO SON REDONDOS, SON CORTADOS. Free Fire bisela las esquinas
- *     en diagonal (chaflan). Es lo primero que el ojo reconoce.
- *  2. LA LUZ ENTRA POR UN LADO. Los paneles del juego tienen una linea
- *     brillante en un borde, no un contorno uniforme.
- *  3. HAY ALGO BARRIENDO. Un reflejo que cruza de vez en cuando: la pantalla
- *     esta "encendida", no impresa.
- *
- * Todo esto se hace con clip-path, degradados y transform. Nada de sombras
- * desenfocadas animadas, que es lo que hunde el rendimiento en gama baja.
- * ============================================================ */
-
-/* 1) CHAFLAN. La esquina cortada del juego. */
-.ff-cut {
-  clip-path: polygon(
-    18px 0,
-    100% 0,
-    100% calc(100% - 18px),
-    calc(100% - 18px) 100%,
-    0 100%,
-    0 18px
-  );
-  border-radius: 0;
-}
-
-.ff-cut-sm {
-  clip-path: polygon(
-    10px 0,
-    100% 0,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    0 100%,
-    0 10px
-  );
-  border-radius: 0;
-}
-
-/* 2) FILO DE LUZ. Una linea celeste en el borde superior y en el izquierdo,
- *    como el reflejo de los paneles del juego. */
-.ff-edge {
-  position: relative;
-}
-.ff-edge::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(91, 157, 255, 0.85), transparent 42%) top / 100% 2px no-repeat,
-    linear-gradient(90deg, rgba(91, 157, 255, 0.6), transparent 55%) left / 2px 100% no-repeat;
-  opacity: 0.75;
-  transition: opacity 0.35s ease;
-}
-.ff-edge:hover::after { opacity: 1; }
-
-/* 3) BARRIDO DE ESCANER. Un reflejo que cruza al pasar el raton.
- *    Solo `transform`: lo resuelve el compositor y no repinta nada.
- *
- *    OJO: usa `::before`, igual que `.ff-panel`. No se pueden poner las dos
- *    clases en el mismo elemento -la segunda pisa a la primera y se queda sin
- *    marco-. En un panel, ponlo en un hijo. */
-.ff-scan {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-}
-.ff-scan::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 42%;
-  top: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent,
-    rgba(91, 157, 255, 0.13) 45%,
-    rgba(255, 255, 255, 0.09) 55%,
-    transparent
-  );
-  transform: translateY(-140%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.ff-scan:hover::before {
-  opacity: 1;
-  animation: ff-scan-run 1.6s ease-in-out;
-}
-@keyframes ff-scan-run {
-  from { transform: translateY(-140%); }
-  to   { transform: translateY(320%); }
-}
-
-/* TEXTO NEON. El resplandor va en `text-shadow`, que no fuerza al navegador a
- * crear una capa nueva (a diferencia de `filter: drop-shadow`). */
-.neon {
-  color: #ffffff;
-  text-shadow:
-    0 0 6px rgba(91, 157, 255, 0.85),
-    0 0 18px rgba(91, 157, 255, 0.45),
-    0 0 42px rgba(91, 157, 255, 0.2);
-}
-.neon-celeste {
-  color: #5b9dff;
-  text-shadow:
-    0 0 8px rgba(91, 157, 255, 0.7),
-    0 0 26px rgba(91, 157, 255, 0.35);
-}
-
-/* BORDE NEON QUE RECORRE. El degradado se mueve, no el elemento. */
-.neon-border {
-  position: relative;
-  isolation: isolate;
-}
-.neon-border::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  padding: 1px;
-  border-radius: inherit;
-  background: linear-gradient(
-    100deg,
-    rgba(91, 157, 255, 0) 0%,
-    rgba(91, 157, 255, 0.9) 18%,
-    rgba(255, 255, 255, 0.95) 30%,
-    rgba(91, 157, 255, 0.9) 42%,
-    rgba(91, 157, 255, 0) 60%,
-    rgba(91, 157, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: border-run 4s linear infinite;
-  pointer-events: none;
-  opacity: 0.55;
-}
-.neon-border:hover::before { opacity: 1; }
-
-/* PANEL DE JUEGO. La combinacion completa, para lo que tenga que verse
- * claramente "sacado de Free Fire": chaflan + filo de luz + fondo de panel.
- *
- * EL CHAFLAN VA EN UNA CAPA DE FONDO, NO RECORTANDO EL PANEL
- * ----------------------------------------------------------
- * Recortar el panel con `clip-path` recorta TAMBIEN a sus hijos. Funciona,
- * pero deja el borde de la tarjeta cortando cualquier cosa que se acerque a la
- * esquina (un nick largo, un emblema) y ata el aspecto del marco a que ningun
- * hijo se salga.
- *
- * Dibujando la piel en dos pseudo-elementos DETRAS del contenido
- * (::before = borde, ::after = relleno, 1 px por dentro), el chaflan se ve
- * igual, el contenido nunca se recorta, y el marco es independiente de lo que
- * lleve dentro.
- *
- * Los `.ff-cut` sueltos -fichas, insignias, chips- si recortan el elemento: son
- * hojas, no contienen nada que pueda salirse. */
-.ff-panel {
-  position: relative;
-  isolation: isolate;
-  background: transparent;
-  border: 0;
-  transition: filter 0.3s ease;
-  /*
-    OJO CON PONER overflow:hidden AQUI.
-
-    Se puso para arreglar el movil: el halo del rango se salia 56 px por la
-    derecha y la pagina se podia arrastrar de lado. Pero recortar el panel
-    tambien recorta los RAYOS del aura, que tienen que salir hacia fuera; sin
-    eso se leen como un marco decorado y no como un aura.
-
-    Asi que el panel deja pasar lo que se sale, y el desbordamiento se ataja
-    en los dos sitios donde toca: el halo ya no se desplaza fuera de la
-    tarjeta, y el body corta el arrastre horizontal pase lo que pase.
-  */
-  overflow: visible;
-}
-.ff-panel::before,
-.ff-panel::after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
-  clip-path: polygon(
-    18px 0,
-    100% 0,
-    100% calc(100% - 18px),
-    calc(100% - 18px) 100%,
-    0 100%,
-    0 18px
-  );
-  transition: background 0.3s ease;
-}
-/* borde */
-.ff-panel::before {
-  inset: 0;
-  z-index: -2;
-  background: rgba(91, 157, 255, 0.22);
-}
-/* relleno, 1 px por dentro: lo que asoma del ::before es el borde */
-.ff-panel::after {
-  inset: 1px;
-  z-index: -1;
-  background:
-    linear-gradient(160deg, rgba(91, 157, 255, 0.07) 0%, rgba(10, 16, 23, 0.92) 55%, rgba(4, 7, 12, 0.96) 100%);
-}
-.ff-panel:hover::before {
-  background: rgba(91, 157, 255, 0.6);
-}
-.ff-panel:hover {
-  filter: drop-shadow(0 0 18px rgba(91, 157, 255, 0.22));
-}
-
-/* CINTA DIAGONAL de cabecera, como las pestañas del juego. */
-.ff-tab {
-  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
-}
-
-/* En gama baja se paran los bucles nuevos, igual que los de antes. */
-:root[data-gama="bajo"] .neon-border::before,
-:root[data-quieto="si"] .neon-border::before {
-  animation: none;
-  opacity: 0.5;
-}
-:root[data-gama="bajo"] .ff-scan:hover::before,
-:root[data-quieto="si"] .ff-scan:hover::before {
-  animation: none;
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .neon-border::before { animation: none; }
-  .ff-scan:hover::before { animation: none; opacity: 0; }
-}
-
-
-/* ============================================================
- * ELITE COIN EN EL MENU: "aqui dentro hay algo"
- *
- * Es el unico enlace del menu que promete una recompensa, asi que es el unico
- * que se mueve. El resto se quedan quietos a proposito: si parpadean todos, no
- * destaca ninguno.
- *
- * El efecto son tres cosas encadenadas:
- *   - el texto en ORO, que es el color que el sitio reserva para lo ganado
- *   - un latido lento del resplandor, para que se note sin marear
- *   - un CHISPAZO que cruza la palabra cada pocos segundos, mas evidente al
- *     pasar el raton
- *
- * Todo con `background-position`, `opacity` y `transform`: nada que obligue al
- * navegador a recalcular el diseño en cada fotograma.
- * ============================================================ */
 /* Gama baja y "menos movimiento".
  *
- * Se van los rayos y los chispazos, que es el movimiento. Se QUEDAN el tinte
- * del rango, el resplandor de la tarjeta y el halo de ELITE COIN: si se
- * apagara todo, el lider se veria igual que cualquier miembro y el enlace
- * igual que el resto del menu, justo en los equipos donde mas falta hace que
- * se note quien es quien. */
-:root[data-gama="bajo"] .aura-electrica,
-:root[data-quieto="si"] .aura-electrica,
-:root[data-gama="bajo"] .nav-electrico .rayo,
-:root[data-quieto="si"] .nav-electrico .rayo {
-  display: none;
-}
+ * ESTO YA SE HIZO MAL UNA VEZ.
+ *
+ * La primera version ponia `display: none` a los rayos. Resultado: en
+ * cualquier equipo con "reducir movimiento" -que en Windows viene activado en
+ * muchisimos, sobre todo en los que se tocan para jugar- el lider se veia
+ * exactamente igual que un miembro cualquiera, y ELITE COIN se quedaba en una
+ * pastilla sola, que es lo que parecia un borde puesto porque si.
+ *
+ * Es el mismo error que se cometio con el campo de estrellas: confundir "no
+ * quiero que se mueva" con "no quiero verlo". Lo que se desactiva es la
+ * ANIMACION; los rayos se quedan dibujados y quietos.
+ */
+:root[data-gama="bajo"] .aura-electrica g,
+:root[data-quieto="si"] .aura-electrica g,
+:root[data-gama="bajo"] .chispa,
+:root[data-quieto="si"] .chispa,
+:root[data-gama="bajo"] .nav-electrico .rayo::before,
+:root[data-quieto="si"] .nav-electrico .rayo::before,
+:root[data-gama="bajo"] .nav-electrico .rayo::after,
+:root[data-quieto="si"] .nav-electrico .rayo::after,
 :root[data-gama="bajo"] .nav-electrico::after,
 :root[data-quieto="si"] .nav-electrico::after {
   animation: none;
-  opacity: 0.55;
+  /* Quietos pero VISIBLES: sin esto se quedarian en la opacidad 0 con la que
+     arranca el fotograma inicial de su animacion, o sea invisibles igual. */
+  opacity: 0.9;
+  left: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aura-electrica,
-  .nav-electrico .rayo { display: none; }
-  .nav-electrico::after { animation: none; opacity: 0.55; }
+  /* Igual que arriba: se para el movimiento, no se esconde el diseño. */
+  .aura-electrica g,
+  .chispa,
+  .nav-electrico .rayo::before,
+  .nav-electrico .rayo::after,
+  .nav-electrico::after {
+    animation: none;
+    opacity: 0.9;
+    left: auto;
+  }
 }

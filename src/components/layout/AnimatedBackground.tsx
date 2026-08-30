@@ -261,16 +261,19 @@ export default function AnimatedBackground() {
         El cielo. Dos manchas MUY tenues, una azul arriba y una violeta abajo,
         para que el negro no sea una pared plana.
 
-        Los porcentajes de opacidad son bajisimos (0.07 y 0.05) y no es un
-        descuido: por encima de eso el fondo deja de ser negro y se convierte
-        en "azul oscuro", que es exactamente el aspecto que se queria quitar.
+        Los porcentajes son bajisimos (0.045 y 0.03) y no es un descuido: por
+        encima de eso el fondo deja de ser negro y se convierte en "azul
+        oscuro". En el movil ya se veia bien negro; en el escritorio, con mas
+        pantalla que cubrir, esos mismos porcentajes se sumaban a las manchas
+        de Resplandor y el conjunto se aclaraba. Cuanto mas negro este el
+        fondo, mas se ven las estrellas.
       */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 90% at 50% -20%, rgba(91,157,255,0.07) 0%, transparent 60%),' +
-            'radial-gradient(100% 80% at 50% 120%, rgba(167,139,250,0.05) 0%, transparent 60%)',
+            'radial-gradient(120% 90% at 50% -20%, rgba(91,157,255,0.045) 0%, transparent 60%),' +
+            'radial-gradient(100% 80% at 50% 120%, rgba(167,139,250,0.03) 0%, transparent 60%)',
         }}
       />
 
