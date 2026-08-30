@@ -285,116 +285,189 @@
 }
 
 /* ============================================
-   JERARQUIA DEL CLAN: EL AURA ELECTRICA
+   JERARQUIA DEL CLAN
    ============================================
 
-   Los rayos los dibuja <AuraElectrica>. Aqui solo esta el aspecto y el ritmo.
+   POR QUE SE TIRARON LOS RAYOS Y LAS ESTRELLAS
+   --------------------------------------------
+   Salian por fuera de la tarjeta y se metian encima de las vecinas. Al estar
+   quietos -que es como los ve cualquiera con "reducir movimiento"- parecian
+   garabatos sueltos por el fondo, no un aura. Y el resplandor de color tenia
+   otro problema peor: al tenir el fondo de la tarjeta, las cifras de dentro
+   perdian contraste justo en las tarjetas que mas se miran.
 
-   La idea: NO hay nada encendido de forma continua. Cada rayo esta apagado
-   casi todo su ciclo y salta un instante. Lo que impresiona de un rayo es que
-   no estaba y de pronto esta; una luz permanente girando es un adorno.
+   Un adorno que invade a los vecinos y ensucia el fondo no distingue: molesta.
 
-   Lider 100 %, interino 40 %, decano 20 %. La variable --i gobierna el tinte
-   de fondo y el resplandor; el numero de rayos y de chispas lo decide el
-   componente con ese mismo numero.
+   LO QUE SE HACE AHORA
+   --------------------
+   La jerarquia se marca con la ESTRUCTURA de la tarjeta, no pintando por
+   encima. Cuatro cosas, todas dentro del rectangulo:
 
-   COSTE: solo se anima `opacity`, que la resuelve el compositor. Ni un
-   `filter`, ni un `blur`, ni una sombra animada. Lo que hundia el rendimiento
-   en versiones anteriores eran los desenfoques grandes, que hay que
-   rasterizar de nuevo en cada fotograma.
+     1. MARCO. Un filo de luz que recorre el borde por dentro. El del lider da
+        la vuelta entera; el del interino cubre la mitad; el del decano, solo
+        la esquina superior. La cantidad de borde encendido ES el rango.
+
+     2. GALON. Una barra vertical pegada al canto izquierdo. Tres alturas.
+        Es lo que se ve primero al bajar por la rejilla, porque los ojos
+        siguen la columna izquierda.
+
+     3. CHAPA. El rectangulo del nombre del cargo, con su propio tono.
+
+     4. INCLINACION. La tarjeta se gira un poco siguiendo al raton. Solo las
+        de mando: al moverse mientras las demas estan fijas, la vista va sola.
+
+   POR QUE ESTO SI FUNCIONA Y EL BRILLO NO
+   ---------------------------------------
+   Todo pasa DENTRO del rectangulo de la tarjeta. Ninguna invade a su vecina,
+   ninguna aclara el fondo, y todo se sigue viendo con las animaciones
+   desactivadas, porque no depende de que nada se mueva.
+
+   RENDIMIENTO
+   -----------
+   El marco y el galon son degradados estaticos: se pintan una vez y ya. La
+   inclinacion es un `transform` sobre un elemento que ya existe, resuelto por
+   el compositor; no hay `blur`, ni sombras animadas, ni filtros, ni un solo
+   elemento nuevo en el HTML.
 */
 
-.member-leader  { --i: 1; }
-.member-interim { --i: 0.4; }
-.member-elder   { --i: 0.2; }
+.member-leader  { --i: 1;   --luz: rgba(219, 233, 255, 0.95); --tono: rgba(167, 139, 250, 0.85); }
+.member-interim { --i: 0.4; --luz: rgba(199, 219, 255, 0.75); --tono: rgba(129, 140, 248, 0.6); }
+.member-elder   { --i: 0.2; --luz: rgba(184, 205, 240, 0.55); --tono: rgba(100, 130, 200, 0.45); }
 
 .member-leader,
 .member-interim,
 .member-elder {
   position: relative;
-  /* El fondo se tine muy poco: lo que distingue el rango son los rayos, no un
-     rectangulo de color, que competiria con las cifras. */
-  background: linear-gradient(
-    135deg,
-    rgba(167, 139, 250, calc(0.10 * var(--i))) 0%,
-    rgba(91, 157, 255, calc(0.04 * var(--i))) 55%,
-    rgba(207, 228, 255, calc(0.07 * var(--i))) 100%) !important;
-  box-shadow: 0 0 calc(34px * var(--i)) rgba(140, 170, 255, calc(0.28 * var(--i)));
+  /* El fondo se deja EN PAZ.
+     Teñirlo le quitaba contraste a las cifras, que es lo unico que la gente
+     viene a leer aqui. El rango se marca por el borde, no por el relleno. */
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* --- El lienzo de los rayos ------------------------------------------- */
-.aura-electrica {
+/* --- 1) EL MARCO ------------------------------------------------------- */
+.member-leader::after,
+.member-interim::after,
+.member-elder::after {
+  content: '';
   position: absolute;
-  /* Se desborda la tarjeta a proposito: los rayos salen HACIA FUERA, como en
-     el personaje de referencia. Si quedaran recortados dentro del borde
-     pareceria un marco decorado, no un aura. */
-  inset: -14px;
-  width: calc(100% + 28px);
-  height: calc(100% + 28px);
+  inset: 0;
+  border-radius: inherit;
   pointer-events: none;
-  z-index: -1;
-  overflow: visible;
+  /* z-index positivo pero por debajo del contenido: se ve el filo sobre el
+     fondo del panel y nunca sobre las cifras. */
+  z-index: 0;
+  padding: 1.5px;
+  /* La mascara deja solo el filo: el centro se vacia. Sin esto seria un
+     rectangulo de color tapando la tarjeta. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
 }
 
-.aura-electrica g {
-  opacity: 0;
-  animation-name: rayo-salta;
-  animation-timing-function: steps(1, end);
-  animation-iteration-count: infinite;
-  /* `steps` y no una curva suave: la electricidad no se desvanece, corta. Con
-     un fundido parecen luciernagas; con cortes secos, chispazos. */
+/* Lider: la luz da la vuelta entera. */
+.member-leader::after {
+  background: conic-gradient(
+    from 210deg,
+    var(--luz) 0deg,
+    var(--tono) 70deg,
+    rgba(91, 157, 255, 0.35) 150deg,
+    var(--tono) 230deg,
+    var(--luz) 300deg,
+    var(--luz) 360deg);
+}
+/* Interino: media vuelta encendida; la otra media se apaga. */
+.member-interim::after {
+  background: conic-gradient(
+    from 210deg,
+    var(--luz) 0deg,
+    var(--tono) 90deg,
+    transparent 175deg,
+    transparent 320deg,
+    var(--luz) 360deg);
+}
+/* Decano: solo la esquina de arriba. Un acento, no un marco. */
+.member-elder::after {
+  background: conic-gradient(
+    from 215deg,
+    var(--luz) 0deg,
+    var(--tono) 55deg,
+    transparent 110deg,
+    transparent 360deg);
 }
 
+/* --- 2) EL GALON ------------------------------------------------------- */
+.member-leader::before,
+.member-interim::before,
+.member-elder::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  pointer-events: none;
+  z-index: 1;
+  background: linear-gradient(180deg, var(--luz), var(--tono) 55%, transparent);
+  /* La ALTURA es el rango. Se lee de un vistazo bajando por la columna, sin
+     tener que fijarse en la etiqueta de cada tarjeta. */
+  height: calc(26px + 74px * var(--i));
+}
+
+/* --- 3) LA CHAPA DEL CARGO -------------------------------------------- */
+.chapa-rango {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.08rem 0.46rem;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #eef4ff;
+  background: linear-gradient(180deg, var(--tono), rgba(91, 157, 255, 0.16));
+  box-shadow: inset 0 0 0 1px var(--luz);
+  /* Chaflan en la esquina: el mismo corte que el resto de paneles del sitio,
+     para que se lea como parte de la identidad y no como una etiqueta pegada. */
+  clip-path: polygon(0 0, 100% 0, 100% 62%, calc(100% - 6px) 100%, 0 100%);
+}
+
+/* --- 4) LA INCLINACION ------------------------------------------------- */
 /*
-  El 90 % del ciclo apagado. Los tres saltos seguidos imitan el reencendido de
-  un arco real, que nunca prende limpio a la primera.
+  Se gira siguiendo al raton. Las variables --rx y --ry las escribe la propia
+  tarjeta al moverse el puntero por encima.
+
+  Solo las de mando. Si se inclinaran las cuarenta y cuatro, no distinguiria a
+  nadie y ademas serian cuarenta y cuatro elementos con transformacion viva.
 */
-@keyframes rayo-salta {
-  0%, 87%   { opacity: 0; }
-  88%       { opacity: 1; }
-  90%       { opacity: 0; }
-  92%       { opacity: 0.85; }
-  94%       { opacity: 0.2; }
-  96%       { opacity: 1; }
-  98%, 100% { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .member-leader:hover,
+  .member-interim:hover,
+  .member-elder:hover {
+    transform:
+      perspective(900px)
+      rotateX(calc(var(--rx, 0) * 1deg * var(--i)))
+      rotateY(calc(var(--ry, 0) * 1deg * var(--i)))
+      translateZ(0);
+  }
 }
 
-/* Trazo grueso y translucido: el resplandor del arco. */
-.rayo-halo {
-  fill: none;
-  stroke: rgba(150, 190, 255, 0.55);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  /* El vector NO se deforma con la tarjeta aunque el viewBox si: sin esto,
-     con preserveAspectRatio="none" los trazos saldrian gordos en un eje y
-     finos en el otro. */
-  vector-effect: non-scaling-stroke;
-}
-
-/* Trazo fino y casi blanco encima: el nucleo. Es lo que hace que "queme". */
-.rayo-nucleo {
-  fill: none;
-  stroke: #f2f8ff;
-  stroke-width: 0.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-/* --- Las chispas sueltas ---------------------------------------------- */
-.chispa {
-  fill: #dbe9ff;
-  opacity: 0;
-  animation-name: chispa-late;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-@keyframes chispa-late {
-  0%, 70%, 100% { opacity: 0; transform: translateY(0); }
-  80%           { opacity: 0.9; }
-  90%           { opacity: 0.3; }
+/* Con "reducir movimiento" no se inclina. Todo lo demas -marco, galon y
+   chapa- se sigue viendo igual, porque nada de eso depende del movimiento.
+   Esa es justamente la ventaja de marcar el rango con la estructura. */
+@media (prefers-reduced-motion: reduce) {
+  .member-leader,
+  .member-interim,
+  .member-elder { transition: none; }
+  .member-leader:hover,
+  .member-interim:hover,
+  .member-elder:hover { transform: none; }
 }
 
 /* ============================================
@@ -522,10 +595,6 @@
  * quiero que se mueva" con "no quiero verlo". Lo que se desactiva es la
  * ANIMACION; los rayos se quedan dibujados y quietos.
  */
-:root[data-gama="bajo"] .aura-electrica g,
-:root[data-quieto="si"] .aura-electrica g,
-:root[data-gama="bajo"] .chispa,
-:root[data-quieto="si"] .chispa,
 :root[data-gama="bajo"] .nav-electrico .rayo::before,
 :root[data-quieto="si"] .nav-electrico .rayo::before,
 :root[data-gama="bajo"] .nav-electrico .rayo::after,
@@ -534,20 +603,13 @@
 :root[data-quieto="si"] .nav-electrico::after {
   animation: none;
   /* Quietos pero VISIBLES: sin esto se quedarian en la opacidad 0 con la que
-     arranca el fotograma inicial de su animacion, o sea invisibles igual.
-     
-     Al 0.45 y no al 0.9: cuando saltan, los rayos se ven de uno en uno y por
-     un instante. Quietos se ven los nueve A LA VEZ y para siempre, asi que a
-     plena opacidad la tarjeta queda emborronada. A media, se lee como un aura
-     encendida, que es lo mas parecido al efecto animado sin movimiento. */
-  opacity: 0.45;
+     arranca el fotograma inicial de su animacion, o sea invisibles igual. */
+  opacity: 0.5;
   left: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
   /* Igual que arriba: se para el movimiento, no se esconde el diseño. */
-  .aura-electrica g,
-  .chispa,
   .nav-electrico .rayo::before,
   .nav-electrico .rayo::after,
   .nav-electrico::after {

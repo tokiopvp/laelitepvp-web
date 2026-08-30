@@ -743,6 +743,17 @@ def sync_leaks(max_items: int = 24):
         # devolver el clic al medio no aporta nada.
         if not titulo or not enlace:
             continue
+        # Y sin IMAGEN tampoco.
+        #
+        # Una tarjeta con el logo generico de relleno no se lee como "esta
+        # noticia no tiene foto": se lee como "aqui hay algo roto que no
+        # carga". Media rejilla asi hace que la seccion entera parezca
+        # estropeada, aunque el resto este perfecto.
+        #
+        # Es una red de seguridad ademas del filtro de fuentes: aunque alguien
+        # vuelva a activar un feed sin miniaturas, la web no se ensucia.
+        if not (it.get("imagen") or "").strip():
+            continue
         items.append({
             "titulo": titulo[:200],
             # Resumen corto: es un adelanto para decidir si abres, no el

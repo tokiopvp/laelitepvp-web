@@ -6,7 +6,6 @@ import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shi
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
-import AuraElectrica from '@/components/miembros/AuraElectrica'
 import IconoJugador from '@/components/miembros/IconoJugador'
 import EmblemaRango from '@/components/miembros/EmblemaRango'
 import OutfitModal from '@/components/OutfitModal'
@@ -151,19 +150,31 @@ export default function MiembrosPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.3 }}
                 whileHover={{ y: -6 }}
+                /* La inclinacion se hace escribiendo dos variables CSS
+                   directamente en el nodo, NO con estado de React: un
+                   setState por cada movimiento del raton repintaria el
+                   componente decenas de veces por segundo. Asi solo cambia
+                   una propiedad que resuelve el compositor. */
+                onMouseMove={INTENSIDAD_ROL[role] == null ? undefined : (e) => {
+                  const c = e.currentTarget
+                  const r = c.getBoundingClientRect()
+                  const x = (e.clientX - r.left) / r.width - 0.5
+                  const y = (e.clientY - r.top) / r.height - 0.5
+                  // 7 grados de tope: mas y la tarjeta se deforma tanto que
+                  // las cifras cuestan de leer.
+                  c.style.setProperty('--ry', String(x * 14))
+                  c.style.setProperty('--rx', String(-y * 14))
+                }}
+                onMouseLeave={INTENSIDAD_ROL[role] == null ? undefined : (e) => {
+                  e.currentTarget.style.setProperty('--rx', '0')
+                  e.currentTarget.style.setProperty('--ry', '0')
+                }}
               >
-                {/* Aura electrica por rango: lider 100 %, interino 40 %,
-                    decano 20 %. Es el MISMO efecto a distinta potencia, no
-                    tres efectos distintos: asi la jerarquia se lee sin tener
-                    que mirar la etiqueta.
-
-                    La semilla hace que dos tarjetas del mismo rango no tengan
-                    los rayos calcados, y que sean iguales en el servidor y en
-                    el navegador (con Math.random no coincidirian y React
-                    avisaria de desajuste de hidratacion). */}
-                {INTENSIDAD_ROL[role] != null && (
-                  <AuraElectrica intensidad={INTENSIDAD_ROL[role]} semilla={i + 1} />
-                )}
+                {/* El rango NO se pinta por encima de la tarjeta.
+                    Los rayos se salian por los bordes y se metian sobre las
+                    vecinas; quietos parecian garabatos sueltos. Ahora lo
+                    marcan el marco, el galon del canto izquierdo y la chapa
+                    del cargo, todo dentro del rectangulo. Ver globals.css. */}
 
                 {/* Halo del rango */}
                 <div
@@ -201,10 +212,26 @@ export default function MiembrosPage() {
                     <h3 className="font-display font-bold text-lg leading-tight truncate uppercase text-elite-ice">
                       {member.nickname}
                     </h3>
-                    <p className="text-white/40 text-xs capitalize tracking-wide">
-                      {ROLE_LABELS[role] || 'Miembro'}
-                      {member.level ? <span className="text-white/25"> · Nvl {member.level}</span> : null}
-                    </p>
+                    {/* El cargo de un mando va en CHAPA, no en el mismo gris
+                        que el nivel: si "Lider" y "Miembro" se escriben igual,
+                        hay que leerlos para distinguirlos, y la idea es que se
+                        vea de un vistazo. Los miembros de a pie siguen en
+                        texto plano: si todo llevara chapa, la chapa no
+                        significaria nada. */}
+                    {INTENSIDAD_ROL[role] != null ? (
+                      <p className="text-xs tracking-wide flex items-center gap-1.5 mt-0.5">
+                        <span className="chapa-rango">
+                          <RoleIcon className="w-2.5 h-2.5" />
+                          {ROLE_LABELS[role]}
+                        </span>
+                        {member.level ? <span className="text-white/25">Nvl {member.level}</span> : null}
+                      </p>
+                    ) : (
+                      <p className="text-white/40 text-xs capitalize tracking-wide">
+                        {ROLE_LABELS[role] || 'Miembro'}
+                        {member.level ? <span className="text-white/25"> · Nvl {member.level}</span> : null}
+                      </p>
+                    )}
                   </div>
 
                   {/* EL EMBLEMA REAL, arriba a la derecha y a tamaño de verdad.
