@@ -143,8 +143,18 @@ export default function MiembrosPage() {
                 transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.3 }}
                 whileHover={{ y: -6 }}
               >
-                {/* Halo del rango, como degradado radial y no como desenfoque:
-                    se ve igual y no cuesta un `blur` por tarjeta. */}
+                {/* Aura visual por rol */}
+                {(role === 'leader' || role === 'interim_leader' || role === 'elder') && (
+                  <div className="aura-ring" />
+                )}
+                {role === 'leader' && (
+                  <>
+                    <div className="thunder-flash" />
+                    <div className="power-particles" />
+                  </>
+                )}
+
+                {/* Halo del rango */}
                 <div
                   className="absolute -top-14 -right-14 w-40 h-40 rounded-full opacity-25 pointer-events-none"
                   style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}

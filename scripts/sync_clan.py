@@ -254,13 +254,13 @@ def extract(db_path):
         mi = mbr.get(uid, {}) if uid else {}
         is_active = bool(r["presente"])
         # role_in_clan NO se sincroniza: se asigna manualmente desde el admin.
-        # Si se incluye aqui, cada sync borra los roles asignados.
-        members.append({
+        # rank, emblema_br_url, emblema_cs_url TAMPOCO se sobreescriben si son
+        # NULL: si el bot no tiene datos, no borramos lo que ya estaba.
+        member_data = {
             "id": mid_for(key),
             "nickname": r["nick"],
             "free_fire_id": uid,
             "level": int(mi["nivel"]) if mi.get("nivel") else None,
-            "rank": rank,
             "kd_ratio": round(float(kd), 2) if kd is not None else None,
             "headshots": int(headshots) if headshots is not None else None,
             "wins": int(wins) if wins is not None else None,
@@ -278,7 +278,12 @@ def extract(db_path):
             "is_active": is_active,
             "last_sync": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
-        })
+        }
+        # rank solo se actualiza si el bot tiene dato: si es NULL, no borramos
+        # el rango que ya estaba en la base (asignado manualmente o del sync anterior).
+        if rank is not None:
+            member_data["rank"] = rank
+        members.append(member_data)
 
     # competencias -> tournaments (+ participantes)
     cur.execute("SELECT * FROM competencias")
