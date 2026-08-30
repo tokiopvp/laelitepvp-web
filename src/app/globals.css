@@ -277,115 +277,107 @@
   [style*="elite-latido"] { animation: none !important; }
   .member-leader::before,
   .member-leader::after,
-  .member-interim::before,
-  .member-interim::after { animation: none !important; opacity: 0.5 !important; }
+  .member-interim::before { animation: none !important; }
 }
 
 /* ============================================
    BANNERS DE JERARQUÍA DEL CLAN
+   Efecto tipo tarjeta Pokémon legendaria:
+   - Color de fondo sutil por rol
+   - Brillo/diamond shine que cruza la tarjeta
+   - Líder tiene efecto extra: borde brillante animado
    ============================================ */
 
-/* LÍDER: Borde azul eléctrico + aura con chispas aleatorias */
+/* LÍDER: Fondo azulado sutil + brillo diamond + borde animado */
 .member-leader {
-  position: relative;
-  border: 2px solid rgba(91, 157, 255, 0.6) !important;
-  box-shadow: 0 0 15px rgba(91, 157, 255, 0.3), inset 0 0 15px rgba(91, 157, 255, 0.05);
+  background: linear-gradient(135deg, 
+    rgba(91, 157, 255, 0.08) 0%, 
+    rgba(91, 157, 255, 0.03) 50%,
+    rgba(130, 200, 255, 0.06) 100%) !important;
+  border: 1px solid rgba(91, 157, 255, 0.3) !important;
+  overflow: hidden;
 }
 
-/* Aura eléctrica - pseudo-elemento detrás del banner */
+/* Brillo diamond sweep - el efecto legendario */
 .member-leader::before {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: linear-gradient(45deg, 
-    transparent 30%, 
-    rgba(91, 157, 255, 0.15) 50%, 
-    transparent 70%);
-  background-size: 200% 200%;
-  animation: electric-aura 3s ease-in-out infinite;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    transparent 40%,
+    rgba(91, 157, 255, 0.08) 45%,
+    rgba(200, 230, 255, 0.15) 50%,
+    rgba(91, 157, 255, 0.08) 55%,
+    transparent 60%
+  );
+  animation: diamond-shine 4s ease-in-out infinite;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
-/* Chispas eléctricas - pseudo-elemento encima */
+/* Líder tiene algo extra: un borde que brilla con Pulso */
 .member-leader::after {
   content: '';
   position: absolute;
-  inset: -2px;
+  inset: 0;
   border-radius: inherit;
-  background: 
-    radial-gradient(circle at 20% 20%, rgba(91, 157, 255, 0.8) 0%, transparent 3%),
-    radial-gradient(circle at 80% 15%, rgba(130, 200, 255, 0.7) 0%, transparent 2%),
-    radial-gradient(circle at 90% 80%, rgba(91, 157, 255, 0.6) 0%, transparent 4%),
-    radial-gradient(circle at 10% 85%, rgba(130, 200, 255, 0.7) 0%, transparent 2%),
-    radial-gradient(circle at 50% 5%, rgba(200, 230, 255, 0.9) 0%, transparent 1.5%),
-    radial-gradient(circle at 95% 50%, rgba(91, 157, 255, 0.5) 0%, transparent 3%);
-  animation: electric-sparks 2s ease-in-out infinite;
+  border: 1px solid rgba(91, 157, 255, 0.4);
+  animation: leader-pulse 3s ease-in-out infinite;
   pointer-events: none;
-  z-index: 1;
-  opacity: 0;
+  z-index: 2;
 }
 
-@keyframes electric-aura {
-  0%, 100% { 
-    background-position: 0% 50%;
-    opacity: 0.5;
-  }
-  50% { 
-    background-position: 100% 50%;
-    opacity: 1;
-  }
+@keyframes diamond-shine {
+  0% { transform: translateX(-30%) translateY(-30%) rotate(25deg); }
+  50% { transform: translateX(30%) translateY(30%) rotate(25deg); }
+  100% { transform: translateX(-30%) translateY(-30%) rotate(25deg); }
 }
 
-@keyframes electric-sparks {
-  0%, 40%, 100% { opacity: 0; }
-  10%, 30% { opacity: 1; }
-  20% { opacity: 0.3; }
-  50%, 90% { opacity: 0; }
-  60%, 80% { opacity: 0.7; }
-  70% { opacity: 0.2; }
+@keyframes leader-pulse {
+  0%, 100% { border-color: rgba(91, 157, 255, 0.2); }
+  50% { border-color: rgba(91, 157, 255, 0.5); }
 }
 
-/* LÍDER INTERINO: 35% de intensidad del líder */
+/* LÍDER INTERINO: 40% intensidad - mismo efecto pero más suave */
 .member-interim {
-  position: relative;
-  border: 2px solid rgba(91, 157, 255, 0.35) !important;
-  box-shadow: 0 0 8px rgba(91, 157, 255, 0.15);
+  background: linear-gradient(135deg, 
+    rgba(91, 157, 255, 0.04) 0%, 
+    rgba(91, 157, 255, 0.015) 50%,
+    rgba(130, 200, 255, 0.03) 100%) !important;
+  border: 1px solid rgba(91, 157, 255, 0.18) !important;
+  overflow: hidden;
 }
 
 .member-interim::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: linear-gradient(45deg, 
-    transparent 40%, 
-    rgba(91, 157, 255, 0.08) 50%, 
-    transparent 60%);
-  background-size: 200% 200%;
-  animation: electric-aura 4s ease-in-out infinite;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    transparent 42%,
+    rgba(91, 157, 255, 0.04) 46%,
+    rgba(200, 230, 255, 0.07) 50%,
+    rgba(91, 157, 255, 0.04) 54%,
+    transparent 58%
+  );
+  animation: diamond-shine 5s ease-in-out infinite;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
 }
 
-.member-interim::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(91, 157, 255, 0.4) 0%, transparent 2%),
-    radial-gradient(circle at 75% 75%, rgba(91, 157, 255, 0.3) 0%, transparent 2%);
-  animation: electric-sparks 3s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0;
-}
-
-/* DECANO: Borde dorado sutil, sin animación */
+/* DECANO: 20% intensidad - solo un toque de color, sin animación */
 .member-elder {
-  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+  background: linear-gradient(135deg, 
+    rgba(251, 191, 36, 0.04) 0%, 
+    transparent 100%) !important;
+  border: 1px solid rgba(251, 191, 36, 0.15) !important;
 }
 
 
@@ -399,8 +391,7 @@
 :root[data-gama="bajo"] .gradient-text-shimmer,
 :root[data-gama="bajo"] .member-leader::before,
 :root[data-gama="bajo"] .member-leader::after,
-:root[data-gama="bajo"] .member-interim::before,
-:root[data-gama="bajo"] .member-interim::after {
+:root[data-gama="bajo"] .member-interim::before {
   animation: none;
 }
 

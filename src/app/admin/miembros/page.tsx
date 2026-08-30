@@ -1,10 +1,17 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { AdminGuard, AdminHeader } from '@/components/admin/AdminGuard'
 import { Member } from '@/lib/types'
 import { Button } from '@/components/ui/button'
+
+const ROLE_LABELS: Record<string, string> = {
+  leader: '👑 Líder',
+  interim_leader: '🔥 Interino',
+  elder: '⭐ Decano',
+  member: 'Miembro',
+}
 
 const empty = {
   nickname: '', free_fire_id: '', role_in_clan: 'member', rank: 'Diamond',
@@ -18,12 +25,30 @@ function MiembrosAdmin() {
   const [editing, setEditing] = useState<string | null>(null)
   const [msg, setMsg] = useState('')
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const sb = supabaseBrowser(); if (!sb) return
-    const { data } = await sb.from('members').select('*').order('kd_ratio', { ascending: false })
-    setRows((data as Member[]) || [])
-  }
-  useEffect(() => { load() }, [])
+    const { data } = await sb.from('members').select('*').eq('is_active', true)
+    // Orden: leader → interim → elder → kills
+    const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
+    const sorted = [...((data as Member[]) || [])].sort((a, b) => {
+      const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
+      const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
+      if (ra !== rb) return ra - rb
+      return (b.kills ?? 0) - (a.kills ?? 0)
+    })
+    setRows(sorted)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  // Realtime: se actualiza cuando alguien cambia un miembro
+  useEffect(() => {
+    const sb = supabaseBrowser(); if (!sb) return
+    const ch = sb.channel('admin-members')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, load)
+      .subscribe()
+    return () => { ch.unsubscribe() }
+  }, [load])
 
   const save = async () => {
     const sb = supabaseBrowser(); if (!sb) return
@@ -35,6 +60,14 @@ function MiembrosAdmin() {
       if (error) { setMsg(error.message); return }
     }
     setForm(empty); setEditing(null); setMsg('Guardado ✓'); load()
+  }
+
+  // Cambio rápido de rol desde la fila
+  const quickRole = async (id: string, role: string) => {
+    const sb = supabaseBrowser(); if (!sb) return
+    const { error } = await sb.from('members').update({ role_in_clan: role }).eq('id', id)
+    if (error) setMsg(error.message)
+    else { setMsg('Rol actualizado ✓'); load() }
   }
 
   const edit = (m: Member) => { setForm(m); setEditing(m.id) }
@@ -75,12 +108,23 @@ function MiembrosAdmin() {
       </div>
       <div className="space-y-2">
         {rows.map((m) => (
-          <div key={m.id} className="card-glow p-4 flex items-center justify-between">
-            <div>
-              <p className="font-display font-bold">{m.nickname} <span className="text-white/40 text-sm">· {m.rank} · K/D {m.kd_ratio}</span></p>
-              <p className="text-white/40 text-xs">{m.role_in_clan} · {m.wins}W · {m.booyahs} booyahs</p>
+          <div key={m.id} className="card-glow p-4 flex flex-wrap items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-bold truncate">{m.nickname} <span className="text-white/40 text-sm">· {m.rank} · K/D {m.kd_ratio}</span></p>
+              <p className="text-white/40 text-xs">{m.wins}W · {m.booyahs} booyahs</p>
             </div>
-            <div className="flex gap-2">
+            {/* Dropdown rápido de rol */}
+            <select
+              className="input w-36 text-sm"
+              value={m.role_in_clan || 'member'}
+              onChange={(e) => quickRole(m.id, e.target.value)}
+            >
+              <option value="leader">👑 Líder</option>
+              <option value="interim_leader">🔥 Interino</option>
+              <option value="elder">⭐ Decano</option>
+              <option value="member">Miembro</option>
+            </select>
+            <div className="flex gap-2 shrink-0">
               <button className="text-elite-primary text-sm" onClick={() => edit(m)}>Editar</button>
               <button className="text-red-400 text-sm" onClick={() => del(m.id)}>Borrar</button>
             </div>

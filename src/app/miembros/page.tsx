@@ -165,9 +165,14 @@ export default function MiembrosPage() {
                       aura={color}
                       prioritaria={i < 8}
                     />
+                    {/* Icono de rol: el líder muestra el águila real */}
                     <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 ff-cut-sm bg-elite-dark
-                                    border border-elite-primary/40 flex items-center justify-center">
-                      <RoleIcon className="w-3.5 h-3.5 text-elite-gold" />
+                                    border border-elite-primary/40 flex items-center justify-center overflow-hidden">
+                      {role === 'leader' ? (
+                        <img src="/icon-192.png" alt="Líder" className="w-full h-full object-cover" />
+                      ) : (
+                        <RoleIcon className="w-3.5 h-3.5 text-elite-gold" />
+                      )}
                     </div>
                   </div>
 
