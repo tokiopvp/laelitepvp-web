@@ -275,179 +275,135 @@
 /* Si el visitante pidio menos movimiento, no se mueve nada. */
 @media (prefers-reduced-motion: reduce) {
   [style*="elite-latido"] { animation: none !important; }
-  .member-leader::before,
-  .member-leader::after,
-  .member-interim::before,
-  .aura-ring,
-  .thunder-flash,
-  .power-particles::before,
-  .power-particles::after { animation: none !important; }
+  .aura-electrica,
+  .nav-electrico .rayo { display: none !important; }
 }
 
 /* ============================================
    JERARQUIA DEL CLAN: EL AURA ELECTRICA
    ============================================
 
-   Un SOLO efecto, graduado. El lider lo lleva al 100 %, el interino al 40 %
-   y el decano al 20 %. Se controla con la variable --i, y de ahi salen a la
-   vez la opacidad, la velocidad y el alcance del resplandor.
+   Los rayos los dibuja <AuraElectrica>. Aqui solo esta el aspecto y el ritmo.
 
-   Por que una variable y no tres efectos distintos: si cada rango tuviera su
-   propia animacion, se leerian como tres adornos sin relacion. Siendo EL
-   MISMO efecto a distinta potencia, la jerarquia se entiende sin leer una
-   sola etiqueta: se ve quien manda.
+   La idea: NO hay nada encendido de forma continua. Cada rayo esta apagado
+   casi todo su ciclo y salta un instante. Lo que impresiona de un rayo es que
+   no estaba y de pronto esta; una luz permanente girando es un adorno.
 
-   EL COLOR
-   --------
-   Un arco electrico entre blanco y azul-violeta (#cfe4ff -> #a78bfa). Es un
-   tono que la paleta ya tiene, asi que no la rompe, pero al ir casi al blanco
-   en el nucleo del rayo destaca por encima de cualquier otro azul de la
-   pagina. El oro NO se usa aqui: esta reservado a lo que se gana.
+   Lider 100 %, interino 40 %, decano 20 %. La variable --i gobierna el tinte
+   de fondo y el resplandor; el numero de rayos y de chispas lo decide el
+   componente con ese mismo numero.
 
-   COSTE
-   -----
-   Todo son degradados y `transform`. Ningun `blur`, ninguna sombra animada y
-   ningun filtro SVG, que es lo que arrodilla a una grafica integrada. El
-   anillo gira con `rotate`, que resuelve el compositor: mover un elemento ya
-   pintado sale gratis. Ademas solo lo llevan tres o cuatro tarjetas de la
-   pagina, no las cuarenta y cuatro.
+   COSTE: solo se anima `opacity`, que la resuelve el compositor. Ni un
+   `filter`, ni un `blur`, ni una sombra animada. Lo que hundia el rendimiento
+   en versiones anteriores eran los desenfoques grandes, que hay que
+   rasterizar de nuevo en cada fotograma.
 */
 
-.member-leader  { --i: 1;    --vel: 3.2s; }
-.member-interim { --i: 0.4;  --vel: 5s; }
-.member-elder   { --i: 0.2;  --vel: 7s; }
+.member-leader  { --i: 1; }
+.member-interim { --i: 0.4; }
+.member-elder   { --i: 0.2; }
 
 .member-leader,
 .member-interim,
 .member-elder {
   position: relative;
-  /* El fondo se tine muy poco: lo que distingue el rango es el AURA, no un
-     rectangulo de color. Un relleno fuerte competiria con las cifras. */
+  /* El fondo se tine muy poco: lo que distingue el rango son los rayos, no un
+     rectangulo de color, que competiria con las cifras. */
   background: linear-gradient(
     135deg,
     rgba(167, 139, 250, calc(0.10 * var(--i))) 0%,
     rgba(91, 157, 255, calc(0.04 * var(--i))) 55%,
-    rgba(207, 228, 255, calc(0.08 * var(--i))) 100%) !important;
-  box-shadow: 0 0 calc(30px * var(--i)) rgba(140, 170, 255, calc(0.30 * var(--i)));
+    rgba(207, 228, 255, calc(0.07 * var(--i))) 100%) !important;
+  box-shadow: 0 0 calc(34px * var(--i)) rgba(140, 170, 255, calc(0.28 * var(--i)));
 }
 
-/* --- El anillo: la corriente que recorre el borde --------------------- */
-.aura-ring {
+/* --- El lienzo de los rayos ------------------------------------------- */
+.aura-electrica {
   position: absolute;
-  inset: -1px;
-  border-radius: inherit;
+  /* Se desborda la tarjeta a proposito: los rayos salen HACIA FUERA, como en
+     el personaje de referencia. Si quedaran recortados dentro del borde
+     pareceria un marco decorado, no un aura. */
+  inset: -14px;
+  width: calc(100% + 28px);
+  height: calc(100% + 28px);
   pointer-events: none;
-  z-index: 0;
-  opacity: var(--i);
-  /* Un cono con dos nucleos claros enfrentados. Al girar, esos nucleos
-     recorren el perimetro y se leen como corriente dando la vuelta. */
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(207, 228, 255, 0.95) 18deg,
-    rgba(167, 139, 250, 0.55) 42deg,
-    transparent 90deg,
-    transparent 180deg,
-    rgba(207, 228, 255, 0.85) 200deg,
-    rgba(91, 157, 255, 0.5) 224deg,
-    transparent 270deg,
-    transparent 360deg);
-  /* Solo se ve el BORDE: la mascara vacia el centro y deja un filo de 2 px.
-     Sin esto seria un disco de color tapando la tarjeta entera. */
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  padding: 2px;
-  animation: aura-girar var(--vel) linear infinite;
+  z-index: -1;
+  overflow: visible;
 }
 
-@keyframes aura-girar {
-  to { transform: rotate(1turn); }
-}
-
-/* --- El chispazo: el rayo que cruza de vez en cuando ------------------ */
-.thunder-flash {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
+.aura-electrica g {
   opacity: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 42%,
-    rgba(207, 228, 255, 0.5) 48%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(167, 139, 250, 0.5) 52%,
-    transparent 58%);
-  /* Casi todo el ciclo esta apagado. Un rayo continuo no es un rayo: es una
-     luz encendida. Lo que impresiona es que no pase nada y de pronto pase. */
-  animation: thunder-flash 4.5s ease-in-out infinite;
+  animation-name: rayo-salta;
+  animation-timing-function: steps(1, end);
+  animation-iteration-count: infinite;
+  /* `steps` y no una curva suave: la electricidad no se desvanece, corta. Con
+     un fundido parecen luciernagas; con cortes secos, chispazos. */
 }
 
-@keyframes thunder-flash {
-  0%, 86%, 100% { opacity: 0; transform: translateX(-8%); }
-  88%  { opacity: 0.9; }
-  90%  { opacity: 0.15; }
-  92%  { opacity: 1; }
-  96%  { opacity: 0; transform: translateX(8%); }
+/*
+  El 90 % del ciclo apagado. Los tres saltos seguidos imitan el reencendido de
+  un arco real, que nunca prende limpio a la primera.
+*/
+@keyframes rayo-salta {
+  0%, 87%   { opacity: 0; }
+  88%       { opacity: 1; }
+  90%       { opacity: 0; }
+  92%       { opacity: 0.85; }
+  94%       { opacity: 0.2; }
+  96%       { opacity: 1; }
+  98%, 100% { opacity: 0; }
 }
 
-/* --- Las chispas: solo para el lider ---------------------------------- */
-.power-particles,
-.power-particles::before,
-.power-particles::after {
-  position: absolute;
-  pointer-events: none;
-}
-.power-particles { inset: 0; border-radius: inherit; overflow: hidden; z-index: 0; }
-.power-particles::before,
-.power-particles::after {
-  content: '';
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #cfe4ff;
-  box-shadow: 0 0 6px #cfe4ff, 0 0 14px rgba(167, 139, 250, 0.9);
-}
-.power-particles::before { top: 18%; left: 8%;  animation: float-particle 3.4s ease-in-out infinite; }
-.power-particles::after  { top: 62%; right: 10%; animation: float-particle 4.6s ease-in-out infinite 0.8s; }
-
-@keyframes float-particle {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.5; }
-  25% { transform: translateY(-9px) scale(1.3); opacity: 1; }
-  50% { transform: translateY(-4px) scale(0.8); opacity: 0.35; }
-  75% { transform: translateY(-13px) scale(1.1); opacity: 0.85; }
+/* Trazo grueso y translucido: el resplandor del arco. */
+.rayo-halo {
+  fill: none;
+  stroke: rgba(150, 190, 255, 0.55);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* El vector NO se deforma con la tarjeta aunque el viewBox si: sin esto,
+     con preserveAspectRatio="none" los trazos saldrian gordos en un eje y
+     finos en el otro. */
+  vector-effect: non-scaling-stroke;
 }
 
-/* El contenido de la tarjeta va por encima de todas estas capas. */
-.member-leader > *:not(.aura-ring):not(.thunder-flash):not(.power-particles),
-.member-interim > *:not(.aura-ring):not(.thunder-flash),
-.member-elder > *:not(.aura-ring) {
-  position: relative;
-  z-index: 1;
+/* Trazo fino y casi blanco encima: el nucleo. Es lo que hace que "queme". */
+.rayo-nucleo {
+  fill: none;
+  stroke: #f2f8ff;
+  stroke-width: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* --- Las chispas sueltas ---------------------------------------------- */
+.chispa {
+  fill: #dbe9ff;
+  opacity: 0;
+  animation-name: chispa-late;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes chispa-late {
+  0%, 70%, 100% { opacity: 0; transform: translateY(0); }
+  80%           { opacity: 0.9; }
+  90%           { opacity: 0.3; }
 }
 
 /* ============================================
    LA MISMA CORRIENTE EN "ELITE COIN" DEL MENU
    ============================================
-   Antes era una pastilla dorada. El oro es el color de lo que se GANA -el
-   primer puesto, el saldo-, y usarlo tambien para un enlace del menu le
-   quitaba ese significado; ademas el amarillo sobre negro es el color que
-   peor envejece de una paleta.
+   Era una pastilla dorada. El oro es el color de lo que se GANA -el primer
+   puesto, el saldo-, y gastarlo tambien en un enlace del menu le quitaba ese
+   significado.
 
-   Ahora lleva el mismo arco electrico que el lider del clan. Dice lo mismo
-   que se queria decir -aqui hay algo especial- con el vocabulario que el
-   sitio ya usa para "esto es lo importante".
+   Ahora lleva la misma corriente que el lider del clan: dice lo mismo que se
+   queria decir -aqui hay algo especial- con el vocabulario que el sitio ya
+   usa para "esto importa".
 */
 .nav-electrico {
-  --i: 0.85;
-  --vel: 3.6s;
   position: relative;
   color: #e8efff;
   border-radius: 999px;
@@ -455,46 +411,22 @@
   padding-right: 0.95rem;
   background: linear-gradient(
     180deg,
-    rgba(167, 139, 250, 0.18),
+    rgba(167, 139, 250, 0.20),
     rgba(91, 157, 255, 0.07));
+  box-shadow: inset 0 1px 0 rgba(207, 228, 255, 0.25);
   text-shadow: 0 0 12px rgba(167, 139, 250, 0.55);
   transition: color 0.2s, transform 0.2s;
   isolation: isolate;
 }
 .nav-electrico:hover { color: #fff; transform: translateY(-1px); }
 
-/* El anillo de corriente, igual que en la tarjeta del lider. */
-.nav-electrico::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.5px;
-  pointer-events: none;
-  z-index: -1;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    rgba(207, 228, 255, 0.95) 16deg,
-    rgba(167, 139, 250, 0.6) 40deg,
-    transparent 88deg,
-    transparent 180deg,
-    rgba(207, 228, 255, 0.85) 198deg,
-    rgba(91, 157, 255, 0.55) 222deg,
-    transparent 268deg,
-    transparent 360deg);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: aura-girar var(--vel) linear infinite;
-}
+/*
+  Dos chispazos que cruzan la pastilla, desfasados entre si.
 
-/* El chispazo del menu: el mismo gesto, mas corto. */
+  Son `::before` y `::after` del propio enlace: cero elementos añadidos al
+  HTML y cero JavaScript. Cada uno esta apagado casi todo el ciclo, igual que
+  los rayos de las tarjetas, para que sea el mismo lenguaje visual.
+*/
 .nav-electrico .rayo {
   position: absolute;
   inset: 0;
@@ -503,19 +435,50 @@
   pointer-events: none;
   z-index: -1;
 }
-.nav-electrico .rayo::before {
+.nav-electrico .rayo::before,
+.nav-electrico .rayo::after {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  width: 42%;
+  opacity: 0;
   background: linear-gradient(
     100deg,
-    transparent 40%,
-    rgba(207, 228, 255, 0.45) 47%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(167, 139, 250, 0.45) 53%,
-    transparent 60%);
-  opacity: 0;
-  animation: thunder-flash 5.5s ease-in-out infinite 1.4s;
+    transparent,
+    rgba(190, 215, 255, 0.5) 42%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(167, 139, 250, 0.5) 58%,
+    transparent);
+  transform: skewX(-18deg);
+}
+.nav-electrico .rayo::before { animation: coin-chispazo 3.8s steps(1, end) infinite; }
+.nav-electrico .rayo::after  { animation: coin-chispazo 5.2s steps(1, end) infinite 1.7s; }
+
+@keyframes coin-chispazo {
+  0%, 78%   { left: -50%; opacity: 0; }
+  80%       { left: 20%;  opacity: 1; }
+  82%       { left: 45%;  opacity: 0; }
+  84%       { left: 60%;  opacity: 0.9; }
+  86%       { left: 100%; opacity: 0; }
+  100%      { left: 100%; opacity: 0; }
+}
+
+/* El halo del enlace, que respira muy despacio por debajo del texto. */
+.nav-electrico::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  z-index: -2;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(167, 139, 250, 0.35), transparent 75%);
+  animation: coin-respira 3.4s ease-in-out infinite;
+}
+
+@keyframes coin-respira {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.8; }
 }
 
 /* En gama baja se para TODA animacion en bucle. Las de entrada (que ocurren
@@ -525,13 +488,7 @@
 :root[data-gama="bajo"] .animate-aurora-c,
 :root[data-gama="bajo"] .animate-grid,
 :root[data-gama="bajo"] .gradient-text-shimmer,
-:root[data-gama="bajo"] .member-leader::before,
-:root[data-gama="bajo"] .member-leader::after,
-:root[data-gama="bajo"] .member-interim::before,
-:root[data-gama="bajo"] .aura-ring,
-:root[data-gama="bajo"] .thunder-flash,
-:root[data-gama="bajo"] .power-particles::before,
-:root[data-gama="bajo"] .power-particles::after {
+:root[data-gama="bajo"] .gradient-text-shimmer {
   animation: none;
 }
 
@@ -857,16 +814,18 @@ h2.font-display {
   border: 0;
   transition: filter 0.3s ease;
   /*
-    Sin esto, cualquier adorno colocado en absoluto DENTRO del panel se sale
-    por los bordes. La tarjeta de miembro tiene un halo de 160 px desplazado
-    -56 px a la derecha: en escritorio el grid lo disimula, pero en el movil la
-    tarjeta ocupa todo el ancho y ese halo empujaba 56 px fuera de la pantalla.
+    OJO CON PONER overflow:hidden AQUI.
 
-    El resultado era una pagina que se podia arrastrar de lado, o sea que "se
-    movia sola" mientras se leia. El recorte del chaflan lo hacen ::before y
-    ::after por dentro, asi que recortar aqui no le quita nada a la forma.
+    Se puso para arreglar el movil: el halo del rango se salia 56 px por la
+    derecha y la pagina se podia arrastrar de lado. Pero recortar el panel
+    tambien recorta los RAYOS del aura, que tienen que salir hacia fuera; sin
+    eso se leen como un marco decorado y no como un aura.
+
+    Asi que el panel deja pasar lo que se sale, y el desbordamiento se ataja
+    en los dos sitios donde toca: el halo ya no se desplaza fuera de la
+    tarjeta, y el body corta el arrastre horizontal pase lo que pase.
   */
-  overflow: hidden;
+  overflow: visible;
 }
 .ff-panel::before,
 .ff-panel::after {
@@ -944,30 +903,25 @@ h2.font-display {
  * ============================================================ */
 /* Gama baja y "menos movimiento".
  *
- * El anillo NO se apaga: se queda quieto. Es lo que distingue a ELITE COIN del
- * resto del menu, y quitarlo dejaria el enlace igual que los demas justo en
- * los equipos donde mas falta hace que se note. Lo que se va es el giro y el
- * chispazo, que es el movimiento. */
-:root[data-gama="bajo"] .nav-electrico::after,
-:root[data-quieto="si"] .nav-electrico::after,
-:root[data-gama="bajo"] .aura-ring,
-:root[data-quieto="si"] .aura-ring {
-  animation: none;
+ * Se van los rayos y los chispazos, que es el movimiento. Se QUEDAN el tinte
+ * del rango, el resplandor de la tarjeta y el halo de ELITE COIN: si se
+ * apagara todo, el lider se veria igual que cualquier miembro y el enlace
+ * igual que el resto del menu, justo en los equipos donde mas falta hace que
+ * se note quien es quien. */
+:root[data-gama="bajo"] .aura-electrica,
+:root[data-quieto="si"] .aura-electrica,
+:root[data-gama="bajo"] .nav-electrico .rayo,
+:root[data-quieto="si"] .nav-electrico .rayo {
+  display: none;
 }
-:root[data-gama="bajo"] .nav-electrico .rayo::before,
-:root[data-quieto="si"] .nav-electrico .rayo::before,
-:root[data-gama="bajo"] .thunder-flash,
-:root[data-quieto="si"] .thunder-flash,
-:root[data-gama="bajo"] .power-particles,
-:root[data-quieto="si"] .power-particles {
+:root[data-gama="bajo"] .nav-electrico::after,
+:root[data-quieto="si"] .nav-electrico::after {
   animation: none;
-  opacity: 0;
+  opacity: 0.55;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-electrico::after,
-  .aura-ring { animation: none; }
-  .nav-electrico .rayo::before,
-  .thunder-flash,
-  .power-particles { animation: none; opacity: 0; }
+  .aura-electrica,
+  .nav-electrico .rayo { display: none; }
+  .nav-electrico::after { animation: none; opacity: 0.55; }
 }

@@ -6,6 +6,7 @@ import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shi
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
+import AuraElectrica from '@/components/miembros/AuraElectrica'
 import IconoJugador from '@/components/miembros/IconoJugador'
 import EmblemaRango from '@/components/miembros/EmblemaRango'
 import OutfitModal from '@/components/OutfitModal'
@@ -27,6 +28,14 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 // Clases CSS para los efectos de cada rol
+// Cuanta corriente lleva cada rango. Los miembros sin cargo no llevan: si
+// todos brillaran, brillar dejaria de significar nada.
+const INTENSIDAD_ROL: Record<string, number> = {
+  leader: 1,
+  interim_leader: 0.4,
+  elder: 0.2,
+}
+
 const ROLE_CLASS: Record<string, string> = {
   leader: 'member-leader',
   interim_leader: 'member-interim',
@@ -143,20 +152,22 @@ export default function MiembrosPage() {
                 transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.3 }}
                 whileHover={{ y: -6 }}
               >
-                {/* Aura visual por rol */}
-                {(role === 'leader' || role === 'interim_leader' || role === 'elder') && (
-                  <div className="aura-ring" />
-                )}
-                {role === 'leader' && (
-                  <>
-                    <div className="thunder-flash" />
-                    <div className="power-particles" />
-                  </>
+                {/* Aura electrica por rango: lider 100 %, interino 40 %,
+                    decano 20 %. Es el MISMO efecto a distinta potencia, no
+                    tres efectos distintos: asi la jerarquia se lee sin tener
+                    que mirar la etiqueta.
+
+                    La semilla hace que dos tarjetas del mismo rango no tengan
+                    los rayos calcados, y que sean iguales en el servidor y en
+                    el navegador (con Math.random no coincidirian y React
+                    avisaria de desajuste de hidratacion). */}
+                {INTENSIDAD_ROL[role] != null && (
+                  <AuraElectrica intensidad={INTENSIDAD_ROL[role]} semilla={i + 1} />
                 )}
 
                 {/* Halo del rango */}
                 <div
-                  className="absolute -top-14 -right-14 w-40 h-40 rounded-full opacity-25 pointer-events-none"
+                  className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-25 pointer-events-none"
                   style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
                 />
 
