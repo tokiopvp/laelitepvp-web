@@ -19,8 +19,15 @@
 
   body {
     @apply bg-elite-dark text-white font-sans antialiased;
-    /* Ceniza calida, no el azul-morado de antes: el ground tira a carbon. */
-    background: radial-gradient(ellipse at top, #17121a 0%, #08080a 100%);
+    /*
+      Negro liso. El degradado que habia (#0a141d arriba) aclaraba la parte de
+      arriba lo bastante como para que el fondo se leyera "azul oscuro" en vez
+      de negro, y ahi las estrellas perdian todo el contraste.
+
+      El cielo lo pinta ahora AnimatedBackground, con manchas al 5-7%. El body
+      solo tiene que ser el negro sobre el que todo eso se apoya.
+    */
+    background: #07080a;
   }
 
   /* Toda cifra que se alinee en columna. */
@@ -70,7 +77,7 @@
       160deg,
       rgba(255, 255, 255, 0.055) 0%,
       rgba(255, 255, 255, 0.018) 42%,
-      rgba(8, 8, 10, 0.55) 100%
+      rgba(4, 7, 12, 0.55) 100%
     );
     border-color: rgba(255, 255, 255, 0.09);
     /* El cristal sale de una VARIABLE, no de un valor fijo.
@@ -92,12 +99,12 @@
   }
 
   .card:hover {
-    border-color: rgba(225, 29, 60, 0.45);
+    border-color: rgba(91, 157, 255, 0.45);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.16),
       inset 0 -1px 0 rgba(0, 0, 0, 0.4),
       0 18px 44px -20px rgba(0, 0, 0, 0.95),
-      0 0 26px -6px rgba(225, 29, 60, 0.3);
+      0 0 26px -6px rgba(91, 157, 255, 0.3);
   }
 
   .card-glow {
@@ -114,16 +121,23 @@
     @apply opacity-100;
   }
 
-  /* Brasa -> ambar -> oro: la rampa del fuego, sin el salto al morado. */
+  /* Blanco -> celeste -> blanco: hielo encendido.
+   *
+   * El titular arranca y termina en BLANCO a proposito. Un degradado que va de
+   * color a color deja las dos puntas apagadas y el titulo pierde fuerza justo
+   * donde el ojo entra. Con el blanco en los extremos el texto se lee primero y
+   * el celeste queda como la luz que lo atraviesa. */
   .gradient-text {
-    @apply bg-gradient-to-r from-elite-primary via-elite-secondary to-elite-gold bg-clip-text text-transparent;
+    background-image: linear-gradient(100deg, #ffffff 0%, #5b9dff 46%, #a78bfa 62%, #ffffff 100%);
+    @apply bg-clip-text text-transparent;
   }
 
   /* Marca de dato en vivo. Es el UNICO sitio donde sobrevive el cian. */
   .chip-live {
     @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium;
-    background: rgba(0, 212, 255, 0.1);
-    color: #00d4ff;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
   }
 
   .section-container {
@@ -154,14 +168,14 @@
 /* ===== Fondo dinamico premium ===== */
 .bg-aurora {
   background:
-    radial-gradient(1200px 600px at 15% 0%, rgba(225, 29, 60, 0.13), transparent 60%),
-    radial-gradient(1000px 500px at 85% 20%, rgba(122, 11, 27, 0.16), transparent 60%);
+    radial-gradient(1200px 600px at 15% 0%, rgba(91, 157, 255, 0.13), transparent 60%),
+    radial-gradient(1000px 500px at 85% 20%, rgba(10, 109, 143, 0.16), transparent 60%);
 }
 
 .bg-grid {
   background-image:
-    linear-gradient(rgba(225, 29, 60, 0.11) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(225, 29, 60, 0.11) 1px, transparent 1px);
+    linear-gradient(rgba(91, 157, 255, 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 157, 255, 0.11) 1px, transparent 1px);
   background-size: 44px 44px;
   transform: perspective(420px) rotateX(62deg);
   transform-origin: bottom center;
@@ -193,7 +207,7 @@
 
 /* Texto con brillo degradado animado */
 .gradient-text-shimmer {
-  background: linear-gradient(100deg, #e11d3c 0%, #ff4d68 22%, #e8b33c 50%, #ff4d68 78%, #e11d3c 100%);
+  background: linear-gradient(100deg, #ffffff 0%, #5b9dff 26%, #a78bfa 50%, #5b9dff 74%, #ffffff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -208,7 +222,7 @@
 .card-premium {
   position: relative;
   border-radius: 1rem;
-  background: rgba(16, 16, 20, 0.66);
+  background: rgba(10, 16, 23, 0.7);
   backdrop-filter: var(--cristal-premium);
   -webkit-backdrop-filter: var(--cristal-premium);
   overflow: hidden;
@@ -219,7 +233,7 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(130deg, rgba(225, 29, 60, 0.8), rgba(122, 11, 27, 0.35), rgba(232, 179, 60, 0.5));
+  background: linear-gradient(130deg, rgba(91, 157, 255, 0.8), rgba(10, 109, 143, 0.35), rgba(232, 179, 60, 0.5));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -314,7 +328,7 @@
     160deg,
     rgba(255, 255, 255, 0.055) 0%,
     rgba(255, 255, 255, 0.018) 42%,
-    rgba(8, 8, 10, 0.82) 100%
+    rgba(4, 7, 12, 0.82) 100%
   );
 }
 
@@ -381,7 +395,7 @@ h2.font-display {
   bottom: 1rem;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, #e11d3c, rgba(225, 29, 60, 0));
+  background: linear-gradient(180deg, #5b9dff, rgba(91, 157, 255, 0));
   opacity: 0.85;
 }
 
@@ -419,4 +433,341 @@ h2.font-display {
 .card-glow ol::-webkit-scrollbar-track,
 .card-glow > div::-webkit-scrollbar-track {
   background: transparent;
+}
+
+
+/* ============================================================
+ * LENGUAJE VISUAL DE FREE FIRE
+ *
+ * Tres cosas hacen que un panel "se sienta" del juego, y ninguna es el color:
+ *
+ *  1. LOS BORDES NO SON REDONDOS, SON CORTADOS. Free Fire bisela las esquinas
+ *     en diagonal (chaflan). Es lo primero que el ojo reconoce.
+ *  2. LA LUZ ENTRA POR UN LADO. Los paneles del juego tienen una linea
+ *     brillante en un borde, no un contorno uniforme.
+ *  3. HAY ALGO BARRIENDO. Un reflejo que cruza de vez en cuando: la pantalla
+ *     esta "encendida", no impresa.
+ *
+ * Todo esto se hace con clip-path, degradados y transform. Nada de sombras
+ * desenfocadas animadas, que es lo que hunde el rendimiento en gama baja.
+ * ============================================================ */
+
+/* 1) CHAFLAN. La esquina cortada del juego. */
+.ff-cut {
+  clip-path: polygon(
+    18px 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    0 100%,
+    0 18px
+  );
+  border-radius: 0;
+}
+
+.ff-cut-sm {
+  clip-path: polygon(
+    10px 0,
+    100% 0,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 10px
+  );
+  border-radius: 0;
+}
+
+/* 2) FILO DE LUZ. Una linea celeste en el borde superior y en el izquierdo,
+ *    como el reflejo de los paneles del juego. */
+.ff-edge {
+  position: relative;
+}
+.ff-edge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(91, 157, 255, 0.85), transparent 42%) top / 100% 2px no-repeat,
+    linear-gradient(90deg, rgba(91, 157, 255, 0.6), transparent 55%) left / 2px 100% no-repeat;
+  opacity: 0.75;
+  transition: opacity 0.35s ease;
+}
+.ff-edge:hover::after { opacity: 1; }
+
+/* 3) BARRIDO DE ESCANER. Un reflejo que cruza al pasar el raton.
+ *    Solo `transform`: lo resuelve el compositor y no repinta nada.
+ *
+ *    OJO: usa `::before`, igual que `.ff-panel`. No se pueden poner las dos
+ *    clases en el mismo elemento -la segunda pisa a la primera y se queda sin
+ *    marco-. En un panel, ponlo en un hijo. */
+.ff-scan {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ff-scan::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 42%;
+  top: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(91, 157, 255, 0.13) 45%,
+    rgba(255, 255, 255, 0.09) 55%,
+    transparent
+  );
+  transform: translateY(-140%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.ff-scan:hover::before {
+  opacity: 1;
+  animation: ff-scan-run 1.6s ease-in-out;
+}
+@keyframes ff-scan-run {
+  from { transform: translateY(-140%); }
+  to   { transform: translateY(320%); }
+}
+
+/* TEXTO NEON. El resplandor va en `text-shadow`, que no fuerza al navegador a
+ * crear una capa nueva (a diferencia de `filter: drop-shadow`). */
+.neon {
+  color: #ffffff;
+  text-shadow:
+    0 0 6px rgba(91, 157, 255, 0.85),
+    0 0 18px rgba(91, 157, 255, 0.45),
+    0 0 42px rgba(91, 157, 255, 0.2);
+}
+.neon-celeste {
+  color: #5b9dff;
+  text-shadow:
+    0 0 8px rgba(91, 157, 255, 0.7),
+    0 0 26px rgba(91, 157, 255, 0.35);
+}
+
+/* BORDE NEON QUE RECORRE. El degradado se mueve, no el elemento. */
+.neon-border {
+  position: relative;
+  isolation: isolate;
+}
+.neon-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    rgba(91, 157, 255, 0) 0%,
+    rgba(91, 157, 255, 0.9) 18%,
+    rgba(255, 255, 255, 0.95) 30%,
+    rgba(91, 157, 255, 0.9) 42%,
+    rgba(91, 157, 255, 0) 60%,
+    rgba(91, 157, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: border-run 4s linear infinite;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.neon-border:hover::before { opacity: 1; }
+
+/* PANEL DE JUEGO. La combinacion completa, para lo que tenga que verse
+ * claramente "sacado de Free Fire": chaflan + filo de luz + fondo de panel.
+ *
+ * EL CHAFLAN VA EN UNA CAPA DE FONDO, NO RECORTANDO EL PANEL
+ * ----------------------------------------------------------
+ * Recortar el panel con `clip-path` recorta TAMBIEN a sus hijos. Funciona,
+ * pero deja el borde de la tarjeta cortando cualquier cosa que se acerque a la
+ * esquina (un nick largo, un emblema) y ata el aspecto del marco a que ningun
+ * hijo se salga.
+ *
+ * Dibujando la piel en dos pseudo-elementos DETRAS del contenido
+ * (::before = borde, ::after = relleno, 1 px por dentro), el chaflan se ve
+ * igual, el contenido nunca se recorta, y el marco es independiente de lo que
+ * lleve dentro.
+ *
+ * Los `.ff-cut` sueltos -fichas, insignias, chips- si recortan el elemento: son
+ * hojas, no contienen nada que pueda salirse. */
+.ff-panel {
+  position: relative;
+  isolation: isolate;
+  background: transparent;
+  border: 0;
+  transition: filter 0.3s ease;
+}
+.ff-panel::before,
+.ff-panel::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  clip-path: polygon(
+    18px 0,
+    100% 0,
+    100% calc(100% - 18px),
+    calc(100% - 18px) 100%,
+    0 100%,
+    0 18px
+  );
+  transition: background 0.3s ease;
+}
+/* borde */
+.ff-panel::before {
+  inset: 0;
+  z-index: -2;
+  background: rgba(91, 157, 255, 0.22);
+}
+/* relleno, 1 px por dentro: lo que asoma del ::before es el borde */
+.ff-panel::after {
+  inset: 1px;
+  z-index: -1;
+  background:
+    linear-gradient(160deg, rgba(91, 157, 255, 0.07) 0%, rgba(10, 16, 23, 0.92) 55%, rgba(4, 7, 12, 0.96) 100%);
+}
+.ff-panel:hover::before {
+  background: rgba(91, 157, 255, 0.6);
+}
+.ff-panel:hover {
+  filter: drop-shadow(0 0 18px rgba(91, 157, 255, 0.22));
+}
+
+/* CINTA DIAGONAL de cabecera, como las pestañas del juego. */
+.ff-tab {
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
+}
+
+/* En gama baja se paran los bucles nuevos, igual que los de antes. */
+:root[data-gama="bajo"] .neon-border::before,
+:root[data-quieto="si"] .neon-border::before {
+  animation: none;
+  opacity: 0.5;
+}
+:root[data-gama="bajo"] .ff-scan:hover::before,
+:root[data-quieto="si"] .ff-scan:hover::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .neon-border::before { animation: none; }
+  .ff-scan:hover::before { animation: none; opacity: 0; }
+}
+
+
+/* ============================================================
+ * ELITE COIN EN EL MENU: "aqui dentro hay algo"
+ *
+ * Es el unico enlace del menu que promete una recompensa, asi que es el unico
+ * que se mueve. El resto se quedan quietos a proposito: si parpadean todos, no
+ * destaca ninguno.
+ *
+ * El efecto son tres cosas encadenadas:
+ *   - el texto en ORO, que es el color que el sitio reserva para lo ganado
+ *   - un latido lento del resplandor, para que se note sin marear
+ *   - un CHISPAZO que cruza la palabra cada pocos segundos, mas evidente al
+ *     pasar el raton
+ *
+ * Todo con `background-position`, `opacity` y `transform`: nada que obligue al
+ * navegador a recalcular el diseño en cada fotograma.
+ * ============================================================ */
+/*
+  ELITE COIN en la barra.
+
+  Antes era texto dorado con un rectangulo en degradado detras. El rectangulo
+  se veia como un borde pegado y encima tapaba el brillo del texto.
+
+  Ahora es una PASTILLA: fondo dorado casi transparente, un filo de luz arriba
+  y un barrido lento que la cruza. El oro se queda para esto y para los
+  primeros puestos; en ningun otro sitio del menu hay dorado, asi que el ojo va
+  aqui sin que haya que subirle el brillo a nada.
+*/
+.nav-electrico {
+  position: relative;
+  color: #ffd98a;
+  border-radius: 999px;
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(240, 180, 41, 0.16), rgba(240, 180, 41, 0.05));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 232, 170, 0.35),
+    0 0 0 1px rgba(240, 180, 41, 0.16),
+    0 6px 22px -10px rgba(240, 180, 41, 0.55);
+  text-shadow: 0 0 14px rgba(240, 180, 41, 0.45);
+  transition: color 0.2s, box-shadow 0.25s, transform 0.2s;
+}
+.nav-electrico:hover {
+  color: #fff3cf;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 240, 200, 0.55),
+    0 0 0 1px rgba(240, 180, 41, 0.35),
+    0 10px 30px -10px rgba(240, 180, 41, 0.8);
+}
+
+@keyframes coin-latido {
+  0%, 100% { filter: brightness(1); }
+  50%      { filter: brightness(1.1); }
+}
+
+/* El chispazo: una banda clara que barre la palabra. */
+.nav-electrico .rayo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.nav-electrico .rayo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 240, 190, 0.55) 45%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 240, 190, 0.55) 55%,
+    transparent
+  );
+  transform: skewX(-18deg);
+  animation: coin-chispazo 4.5s ease-in-out infinite;
+}
+.nav-electrico:hover .rayo::before {
+  animation-duration: 1.4s;
+}
+
+@keyframes coin-chispazo {
+  0%, 62%  { left: -60%; opacity: 0; }
+  66%      { opacity: 1; }
+  86%      { left: 115%; opacity: 0; }
+  100%     { left: 115%; opacity: 0; }
+}
+
+/* Gama baja y "menos movimiento": se queda el oro, se va la animacion. */
+:root[data-gama="bajo"] .nav-electrico,
+:root[data-quieto="si"] .nav-electrico {
+  animation: none;
+}
+:root[data-gama="bajo"] .nav-electrico .rayo::before,
+:root[data-quieto="si"] .nav-electrico .rayo::before {
+  animation: none;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-electrico { animation: none; }
+  .nav-electrico .rayo::before { animation: none; opacity: 0; }
 }

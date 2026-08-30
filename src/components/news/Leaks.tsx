@@ -147,7 +147,7 @@ export default function Leaks() {
                 className="relative h-40 shrink-0 flex flex-col items-center justify-center gap-2 overflow-hidden"
                 style={{
                   background:
-                    'radial-gradient(120% 140% at 50% 0%, rgba(225,29,60,0.20), transparent 70%)',
+                    'radial-gradient(120% 140% at 50% 0%, rgba(91,157,255,0.20), transparent 70%)',
                 }}
               >
                 {/* Rejilla tenue: da textura al hueco en vez de dejar un plano. */}

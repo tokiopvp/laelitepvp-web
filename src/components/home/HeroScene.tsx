@@ -2,25 +2,40 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { Trophy, Flame, Crown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Trophy, Flame, Crown, ChevronLeft, ChevronRight, Coins } from 'lucide-react'
 import LiveBadge from '@/components/LiveBadge'
 import type { Member } from '@/lib/types'
 import { honorHoy, honorSemana } from '@/lib/armas'
 import CompetenciaViva from '@/components/home/CompetenciaViva'
+import { getLeaderboard } from '@/lib/data'
 
 // El heroe es una tesis: lo primero que se ve es el marcador EN VIVO del clan,
 // que es lo mas caracteristico de este proyecto. Las cuatro cifras generales
 // viven en la barra de abajo y no se repiten aqui: antes estaban en los dos
 // sitios y ademas los chips se montaban sobre la tarjeta en pantallas medianas.
-// Los tops que van rotando en el marcador. Las KILLS primero: es la cifra que
-// el jugador presume, mucho mas que el K/D.
-const TOPS: {
+// Los tops que van rotando en el marcador.
+//
+// ORDEN: el de Elite Coin va SIEMPRE el primero y los demas salen barajados en
+// cada visita. Las coins primero porque son lo unico de esta pantalla que el
+// visitante puede ganar hoy; los demas tops son merito acumulado de meses y
+// ninguno merece el primer puesto fijo por encima de otro. Barajarlos ademas
+// hace que la portada no se vea igual dos veces.
+type Panel = {
   id: string
   titulo: string
+  // De donde salen las filas. 'clan' = del censo del juego; 'coins' = del saldo
+  // de la web, que vive en otra tabla y no cabe en un Member.
+  fuente?: 'clan' | 'coins'
   valor: (m: Member) => number
   formato: (v: number) => string
-}[] = [
-  // Las KILLS primero: es la cifra que el jugador presume, mas que el K/D.
+}
+
+const TOP_COINS: Panel = {
+  id: 'coins', titulo: 'Top Elite Coin', fuente: 'coins',
+  valor: () => 0, formato: (v) => v.toLocaleString('es'),
+}
+
+const TOPS: Panel[] = [
   { id: 'kills', titulo: 'Top eliminaciones', valor: (m) => m.kills ?? 0,
     formato: (v) => v.toLocaleString('es') },
   { id: 'kd', titulo: 'Top K/D', valor: (m) => m.kd_ratio ?? 0,
@@ -41,9 +56,62 @@ const TOPS: {
     formato: (v) => v.toLocaleString('es') },
   { id: 'rev', titulo: 'Top revividas', valor: (m) => m.revividas ?? 0,
     formato: (v) => v.toLocaleString('es') },
+
+  // --- Los que solo se pueden enseñar desde que el censo lee el perfil entero.
+  // Antes de eso estos campos venian vacios y un top de ceros no es un top.
+  { id: 'hs_tasa', titulo: 'Mejor punteria (% headshot)',
+    valor: (m) => m.headshot_tasa ?? 0, formato: (v) => `${v.toFixed(1)}%` },
+  { id: 'top10', titulo: 'Top supervivencia (% top 10)',
+    valor: (m) => m.top10_tasa ?? 0, formato: (v) => `${v.toFixed(1)}%` },
+  { id: 'dano', titulo: 'Top daño por partida',
+    valor: (m) => m.dano_partida ?? 0, formato: (v) => Math.round(v).toLocaleString('es') },
+  { id: 'kpp', titulo: 'Top kills por partida',
+    valor: (m) => m.kpp ?? 0, formato: (v) => v.toFixed(2) },
+  { id: 'partidas', titulo: 'Mas partidas jugadas',
+    valor: (m) => m.partidas ?? 0, formato: (v) => v.toLocaleString('es') },
+  { id: 'nivel', titulo: 'Top nivel',
+    valor: (m) => m.level ?? 0, formato: (v) => v.toLocaleString('es') },
+  { id: 'puntos_br', titulo: 'Top puntos Battle Royale',
+    valor: (m) => m.puntos_br ?? 0, formato: (v) => v.toLocaleString('es') },
+  { id: 'puntos_cs', titulo: 'Top puntos Duelo de Escuadras',
+    valor: (m) => m.puntos_cs ?? 0, formato: (v) => v.toLocaleString('es') },
 ]
 
+// Baraja de Fisher-Yates. Se hace UNA vez por visita, no en cada render: si se
+// rebarajara al rotar, el visitante veria el mismo top dos veces seguidas y se
+// saltaria otros.
+function barajar<T>(xs: T[]): T[] {
+  const a = [...xs]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function HeroScene({ members }: { members: Member[] }) {
+  // El orden de la vuelta: Elite Coin fijo el primero, el resto barajado.
+  // Se calcula en el estado inicial (una sola vez) y no en el cuerpo del
+  // render: si se recalculara, cada rotacion reordenaria la lista entera.
+  const paneles = useState(() => [TOP_COINS, ...barajar(TOPS)])[0]
+
+  // El top de coins no sale del censo del juego sino del saldo de la web, asi
+  // que se pide aparte. Si falla, ese panel simplemente aparece vacio y los
+  // demas siguen: una tabla caida no puede tumbar la portada.
+  const [coins, setCoins] = useState<{ nombre: string; v: number }[]>([])
+  useEffect(() => {
+    let vivo = true
+    getLeaderboard(5)
+      .then((filas) => {
+        if (!vivo) return
+        setCoins(filas
+          .map((f) => ({ nombre: f.display_name || 'Jugador', v: f.points ?? 0 }))
+          .filter((f) => f.v > 0))
+      })
+      .catch(() => {})
+    return () => { vivo = false }
+  }, [])
+
   // El marcador cambia de top cada 6 s. Un panel que siempre enseña lo mismo
   // deja de mirarse; rotando, el visitante se queda a ver que sale.
   const [iTop, setITop] = useState(0)
@@ -69,24 +137,26 @@ export default function HeroScene({ members }: { members: Member[] }) {
 
   useEffect(() => {
     if (pausa) return
-    const id = setInterval(() => setITop((i) => (i + 1) % TOPS.length), 5000)
+    const id = setInterval(() => setITop((i) => (i + 1) % paneles.length), 5000)
     return () => clearInterval(id)
-  }, [pausa])
+  }, [pausa, paneles.length])
 
   const irA = (paso: number) => {
     setPausa(true)
-    setITop((i) => (i + paso + TOPS.length) % TOPS.length)
+    setITop((i) => (i + paso + paneles.length) % paneles.length)
   }
 
-  const top = TOPS[iTop]
+  const top = paneles[iTop]
   const filas = useMemo(
     () =>
-      members
-        .map((m) => ({ nombre: m.nickname, v: top.valor(m) }))
-        .filter((f) => f.v > 0)
-        .sort((a, b) => b.v - a.v)
-        .slice(0, 5),
-    [members, top]
+      top.fuente === 'coins'
+        ? coins
+        : members
+            .map((m) => ({ nombre: m.nickname, v: top.valor(m) }))
+            .filter((f) => f.v > 0)
+            .sort((a, b) => b.v - a.v)
+            .slice(0, 5),
+    [members, top, coins]
   )
 
   const mx = useMotionValue(0)
@@ -112,7 +182,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
         {/* Anillos rotatorios de fondo */}
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[125%] aspect-square rounded-full pointer-events-none"
-          style={{ border: '2px solid rgba(225,29,60,0.22)', z: -70 }}
+          style={{ border: '2px solid rgba(91,157,255,0.22)', z: -70 }}
           animate={{ rotate: 360 }}
           transition={{ duration: 26, repeat: Infinity, ease: 'linear' }}
         />
@@ -158,7 +228,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <span className="text-[10px] font-mono tabular-nums text-white/30">
-                  {iTop + 1}/{TOPS.length}
+                  {iTop + 1}/{paneles.length}
                 </span>
                 <button
                   onClick={() => irA(1)}
@@ -170,7 +240,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
                 <div className="w-14 h-[3px] rounded-full bg-white/10 overflow-hidden" aria-hidden>
                   <motion.div
                     className="h-full rounded-full bg-elite-primary"
-                    animate={{ width: `${((iTop + 1) / TOPS.length) * 100}%` }}
+                    animate={{ width: `${((iTop + 1) / paneles.length) * 100}%` }}
                     transition={{ duration: 0.5, ease: 'easeOut' }}
                   />
                 </div>
@@ -199,7 +269,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
                       className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
                       style={
                         i === 0
-                          ? { background: 'linear-gradient(135deg,#e8b33c,#ff4d68)', color: '#17130f' }
+                          ? { background: 'linear-gradient(135deg,#f0b429,#a78bfa)', color: '#17130f' }
                           : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }
                       }
                     >
@@ -208,7 +278,11 @@ export default function HeroScene({ members }: { members: Member[] }) {
                     <span className="font-medium truncate">{row.nombre}</span>
                   </div>
                   <div className="flex items-center gap-2 text-white/60 text-sm shrink-0">
-                    <Flame className="w-4 h-4" style={{ color: i === 0 ? '#e8b33c' : undefined }} />
+                    {/* Llama para lo del juego, moneda para lo que se gasta:
+                        el icono ya dice de que top se esta hablando. */}
+                    {top.fuente === 'coins'
+                      ? <Coins className="w-4 h-4" style={{ color: '#f0b429' }} />
+                      : <Flame className="w-4 h-4" style={{ color: i === 0 ? '#f0b429' : undefined }} />}
                     <span className="tabular-nums font-mono">{top.formato(row.v)}</span>
                   </div>
                 </div>

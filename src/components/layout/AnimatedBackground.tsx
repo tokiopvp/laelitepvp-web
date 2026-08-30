@@ -4,17 +4,42 @@ import { useEffect, useRef } from 'react'
 import { useGama } from '@/components/layout/Resplandor'
 
 /**
- * Fondo del sitio: negro con chispas carmesi subiendo.
+ * Fondo del sitio: negro y estrellas a la deriva.
  *
- * Antes esto rotaba 8 JPG que eran las capturas de depuracion del emulador
- * (menus del juego, la lista del clan, la pantalla de armas). Se veian como lo
- * que eran. Ahora el fondo se dibuja: no pesa nada, no se pixela, y las brasas
- * suben en vez de caer, que es lo que hace el fuego.
+ * QUE HABIA ANTES Y POR QUE SE FUE
+ * --------------------------------
+ * Chispas subiendo, tres halos de calor y una rejilla en perspectiva. Cada
+ * pieza estaba bien resuelta, pero juntas eran CUATRO cosas moviendose detras
+ * del contenido. El fondo competia con lo que habia encima, y un fondo que
+ * compite es lo que hace que un sitio se lea barato por mucho que las tarjetas
+ * esten bien hechas.
  *
- * El numero de chispas lo decide la gama del dispositivo; en gama baja no se
- * dibuja ninguna y queda solo el degradado, que es igual de digno.
+ * Ahora hay una sola: el campo de estrellas. Un fondo caro no es el que tiene
+ * mas cosas, es el que tiene una sola bien hecha y muy tranquila.
+ *
+ * TRES CAPAS, Y ESO ES TODO EL TRUCO
+ * ----------------------------------
+ * Las estrellas se reparten en tres profundidades. Las del fondo son diminutas
+ * y casi no se mueven; las de delante son mayores, mas brillantes y van tres
+ * veces mas rapido. Esa diferencia de velocidad es lo unico que convierte unos
+ * puntos blancos en un espacio con hondura: sin ella se ve un papel pintado.
+ *
+ * La deriva es MUY lenta a proposito (segundos por pixel). Tiene que notarse
+ * si te quedas mirando y desaparecer si estas leyendo.
+ *
+ * NO PARPADEAN TODAS A LA VEZ
+ * ---------------------------
+ * Cada estrella lleva su propia fase, asi que el titileo nunca se sincroniza.
+ * Un campo de estrellas que pulsa a la vez se lee como un cursor y molesta.
+ *
+ * COSTE
+ * -----
+ * Un canvas y una circunferencia por estrella. Sin blur, sin sombras, sin
+ * animar `background-position` (que obliga a repintar) — lo unico caro que
+ * habia antes. En gama baja no se dibuja ninguna y queda el degradado solo,
+ * que sigue siendo digno.
  */
-function Chispas({ cantidad }: { cantidad: number }) {
+function Estrellas({ cantidad }: { cantidad: number }) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -37,120 +62,133 @@ function Chispas({ cantidad }: { cantidad: number }) {
     }
     resize()
 
-    type Chispa = { x: number; y: number; r: number; vy: number; deriva: number; fase: number; calor: number }
-    const nueva = (alto: number): Chispa => ({
-      x: Math.random() * w,
-      y: alto,
-      r: Math.random() * 1.8 + 0.6,
-      vy: Math.random() * 0.35 + 0.12,
-      deriva: (Math.random() - 0.5) * 0.25,
-      fase: Math.random() * Math.PI * 2,
-      // 0 = chispa apagada (carmesi hondo), 1 = viva (rosa sangre)
-      calor: Math.random(),
-    })
-    const chispas: Chispa[] = Array.from({ length: cantidad }, () => nueva(Math.random() * h))
+    type Estrella = {
+      x: number
+      y: number
+      r: number
+      vx: number
+      vy: number
+      base: number   // brillo de reposo
+      fase: number   // desfase del titileo, propio de cada una
+      vel: number    // lo rapido que titila
+      tinte: string
+    }
 
-    const dibujar = () => {
+    // Casi todas blancas. Una de cada seis, azul o violeta muy palido: le da
+    // temperatura al campo sin que se note que hay color.
+    const TINTES = [
+      '255,255,255', '255,255,255', '255,255,255',
+      '255,255,255', '198,218,255', '205,196,255',
+    ]
+
+    const nueva = (): Estrella => {
+      // capa 0 = fondo (lejos, lenta, tenue) .. capa 2 = frente
+      const capa = Math.random() < 0.6 ? 0 : Math.random() < 0.75 ? 1 : 2
+      const prof = [0.35, 0.7, 1][capa]
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        r: [0.5, 0.9, 1.4][capa] + Math.random() * 0.35,
+        // Deriva en diagonal suave, siempre en el mismo sentido: un campo que
+        // va en direcciones distintas se lee como ruido, no como movimiento.
+        vx: (0.012 + Math.random() * 0.014) * prof,
+        vy: (-0.006 - Math.random() * 0.008) * prof,
+        base: [0.28, 0.5, 0.78][capa] + Math.random() * 0.16,
+        fase: Math.random() * Math.PI * 2,
+        vel: 0.0004 + Math.random() * 0.0011,
+        tinte: TINTES[(Math.random() * TINTES.length) | 0],
+      }
+    }
+
+    let estrellas: Estrella[] = Array.from({ length: cantidad }, nueva)
+
+    const pintar = (t: number) => {
       ctx.clearRect(0, 0, w, h)
-      for (const b of chispas) {
-        b.y -= b.vy
-        b.fase += 0.01
-        // Vaiven lateral: una chispa no sube en linea recta.
-        b.x += b.deriva + Math.sin(b.fase) * 0.2
+      for (const e of estrellas) {
+        e.x += e.vx
+        e.y += e.vy
+        // Al salir por un borde reaparece por el contrario: el campo no se
+        // agota nunca y no hace falta crear estrellas nuevas.
+        if (e.x > w + 2) e.x = -2
+        if (e.y < -2) e.y = h + 2
 
-        if (b.y < -10) Object.assign(b, nueva(h + 10))
-        if (b.x < -10) b.x = w + 10
-        if (b.x > w + 10) b.x = -10
-
-        // Se apagan a medida que suben.
-        const vida = Math.max(0, Math.min(1, b.y / h))
-        const alfa = vida * 0.55 + 0.08
-        // Carmesi #e11d3c -> rosa sangre #ff4d68 segun el calor.
-        const rojo = Math.round(225 + b.calor * 30)
-        const verde = Math.round(29 + b.calor * 48)
-        const azul = Math.round(60 + b.calor * 44)
-
+        // Titileo suave alrededor del brillo de reposo. El 0.22 es corto a
+        // proposito: mas amplitud y el campo empieza a "hervir".
+        const alfa = Math.max(0, Math.min(1, e.base + Math.sin(t * e.vel + e.fase) * 0.22))
         ctx.beginPath()
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(${rojo}, ${verde}, ${azul}, ${alfa})`
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(${e.tinte},${alfa})`
         ctx.fill()
       }
-      raf = requestAnimationFrame(dibujar)
+      raf = requestAnimationFrame(pintar)
     }
-    dibujar()
+    raf = requestAnimationFrame(pintar)
 
-    window.addEventListener('resize', resize)
+    const alCambiarTamano = () => {
+      resize()
+      estrellas = Array.from({ length: cantidad }, nueva)
+    }
+    window.addEventListener('resize', alCambiarTamano)
+
+    // Con la pestana de fondo no se pinta nada: en un movil eso es bateria
+    // quemada por un fondo que nadie esta viendo.
+    const alVisibilidad = () => {
+      if (document.hidden) cancelAnimationFrame(raf)
+      else raf = requestAnimationFrame(pintar)
+    }
+    document.addEventListener('visibilitychange', alVisibilidad)
+
     return () => {
       cancelAnimationFrame(raf)
-      window.removeEventListener('resize', resize)
+      window.removeEventListener('resize', alCambiarTamano)
+      document.removeEventListener('visibilitychange', alVisibilidad)
     }
   }, [cantidad])
 
-  return <canvas ref={ref} className="absolute inset-0 h-full w-full" aria-hidden />
+  return <canvas ref={ref} className="absolute inset-0 h-full w-full" />
 }
 
 export default function AnimatedBackground() {
-  // Arranca en la gama mas baja y sube si el dispositivo da: asi el primer
-  // pintado nunca promete un efecto que despues haya que retirar.
-  // `useGama` empieza en la gama baja, sube a la estimada al hidratar, y la
-  // corrige a la baja si la sonda de fotogramas ve que el equipo no da. Antes
-  // se llamaba a `detectarGama()` una sola vez y ya no habia vuelta atras: un
-  // PC con muchos nucleos y grafica integrada se quedaba con todos los efectos.
   const cap = useGama()
   const quieto = cap.quieto
-  const alto = cap.gama === 'alto'
 
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-elite-dark" aria-hidden>
-      {/* Negro, con el rescoldo carmesi asomando por abajo. */}
+      {/*
+        El cielo. Dos manchas MUY tenues, una azul arriba y una violeta abajo,
+        para que el negro no sea una pared plana.
+
+        Los porcentajes de opacidad son bajisimos (0.07 y 0.05) y no es un
+        descuido: por encima de eso el fondo deja de ser negro y se convierte
+        en "azul oscuro", que es exactamente el aspecto que se queria quitar.
+      */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 80% at 50% 110%, rgba(225,29,60,0.16) 0%, transparent 55%),' +
-            'radial-gradient(100% 70% at 50% -10%, rgba(26,20,32,0.9) 0%, transparent 60%)',
+            'radial-gradient(120% 90% at 50% -20%, rgba(91,157,255,0.07) 0%, transparent 60%),' +
+            'radial-gradient(100% 80% at 50% 120%, rgba(167,139,250,0.05) 0%, transparent 60%)',
         }}
       />
 
-      {/* Halos de calor. Se mueven muy lento; en modo ahorro quedan quietos. */}
-      <div className="absolute inset-0 bg-aurora" />
-      {/* Los tres halos de calor.
-          Eran `div` de 50-60vh con `blur-[130px]` a los que se les animaba
-          `translate` Y `scale`. Un desenfoque de 130 px sobre un elemento de
-          650 px ya es caro de rasterizar una vez; al cambiarle la escala hay
-          que rehacerlo entero en cada fotograma. Tres a la vez, siempre, en
-          todas las paginas: eso es lo que arrodilla a una grafica integrada.
+      {/*
+        El presupuesto de particulas venia calibrado para las brasas de antes,
+        que llevaban degradado y estela. Una estrella es un `arc` y un `fill`:
+        cuesta una fraccion, asi que hay suelo de 34 incluso en gama baja.
 
-          Ahora son degradados radiales, que es a lo que se PARECE un circulo
-          desenfocado. El navegador los pinta una vez y luego moverlos es
-          trabajo del compositor, o sea gratis. Se ve igual. */}
-      {[
-        { c: 'rgba(225,29,60,0.15)', pos: '-left-1/4 top-0 h-[60vh] w-[60vh]', anim: 'animate-aurora-a' },
-        { c: 'rgba(122,11,27,0.12)', pos: 'right-0 top-1/3 h-[55vh] w-[55vh]', anim: 'animate-aurora-b' },
-        { c: 'rgba(212,162,76,0.08)', pos: 'bottom-0 left-1/3 h-[50vh] w-[50vh]', anim: 'animate-aurora-c' },
-      ].map((h) => (
-        <div
-          key={h.anim}
-          className={`absolute rounded-full ${h.pos} ${quieto ? '' : h.anim}`}
-          style={{
-            background: `radial-gradient(closest-side, ${h.c} 0%, transparent 100%)`,
-            transform: 'translateZ(0)',
-          }}
-        />
-      ))}
+        Sin ese suelo, un movil normal se quedaba con el fondo negro liso y el
+        sitio perdia justo lo unico que lo distingue. Lo que SI se respeta es
+        `quieto` (el "menos movimiento" del sistema): ahi no se dibuja nada,
+        porque eso no es una cuestion de potencia sino de lo que la persona
+        ha pedido.
+      */}
+      {!quieto && <Estrellas cantidad={Math.max(34, Math.round(cap.particulas * 2.6))} />}
 
-      {!quieto && <Chispas cantidad={cap.particulas} />}
-
-      {/* Rejilla en perspectiva: el suelo de la arena. */}
-      {/* La rejilla anima `background-position`, que NO lo resuelve el
-          compositor: obliga a repintar la franja entera en cada fotograma.
-          Se queda quieta salvo en equipos que van sobrados. Quieta se ve
-          practicamente igual: es un suelo, no tiene que correr. */}
-      <div className={`absolute inset-x-0 bottom-0 h-[40vh] bg-grid ${alto && !quieto ? 'animate-grid' : ''}`} />
-
-      {/* Viñeta para que el texto siempre tenga contraste encima. */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(8,8,10,0.9)_100%)]" />
-      <div className="absolute inset-0 bg-gradient-to-b from-elite-dark/70 via-transparent to-elite-dark" />
+      {/*
+        Vinieta. Oscurece los bordes para que el texto siempre tenga contraste
+        por debajo, pase lo que pase con las estrellas.
+      */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(7,8,10,0.85)_100%)]" />
     </div>
   )
 }

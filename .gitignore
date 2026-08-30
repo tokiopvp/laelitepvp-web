@@ -47,3 +47,6 @@ scripts/*.log
 # copias de seguridad y config local del editor
 *.bak
 .claude/
+
+# Scratch del CLI de Supabase: no es codigo del proyecto.
+supabase/.temp/

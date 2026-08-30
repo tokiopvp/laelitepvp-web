@@ -40,10 +40,10 @@ const features = [
 
 export default function Home() {
   const [stats, setStats] = useState([
-    { value: '—', label: 'Miembros Activos', icon: Users, color: '#e11d3c' },
-    { value: '—', label: 'Torneos', icon: Trophy, color: '#e8b33c' },
-    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#ff4d68' },
-    { value: '—', label: 'Kills Totales', icon: Flame, color: '#e8b33c' },
+    { value: '—', label: 'Miembros Activos', icon: Users, color: '#5b9dff' },
+    { value: '—', label: 'Torneos', icon: Trophy, color: '#f0b429' },
+    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#a78bfa' },
+    { value: '—', label: 'Kills Totales', icon: Flame, color: '#f0b429' },
   ])
   const [todos, setTodos] = useState<Member[]>([])
 
@@ -68,12 +68,12 @@ export default function Home() {
       const topKd = members.reduce((a, m) => ((m.kd_ratio || 0) > a ? (m.kd_ratio as number) : a), 0)
       const totalKills = members.reduce((a, m) => a + (m.kills ?? 0), 0)
       setStats([
-        { value: String(totalMembers), label: 'Miembros Activos', icon: Users, color: '#e11d3c' },
+        { value: String(totalMembers), label: 'Miembros Activos', icon: Users, color: '#5b9dff' },
         torneosGanados > 0
-          ? { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#e8b33c' }
-          : { value: String(torneosTotales), label: 'Torneos Jugados', icon: Trophy, color: '#e8b33c' },
-        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#ff4d68' },
-        { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#e8b33c' },
+          ? { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#f0b429' }
+          : { value: String(torneosTotales), label: 'Torneos Jugados', icon: Trophy, color: '#f0b429' },
+        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#a78bfa' },
+        { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#f0b429' },
       ])
       // Se pasan los miembros enteros: el marcador del hero rota entre varios
       // tops (kills, K/D, headshots, honor de hoy) en vez de enseñar siempre
@@ -98,7 +98,7 @@ export default function Home() {
             className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200%] h-[55%]"
             style={{
               backgroundImage:
-                'linear-gradient(rgba(225,29,60,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(225,29,60,0.18) 1px, transparent 1px)',
+                'linear-gradient(rgba(91,157,255,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(91,157,255,0.18) 1px, transparent 1px)',
               backgroundSize: '44px 44px',
               transform: 'perspective(420px) rotateX(72deg)',
               transformOrigin: 'bottom',

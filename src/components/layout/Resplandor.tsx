@@ -49,7 +49,7 @@ export function useGama(): Capacidades {
  */
 export default function Resplandor({
   className = '',
-  color = '#e11d3c',
+  color = '#5b9dff',
   intensidad = 0.18,
   animado = true,
 }: {

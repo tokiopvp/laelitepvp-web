@@ -179,6 +179,11 @@ GRANT EXECUTE ON FUNCTION market_push(text, text, bigint, numeric) TO anon, auth
 GRANT EXECUTE ON FUNCTION house_trade(text, bigint) TO authenticated;
 
 -- Como queda el empujon de cada cobro.
+-- El casteo a `numeric` no es un adorno: `ln()` sobre un entero devuelve
+-- `double precision`, y `round(double precision, integer)` NO EXISTE en
+-- PostgreSQL -solo la version de dos argumentos, sin decimales-. Sin el casteo
+-- el script entero falla en esta ultima linea y no se aplica NADA.
 SELECT c AS coins,
-       round(LEAST(0.005, 0.00015 * ln(c + 1)) * 100, 3) || ' %' AS mueve
+       round(LEAST(0.005::numeric, 0.00015::numeric * ln((c + 1)::numeric)) * 100, 3)
+         || ' %' AS mueve
   FROM (VALUES (10),(60),(200),(500),(1500),(4000),(6000)) v(c);

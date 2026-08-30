@@ -9,7 +9,7 @@
  * Corre en el navegador: no hace falta servidor ni llamada a ninguna API.
  */
 
-import { fichaDe, respuestaTactil, type FichaDispositivo } from './dispositivos'
+import { resolver, respuestaTactil, type FichaDispositivo } from './dispositivos'
 import { calcularBoton, type ResultadoBoton } from './boton'
 
 export type Gama = 'baja' | 'media' | 'alta'
@@ -118,8 +118,14 @@ const LIMITES: Record<keyof Sensi, [number, number]> = {
  * porque la correccion llega antes.
  */
 function factorRespuesta(f: FichaDispositivo): number {
-  // respuestaTactil devuelve 0..1 combinando tactil, refresco y tipo de panel.
-  return 1 + respuestaTactil(f) * 0.07
+  // respuestaTactil devuelve 0..1 combinando tactil, refresco, fps y panel.
+  //
+  // El 0.07 de antes daba un margen total del 7% entre el peor telefono y el
+  // mejor. Sobre una escala de 100 eso son 7 puntos, o sea que un Galaxy A14 y
+  // un ROG Phone salian practicamente iguales. Con 0.20 la diferencia entre
+  // gama baja y gama alta se ve de un vistazo, que es lo que uno espera al
+  // comparar dos telefonos que no se parecen en nada.
+  return 1 + respuestaTactil(f) * 0.20
 }
 
 /**
@@ -136,14 +142,28 @@ function factorTamano(pulgadas: number): number {
 
 export function generarSensi(dispositivo: string): ResultadoSensi {
   const limpio = dispositivo.trim().replace(/\s+/g, ' ')
-  const { gama, etiqueta } = detectarGama(limpio)
+  const res0 = resolver(limpio)
+  // La gama se mira sobre el nombre CANONICO cuando se reconocio el modelo.
+  // Sobre el texto crudo, "iphone doce" no casaba con ningun patron de gama y
+  // caia en "media" mientras que "iPhone 12" caia en "alta": el mismo telefono,
+  // dos respuestas.
+  const { gama, etiqueta } = detectarGama(res0.canonico || limpio)
   const base = BASE[gama]
-  const s = semilla(limpio.toLowerCase())
 
   // Las medidas REALES del telefono, no solo su gama. Aqui es donde el
   // resultado deja de ser "una sensi de gama media" y pasa a ser la de ESE
   // telefono: entran sus pulgadas y sus hercios.
-  const { ficha, reconocido } = fichaDe(limpio)
+  const res = res0
+  const { ficha, reconocido } = res
+
+  // La semilla sale del nombre CANONICO, no de lo que se tecleo.
+  //
+  // Antes salia del texto crudo, y eso hacia que "iPhone 12", "iphone doce" y
+  // "iphone 12 " dieran tres respuestas distintas para el mismo telefono. Un
+  // sistema que cambia de opinion segun como le escribas no parece un sistema:
+  // parece un generador de numeros. Con el canonico, ese telefono da SIEMPRE
+  // los mismos valores, se escriba como se escriba.
+  const s = semilla((res.canonico || limpio).toLowerCase())
   const ajuste = factorRespuesta(ficha) * factorTamano(ficha.pulgadas)
 
   const sensi = {} as Sensi
@@ -189,6 +209,13 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
       'algo por debajo: con más, la mira se te pasaría de largo.'
     )
   }
+  if (reconocido && ficha.chip) {
+    notas.push(
+      `Tu ${ficha.nombre} monta un ${ficha.chip} y sostiene cerca de ` +
+      `${ficha.fps} fps estables en Free Fire. Ese dato es el que separa estos ` +
+      'valores de los de un modelo con la misma pantalla pero menos chip.'
+    )
+  }
   if (ficha.panel === 'IPS') {
     notas.push(
       'Al ser panel IPS, en giros muy rápidos verás algo de estela. Mejor ' +
@@ -197,14 +224,27 @@ export function generarSensi(dispositivo: string): ResultadoSensi {
   }
 
   if (!reconocido) {
-    notas.unshift(
-      'No tengo la ficha exacta de ese modelo, así que estimé una pantalla de ' +
-      '6.5". Si me dices las pulgadas, afino el cálculo.'
-    )
+    // Si hay candidatos cerca, se ofrecen ANTES de dar nada por bueno: es
+    // preferible preguntar a responder con la ficha de otro telefono.
+    if (res.sugerencias.length) {
+      notas.unshift(
+        'No estoy seguro de ese modelo. ¿Quisiste decir ' +
+        res.sugerencias.slice(0, 3).join(', ') + '? Escríbelo y te doy la ' +
+        'sensibilidad exacta de ese.'
+      )
+    } else {
+      notas.unshift(
+        'No tengo la ficha exacta de ese modelo, así que estimé una pantalla de ' +
+        '6.5". Si me dices las pulgadas, afino el cálculo.'
+      )
+    }
   }
 
   return {
-    modelo: limpio,
+    // Se devuelve el nombre bien escrito ("iPhone 14 Pro Max"), no lo que
+    // tecleo la persona. Ver su propia errata repetida de vuelta es lo que
+    // delata que detras no hay nada mirando.
+    modelo: res.canonico || limpio,
     gama,
     sensi,
     hud: HUD[gama],

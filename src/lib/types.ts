@@ -30,6 +30,14 @@ export interface Member {
   stats_json?: Record<string, number> | null
   avatar_url: string | null
   outfit_image_url: string | null
+  // Emblema REAL recortado del perfil del jugador. Se prefiere SIEMPRE sobre
+  // `rank`: el texto del juego dice "EMBLEMA HEROICO" para todo el mundo, asi
+  // que `rank` no distingue a nadie. La imagen si.
+  emblema_br_url?: string | null
+  emblema_cs_url?: string | null
+  puntos_br?: number | null
+  puntos_cs?: number | null
+  temporada_br?: string | null
   is_active: boolean
   joined_at: string
   last_sync: string | null
@@ -46,6 +54,9 @@ export interface Profile {
   bio: string | null
   discord_id: string | null
   free_fire_id: string | null
+  // Solo digitos (codigo de pais + numero). Lo pone el jugador en /mi y es lo
+  // que le permite al bot etiquetarlo en el grupo de WhatsApp.
+  whatsapp: string | null
   member_id: string | null
   points: number
   last_checkin: string | null

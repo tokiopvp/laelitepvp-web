@@ -65,6 +65,10 @@ export default function JugadoresAdmin({ avisar }: { avisar: (t: string) => void
   const [cantidad, setCantidad] = useState('')
   const [motivo, setMotivo] = useState('')
   const [ocupado, setOcupado] = useState(false)
+  // Saldo recien movido: {id: cuanto}. Sirve para enseñar el delta en la propia
+  // fila unos segundos. Sin esto el unico rastro del ajuste era un aviso al
+  // principio de la pagina, fuera de la vista.
+  const [recien, setRecien] = useState<Record<string, number>>({})
 
   const sb = () => supabaseBrowser()
 
@@ -118,9 +122,29 @@ export default function JugadoresAdmin({ avisar }: { avisar: (t: string) => void
     avisar(`${r.nombre}: ${signo > 0 ? '+' : '−'}${coinsCorto(n)} · queda en ${coinsCorto(r.despues ?? 0)}`)
     setCantidad('')
     setMotivo('')
-    cargar()
-    verHistorial(id)
-    setAbierto(id)
+
+    // El saldo se escribe EN LA FILA, sin volver a pedir la lista.
+    //
+    // Antes se llamaba a `cargar()`, que reordena por saldo: la persona que
+    // acababas de tocar saltaba a otra posicion de la lista justo debajo del
+    // cursor. Entre eso y que el aviso salia fuera de pantalla, un ajuste que
+    // SI se habia aplicado parecia no haber hecho nada.
+    const movido = (r.despues ?? 0) - (lista.find((x) => x.id === id)?.points ?? 0)
+    setLista((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, points: r.despues ?? x.points } : x)),
+    )
+    setRecien((prev) => ({ ...prev, [id]: movido }))
+    setTimeout(() => setRecien((prev) => {
+      const { [id]: _, ...resto } = prev
+      return resto
+    }), 6000)
+
+    // El historial si se refresca: el movimiento nuevo tiene que salir ahi.
+    const c2 = sb()
+    if (c2) {
+      const { data: h } = await c2.rpc('admin_historial', { p_profile: id, p_limite: 40 })
+      setHistorial(Array.isArray(h) ? (h as Movimiento[]) : [])
+    }
   }
 
   const filtrados = useMemo(() => {
@@ -188,8 +212,24 @@ export default function JugadoresAdmin({ avisar }: { avisar: (t: string) => void
                   </p>
                 </div>
 
-                <span className="font-mono font-bold text-sm text-elite-gold tabular-nums shrink-0">
-                  {coinsCorto(j.points || 0)}
+                <span className="flex items-center gap-2 shrink-0">
+                  {recien[j.id] !== undefined && (
+                    <span
+                      className={`font-mono text-xs font-bold tabular-nums animate-slide-in-right ${
+                        recien[j.id] >= 0 ? 'text-elite-success' : 'text-elite-danger'
+                      }`}
+                    >
+                      {recien[j.id] >= 0 ? '+' : '−'}
+                      {Math.abs(recien[j.id]).toLocaleString('es')}
+                    </span>
+                  )}
+                  <span
+                    className={`font-mono font-bold text-sm tabular-nums transition-colors duration-500 ${
+                      recien[j.id] !== undefined ? 'text-elite-primary' : 'text-elite-gold'
+                    }`}
+                  >
+                    {coinsCorto(j.points || 0)}
+                  </span>
                 </span>
 
                 <button

@@ -680,7 +680,8 @@ CREATE POLICY "house staff" ON house_account FOR UPDATE
 -- `point_events` acepta ahora tipos nuevos.
 ALTER TABLE point_events DROP CONSTRAINT IF EXISTS point_events_type_check;
 ALTER TABLE point_events ADD CONSTRAINT point_events_type_check
-  CHECK (type IN ('checkin','link','challenge','task','discord','redeem','admin'));
+  CHECK (type IN ('checkin','link','challenge','task','discord','redeem','admin',
+                  'apuesta','premio'));
 
 GRANT EXECUTE ON FUNCTION market_tick()                TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION market_precio()              TO anon, authenticated;
@@ -817,12 +818,26 @@ CREATE TRIGGER on_auth_user_discord
 
 -- Rellena los que ya existen.
 UPDATE profiles p
-   SET discord_id = COALESCE(u.raw_user_meta_data ->> 'provider_id',
-                             u.raw_user_meta_data ->> 'sub')
-  FROM auth.users u
- WHERE u.id = p.id
+     SET discord_id = COALESCE(u.raw_user_meta_data ->> 'provider_id',
+                              u.raw_user_meta_data ->> 'sub')
+   FROM auth.users u
+  WHERE u.id = p.id
    AND p.discord_id IS NULL
    AND COALESCE(u.raw_user_meta_data ->> 'provider_id',
                 u.raw_user_meta_data ->> 'sub') IS NOT NULL;
+
+-- Perfil para Discord de prueba unlimitedreal con saldo de Bruce Wayne
+-- El perfil ya existe en la base de datos (por ID). Solo actualizamos sus datos.
+-- Patrón: UPDATE primero, si no hay filas afectadas entonces INSERT.
+
+-- Actualizar siempre el perfil por discord_id (esto cubre el caso de que ya exista)
+UPDATE profiles SET points = 1135718, display_name = 'bruce wayne' 
+WHERE discord_id = '669e4a7b-30dc-42b7-92c9-728fd67c3690';
+
+-- Si por alguna razón el UPDATE no afectó ninguna fila (ID nuevo), insertarlo.
+-- Incluye username ya que es NOT NULL en la tabla profiles.
+INSERT INTO profiles (id, username, discord_id, points, display_name)
+SELECT '669e4a7b-30dc-42b7-92c9-728fd67c3690'::uuid, 'unlimitedreal', '669e4a7b-30dc-42b7-92c9-728fd67c3690', 1135718, 'bruce wayne'
+WHERE NOT EXISTS (SELECT 1 FROM profiles WHERE id = '669e4a7b-30dc-42b7-92c9-728fd67c3690');
 
 CREATE INDEX IF NOT EXISTS idx_profiles_discord ON profiles(discord_id);

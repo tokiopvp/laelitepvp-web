@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Barlow, Oswald, JetBrains_Mono } from 'next/font/google'
+import { Inter, Sora, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { ADSENSE_PUBLISHER } from '@/lib/adsense'
 import { AuthProvider } from '@/components/auth/AuthProvider'
@@ -8,22 +8,28 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
 import AjusteRendimiento from '@/components/layout/AjusteRendimiento'
 
-// Cuerpo: Barlow. Buena legibilidad en pantallas chicas y de gama baja, con
-// mas caracter que las sans neutras de siempre.
-const body = Barlow({
+// Cuerpo: Inter. Es la sans de las interfaces que se ven caras (Linear,
+// Vercel, Stripe) por un motivo concreto: se disenio para leerse en pantalla a
+// tamano pequeno, no para imprimirse. Sustituye a Barlow, que tenia mas
+// caracter del que un cuerpo de texto necesita y competia con los titulares.
+const body = Inter({
   subsets: ['latin'],
   variable: '--font-body',
   display: 'swap',
   weight: ['400', '500', '600', '700'],
 })
 
-// Titulos y marcadores: Oswald. Condensada con peso real, el registro de los
-// tableros de estadio y los overlays de transmision.
-const display = Oswald({
+// Titulos: Sora. Geometrica y con contraste bajo; a peso alto llena sin
+// gritar.
+//
+// Antes era Oswald, una condensada de marcador de estadio. Estaba elegida
+// para "gritar deporte", y ese es justo el registro que hacia ver barato el
+// sitio: condensada + neon + mayusculas es la formula del cartel de gimnasio.
+const display = Sora({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '600', '700', '800'],
 })
 
 // Cifras que se alinean en columna: K/D, precios, tops.

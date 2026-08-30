@@ -145,7 +145,18 @@ function EconomiaAdmin() {
   return (
     <div className="min-h-screen pt-24 pb-16 section-container">
       <AdminHeader title="Economía Elite Coin" subtitle="Tareas, tienda, mercado y canjes" />
-      {msg && <p className="text-elite-primary mb-4 font-display">{msg}</p>}
+      {/* AVISO FLOTANTE, no un parrafo al principio de la pagina.
+          Estaba arriba del todo y la lista de jugadores queda cientos de
+          pixeles mas abajo: al ajustar un saldo el mensaje aparecia fuera de
+          pantalla y desaparecia a los 3 s, asi que parecia que el boton no
+          hacia nada -cuando el ajuste si se estaba aplicando-. */}
+      {msg && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 ff-cut-sm
+                        border border-elite-primary/50 bg-elite-dark/95 text-elite-primary
+                        font-display shadow-lg shadow-black/60 animate-slide-up">
+          {msg}
+        </div>
+      )}
 
       {/* ---------- MERCADO ---------- */}
       <section className="card-glow p-6 mb-8">

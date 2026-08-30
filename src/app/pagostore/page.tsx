@@ -22,8 +22,8 @@ import {
 } from '@/lib/carrito'
 
 const categoryConfig: Record<ProductCategory, { label: string; icon: any; color: string }> = {
-  diamonds: { label: 'Diamantes', icon: Gem, color: '#e11d3c' },
-  membership: { label: 'Membresías', icon: Crown, color: '#e8b33c' },
+  diamonds: { label: 'Diamantes', icon: Gem, color: '#5b9dff' },
+  membership: { label: 'Membresías', icon: Crown, color: '#f0b429' },
   bundle: { label: 'Bundles', icon: Package, color: '#ffd700' },
   pass: { label: 'Pases', icon: Ticket, color: '#ff6b6b' },
 }
@@ -319,7 +319,7 @@ export default function PagoStorePage() {
   return (
     <div className="min-h-screen pt-24 pb-24">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#e11d3c" />
+        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#5b9dff" />
       </div>
 
       <div className="section-container">

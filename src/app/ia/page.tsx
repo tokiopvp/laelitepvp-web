@@ -37,7 +37,7 @@ function FichaSensi({ r }: { r: ResultadoSensi }) {
     ['Francotirador', r.sensi.sniper],
     ['Vista libre', r.sensi.vistaLibre],
   ]
-  const color = { alta: '#46a758', media: '#e8b33c', baja: '#e11d3c' }[r.gama]
+  const color = { alta: '#46a758', media: '#f0b429', baja: '#5b9dff' }[r.gama]
 
   return (
     <div className="mt-1">
@@ -115,8 +115,8 @@ function FichaBoton({ b }: { b: { modelo: string; pulgadas: number; opciones: Re
               key={k}
               className="rounded-lg border px-3 py-2"
               style={{
-                borderColor: esRecomendado ? 'rgba(225,29,60,0.4)' : 'rgba(255,255,255,0.08)',
-                background: esRecomendado ? 'rgba(225,29,60,0.07)' : 'rgba(255,255,255,0.03)',
+                borderColor: esRecomendado ? 'rgba(91,157,255,0.4)' : 'rgba(255,255,255,0.08)',
+                background: esRecomendado ? 'rgba(91,157,255,0.07)' : 'rgba(255,255,255,0.03)',
               }}
             >
               <div className="flex items-baseline justify-between gap-2">

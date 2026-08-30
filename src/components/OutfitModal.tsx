@@ -90,7 +90,7 @@ export default function OutfitModal({
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background:
-                    'radial-gradient(60% 50% at 50% 60%, rgba(225,29,60,0.16), transparent 70%)',
+                    'radial-gradient(60% 50% at 50% 60%, rgba(91,157,255,0.16), transparent 70%)',
                 }}
               />
               {imagen ? (
@@ -199,7 +199,7 @@ export default function OutfitModal({
                             transition={{ delay: 0.1 + i * 0.04, duration: 0.6 }}
                             style={{
                               background:
-                                'linear-gradient(90deg, rgba(225,29,60,0.20), rgba(225,29,60,0.02))',
+                                'linear-gradient(90deg, rgba(91,157,255,0.20), rgba(91,157,255,0.02))',
                             }}
                           />
                           <div className="relative flex items-center gap-2">

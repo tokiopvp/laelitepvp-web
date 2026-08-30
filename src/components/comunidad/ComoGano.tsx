@@ -42,13 +42,13 @@ const PASOS = [
     icono: Swords,
     titulo: 'Juega PvP',
     texto: 'Tus kills, headshots y Booyahs reales desbloquean las tareas grandes.',
-    color: '#e11d3c',
+    color: '#5b9dff',
   },
   {
     icono: Gift,
     titulo: 'Canjea diamantes',
     texto: 'Cambia tus coins por recargas de verdad. Lo paga el clan.',
-    color: '#e8b33c',
+    color: '#f0b429',
   },
 ]
 

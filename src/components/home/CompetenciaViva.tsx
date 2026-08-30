@@ -37,7 +37,7 @@ export default function CompetenciaViva() {
               className="w-5 h-5 shrink-0 rounded-full flex items-center justify-center text-[10px] font-bold tabular-nums"
               style={
                 i === 0
-                  ? { background: 'linear-gradient(135deg,#e8b33c,#ff4d68)', color: '#101014' }
+                  ? { background: 'linear-gradient(135deg,#f0b429,#a78bfa)', color: '#101014' }
                   : { background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' }
               }
             >

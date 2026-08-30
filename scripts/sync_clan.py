@@ -439,6 +439,75 @@ def sync_tasas():
     return len(tasas)
 
 
+# ------------------------------------- contactos web -> bot (sentido inverso)
+# Todo lo demas de este script empuja del bot a la web. Esto es lo unico que va
+# al reves, y hace falta: el jugador pone su WhatsApp en /mi, y el bot necesita
+# ese numero para poder ETIQUETARLO en el grupo cuando gana un top, cuando le
+# toca una tarea o cuando se le paga una competencia.
+#
+# Sin esto, el numero se quedaba en la web y el bot solo sabia etiquetar a quien
+# el dueño hubiera atado a mano desde el panel.
+#
+# Se lee `profiles` directamente (el service_role se salta las RLS) y se cruza
+# con `members` por el Free Fire ID, que es la identidad que comparten las dos
+# partes. Solo se traen los tres campos que el bot usa: nunca correos ni nada
+# que no le haga falta.
+def sync_contactos():
+    """Trae de la web los WhatsApp que la gente vinculo y los guarda en el bot."""
+    try:
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/rest/v1/profiles"
+            f"?select=free_fire_id,whatsapp,discord_id"
+            f"&whatsapp=not.is.null&free_fire_id=not.is.null",
+            headers={"apikey": SERVICE_KEY,
+                     "Authorization": f"Bearer {SERVICE_KEY}"},
+        )
+        with urllib.request.urlopen(req, timeout=30) as r:
+            filas = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 404):
+            # La columna `whatsapp` aun no existe: falta correr
+            # supabase/emblemas_y_contacto.sql. No es un fallo del sync.
+            log.info("contactos: falta la migracion emblemas_y_contacto.sql, "
+                     "lo salto")
+            return 0
+        raise
+    except Exception as e:
+        log.error("no pude leer los contactos de la web: %s", e)
+        return 0
+
+    if not filas:
+        return 0
+
+    cx = sqlite3.connect(DB_PATH, timeout=30)
+    cx.row_factory = sqlite3.Row
+    puestos = 0
+    try:
+        for f in filas:
+            uid = str(f.get("free_fire_id") or "").strip()
+            wa = "".join(ch for ch in str(f.get("whatsapp") or "") if ch.isdigit())
+            if not uid.isdigit() or len(wa) < 8:
+                continue
+            actual = cx.execute(
+                "SELECT wa_numero FROM miembros WHERE uid=?", (uid,)).fetchone()
+            if actual is None:
+                continue                      # ese ID no esta en el clan
+            if (actual["wa_numero"] or "") == wa:
+                continue                      # ya estaba
+            # Un mismo numero no puede quedar en dos personas: si el bot
+            # etiqueta al equivocado, el aviso le llega a quien no es.
+            cx.execute("UPDATE miembros SET wa_numero=NULL WHERE wa_numero=?", (wa,))
+            cx.execute("UPDATE miembros SET wa_numero=? WHERE uid=?", (wa, uid))
+            puestos += 1
+        cx.commit()
+    finally:
+        cx.close()
+
+    if puestos:
+        log.info("contactos: %d WhatsApp traidos de la web al bot", puestos)
+    return puestos
+
+
 # ------------------------------------------------- retratos -> Supabase Storage
 # El bot recorta avatar, outfit, banner y emblema del perfil de cada jugador y
 # los deja en BOT/datos/retratos. Aqui se suben a Storage y se enlazan en la
@@ -446,9 +515,17 @@ def sync_tasas():
 # de color y enseñe al personaje de verdad.
 RETRATOS_DIR = os.path.join(os.path.dirname(DEFAULT_DB), "retratos")
 # pieza del recorte -> (bucket, columna de members)
+#
+# Los EMBLEMAS son los importantes de esta lista. El texto que Free Fire pone
+# bajo el rango dice "EMBLEMA HEROICO" en la tarjeta de TODOS los jugadores: es
+# una insignia fija, no el tier. Por eso members.rank sale "Heroic" para los 44
+# y la web pintaba el mismo distintivo a todo el mundo. La IMAGEN recortada del
+# emblema si es la de verdad, con su color, sus estrellas y sus puntos.
 PIEZAS = {
     "avatar": ("avatars", "avatar_url"),
     "outfit": ("outfits", "outfit_image_url"),
+    "emblema_br": ("emblemas", "emblema_br_url"),
+    "emblema_cs": ("emblemas", "emblema_cs_url"),
 }
 _SUBIDOS_CACHE = os.path.join(BASE, ".retratos_subidos.json")
 
@@ -504,7 +581,10 @@ def sync_retratos():
         if previas.get(archivo) == firma:
             continue
         bucket, columna = destino
-        url = _subir_archivo(bucket, f"{uid}.png", ruta)
+        # Los dos emblemas comparten bucket, asi que el nombre lleva la pieza;
+        # si no, el de Duelo pisaria al de Battle Royale.
+        nombre = f"{uid}.png" if bucket != "emblemas" else f"{uid}_{pieza}.png"
+        url = _subir_archivo(bucket, nombre, ruta)
         if not url:
             continue
         nuevas[archivo] = firma
@@ -516,6 +596,20 @@ def sync_retratos():
             supabase("members", "PATCH", cols,
                      params=f"?id=eq.{mid_for(uid)}")
         except Exception as e:
+            # Si la columna todavia no existe (falta correr
+            # supabase/emblemas_y_contacto.sql), se reintenta SIN los emblemas
+            # en vez de perder tambien el avatar y el outfit, que si funcionan.
+            faltan = [c for c in cols if c.startswith("emblema_")]
+            basicas = {k: v for k, v in cols.items() if not k.startswith("emblema_")}
+            if faltan and basicas:
+                try:
+                    supabase("members", "PATCH", basicas,
+                             params=f"?id=eq.{mid_for(uid)}")
+                    log.warning("emblemas de %s sin enlazar: falta la migracion "
+                                "supabase/emblemas_y_contacto.sql", uid)
+                    continue
+                except Exception:
+                    pass
             log.error("no pude enlazar el retrato de %s: %s", uid, e)
 
     if subidos:
@@ -669,6 +763,13 @@ def run_once():
         sync_retratos()
     except Exception as e:
         log.error("sync de retratos fallo: %s", e)
+
+    # UNICO sentido inverso: los WhatsApp que la gente vinculo en la web bajan
+    # al bot para que pueda etiquetarlos en el grupo.
+    try:
+        sync_contactos()
+    except Exception as e:
+        log.error("sync de contactos fallo: %s", e)
 
     # Metodos de pago con sus datos, para poder cobrar en la propia tienda.
     try:

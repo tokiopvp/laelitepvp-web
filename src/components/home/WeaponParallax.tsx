@@ -38,8 +38,12 @@ export default function WeaponParallax() {
           left: glowX,
           top: '30%',
           background:
-            'radial-gradient(circle, rgba(225,29,60,0.85) 0%, rgba(255,77,104,0.45) 38%, ' +
-            'rgba(255,77,104,0.12) 62%, transparent 80%)',
+            // El rosa de en medio (rgba(255,77,104)) era el ultimo resto de la
+            // identidad carmesi: con el fondo ya en negro y azul se veia como
+            // una mancha roja suelta, justo en el centro de la portada.
+            // Ahora el halo va del azul al violeta, como todo lo demas.
+            'radial-gradient(circle, rgba(91,157,255,0.75) 0%, rgba(167,139,250,0.32) 40%, ' +
+            'rgba(167,139,250,0.10) 64%, transparent 80%)',
         }}
       />
 
@@ -51,8 +55,8 @@ export default function WeaponParallax() {
         <svg width="520" height="220" viewBox="0 0 520 220" fill="none">
           <defs>
             <linearGradient id="gun" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#e11d3c" />
-              <stop offset="100%" stopColor="#e8b33c" />
+              <stop offset="0%" stopColor="#5b9dff" />
+              <stop offset="100%" stopColor="#f0b429" />
             </linearGradient>
             <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur stdDeviation="6" result="b" />
@@ -62,7 +66,7 @@ export default function WeaponParallax() {
               </feMerge>
             </filter>
           </defs>
-          <g stroke="url(#gun)" strokeWidth="3" filter="url(#glow)" strokeLinejoin="round" fill="rgba(225,29,60,0.06)">
+          <g stroke="url(#gun)" strokeWidth="3" filter="url(#glow)" strokeLinejoin="round" fill="rgba(91,157,255,0.06)">
             {/* cañón */}
             <rect x="330" y="86" width="160" height="16" rx="4" />
             {/* boca */}

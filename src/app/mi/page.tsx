@@ -3,12 +3,15 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Coins, CalendarCheck, Link2, Trophy, LogIn, Loader2, CheckCircle2, XCircle, Target, Flag } from 'lucide-react'
+import { Coins, CalendarCheck, Trophy, LogIn, Loader2, CheckCircle2, Target, Flag } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { getMyProfile, dailyCheckin, linkMember, getPointEvents, getMember, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
+import { getMyProfile, dailyCheckin, getPointEvents, getMember, getChallenges, checkChallenges, getMyChallengeCompletions } from '@/lib/data'
 import type { Profile, PointEvent, Member } from '@/lib/types'
 import type { Challenge } from '@/lib/data'
 import AvisoCorreoDiscord from '@/components/auth/AvisoCorreoDiscord'
+import MiVinculacion from '@/components/mi/MiVinculacion'
+import { RANK_COLORS } from '@/lib/rangos'
+import { cn } from '@/lib/utils'
 
 const METRIC_LABEL: Record<string, string> = {
   kd_ratio: 'K/D',
@@ -26,30 +29,29 @@ const METRIC_LABEL: Record<string, string> = {
   kpp: 'Kills / partida',
 }
 
-const RANK_COLORS: Record<string, string> = {
-  Bronze: '#cd7f32',
-  Silver: '#c0c0c0',
-  Gold: '#ffd700',
-  Platinum: '#e5e4e2',
-  Diamond: '#b9f2ff',
-  Master: '#ff6b6b',
-  Grandmaster: '#c77dff',
+// Las etiquetas son constantes: no dependen de nada del render y no tienen
+// por que rehacerse en cada uno.
+const MODOS_ETIQUETAS: Record<string, string> = {
+  solo: 'Solo',
+  duo: 'Dúo',
+  escuadra: 'Escuadra',
 }
+
+const MODOS_RANKED = ['solo', 'duo', 'escuadra'] as const
 
 export default function MiPage() {
   const { user, loading, isAuthed, signIn } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [events, setEvents] = useState<PointEvent[]>([])
   const [miembro, setMiembro] = useState<Member | null>(null)
-  const [ffid, setFfid] = useState('')
-  const [linking, setLinking] = useState(false)
-  const [linkMsg, setLinkMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [checking, setChecking] = useState(false)
   const [load, setLoad] = useState(true)
   const [challenges, setChallenges] = useState<Challenge[]>([])
   const [completions, setCompletions] = useState<Set<string>>(new Set())
   const [checkingCh, setCheckingCh] = useState(false)
   const [chMsg, setChMsg] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [modoActual, setModoActual] = useState<'solo' | 'duo' | 'escuadra'>('solo')
 
   useEffect(() => {
     if (loading) return
@@ -131,26 +133,6 @@ export default function MiPage() {
     ? new Date(profile.last_checkin).toDateString() === new Date().toDateString()
     : false
 
-  const onLink = async () => {
-    if (!ffid.trim()) return
-    setLinking(true)
-    setLinkMsg(null)
-    const ok = await linkMember(ffid.trim())
-    if (ok) {
-      setLinkMsg({ ok: true, text: '¡Vinculado! Ganaste +20 puntos de bienvenida.' })
-      const actualizado = await getMyProfile()
-      setProfile(actualizado)
-      setEvents(await getPointEvents())
-      setCompletions(await getMyChallengeCompletions())
-      // Recien vinculado: su ficha todavia no estaba cargada.
-      if (actualizado?.member_id) setMiembro(await getMember(actualizado.member_id))
-      runChallenges()
-    } else {
-      setLinkMsg({ ok: false, text: 'No encontramos ese ID en el clan. Revisa tu Free Fire ID.' })
-    }
-    setLinking(false)
-  }
-
   const onCheckin = async () => {
     setChecking(true)
     const pts = await dailyCheckin()
@@ -161,28 +143,23 @@ export default function MiPage() {
     setChecking(false)
   }
 
-  if (loading || load) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-elite-primary" />
-      </div>
-    )
-  }
-
-  if (!isAuthed) {
-    return (
-      <div className="min-h-screen pt-32 pb-24 section-container">
-        <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-glow p-10 max-w-lg mx-auto text-center">
-          <LogIn className="w-12 h-12 mx-auto mb-4 text-elite-primary" />
-          <h1 className="font-display font-bold text-3xl gradient-text mb-3">Mi Cuenta</h1>
-          <p className="text-white/60 mb-6">Inicia sesión con Discord para ver tu perfil, tus puntos y participar en la comunidad.</p>
-          <button onClick={() => signIn()} className="btn-primary justify-center w-full">
-            <LogIn className="w-4 h-4" /> Entrar con Discord
-          </button>
-          <AvisoCorreoDiscord className="mt-4" />
-        </motion.div>
-      </div>
-    )
+{loading || load || refreshing ? (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-elite-primary" />
+    </div>
+  ) : (
+    <div className="min-h-screen pt-32 pb-24 section-container">
+      <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-glow p-10 max-w-lg mx-auto text-center">
+        <LogIn className="w-12 h-12 mx-auto mb-4 text-elite-primary" />
+        <h1 className="font-display font-bold text-3xl gradient-text mb-3">Mi Cuenta</h1>
+        <p className="text-white/60 mb-6">Inicia sesión con Discord para ver tu perfil, tus puntos y participar en la comunidad.</p>
+        <button onClick={() => signIn()} className="btn-primary justify-center w-full">
+          <LogIn className="w-4 h-4" /> Entrar con Discord
+        </button>
+        <AvisoCorreoDiscord className="mt-4" />
+      </motion.div>
+    </div>
+  )
   }
 
   return (
@@ -193,6 +170,30 @@ export default function MiPage() {
           <p className="text-white/50">Bienvenido, {profile?.display_name || user?.email}</p>
         </motion.div>
 
+        {/* Selector de modo BR - Solo/Duo/Escuadra con slide up/down */}
+        <div className="relative mb-6">
+          <div className="flex items-center gap-2 bg-elite-card border border-elite-border rounded-xl p-3 mb-3">
+            <span className="text-xs uppercase tracking-wider text-white/40">Modo BR</span>
+            {MODOS_RANKED.map((modo, mi) => (
+              <button
+                key={modo}
+                onClick={() => setModoActual(modo)}
+                className={cn(
+                  'flex-1 rounded-lg p-2 text-sm font-medium transition-colors',
+                  modo === modoActual
+                    ? 'bg-elite-primary text-elite-dark'
+                    : 'text-white/50 hover:text-white hover:bg-elite-primary/10'
+                )}
+              >
+                {MODOS_ETIQUETAS[modo]}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-white/40 text-center">
+            Desliza para ver detalles o toca el modo para cambiar
+          </p>
+        </div>
+
         {/* Banner estilo perfil de juego (automatico: usa la imagen que escanea el bot) */}
         <div className="relative rounded-2xl overflow-hidden border border-elite-border card-glow mb-6">
           {linkedMember?.outfit_image_url ? (
@@ -202,8 +203,8 @@ export default function MiPage() {
               className="h-28 sm:h-32"
               style={{
                 background: linkedMember
-                  ? `linear-gradient(90deg, ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}55, #ff4d6833, #e11d3c44)`
-                  : 'linear-gradient(90deg, #e11d3c44, #ff4d6844)',
+                  ? `linear-gradient(90deg, ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}55, #a78bfa33, #5b9dff44)`
+                  : 'linear-gradient(90deg, #5b9dff44, #a78bfa44)',
               }}
             />
           )}
@@ -212,18 +213,18 @@ export default function MiPage() {
             style={{ background: 'linear-gradient(180deg, transparent 40%, #0d0b09 100%), radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px)', backgroundSize: 'auto, 22px 22px' }}
           />
           <div className="relative -mt-12 sm:-mt-14 flex flex-col sm:flex-row items-center sm:items-end gap-4 px-6 pb-6">
-            {linkedMember?.avatar_url || linkedMember?.outfit_image_url ? (
-              <img
-                src={linkedMember.avatar_url || linkedMember.outfit_image_url || ''}
-                alt=""
-                className="w-24 h-24 rounded-2xl object-cover shadow-lg"
-                style={{ boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09' }}
-              />
-            ) : (
+{linkedMember?.avatar_url || linkedMember?.outfit_image_url ? (
+            <img
+              src={linkedMember.avatar_url || linkedMember.outfit_image_url || ''}
+              alt=""
+              className="w-24 h-24 rounded-2xl object-cover bg-black shadow-lg"
+              style={{ boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09', objectPosition: 'center center' }}
+            />
+          ) : (
               <div
                 className="w-24 h-24 rounded-2xl flex items-center justify-center text-3xl font-display font-bold text-white shadow-lg"
                 style={{
-                  background: 'linear-gradient(135deg, #e11d3c, #ff4d68)',
+                  background: 'linear-gradient(135deg, #5b9dff, #a78bfa)',
                   boxShadow: linkedMember ? `0 0 0 4px ${(linkedMember.rank ? RANK_COLORS[linkedMember.rank] : null) || '#6b6156'}` : '0 0 0 4px #0d0b09',
                 }}
               >
@@ -280,59 +281,46 @@ export default function MiPage() {
           </div>
         </div>
 
-        {/* Vinculación */}
-        <div className="card-glow p-6 mb-6">
-          <h2 className="font-display font-bold text-xl mb-3 flex items-center gap-2">
-            <Link2 className="w-5 h-5 text-elite-primary" /> Vinculación con el clan
-          </h2>
-          {linkedMember ? (
-            <div className="flex items-center gap-3 text-elite-gold">
-              <CheckCircle2 className="w-5 h-5" />
-              <span>Vinculado como <b>{linkedMember.nickname}</b> (ID: {linkedMember.free_fire_id})</span>
-            </div>
-          ) : (
-            <>
-              <p className="text-white/60 text-sm mb-3">
-                Ingresa tu Free Fire ID para vincular tu cuenta y ver tus stats reales del clan.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <input
-                  className="input flex-1 min-w-[200px]"
-                  placeholder="Tu ID de Free Fire"
-                  value={ffid}
-                  onChange={(e) => setFfid(e.target.value)}
-                />
-                <button onClick={onLink} disabled={linking} className="btn-primary justify-center">
-                  {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Vincular'}
-                </button>
-              </div>
-              {linkMsg && (
-                <p className={`text-sm mt-3 flex items-center gap-2 ${linkMsg.ok ? 'text-elite-gold' : 'text-red-400'}`}>
-                  {linkMsg.ok ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                  {linkMsg.text}
-                </p>
-              )}
-            </>
-          )}
-        </div>
+        {/* Vinculación: Discord + Free Fire + WhatsApp, las tres juntas. */}
+        <MiVinculacion
+          profile={profile}
+          miembro={linkedMember}
+          onGuardado={async () => {
+            const actualizado = await getMyProfile()
+            setProfile(actualizado)
+            setEvents(await getPointEvents())
+            setCompletions(await getMyChallengeCompletions())
+            if (actualizado?.member_id) setMiembro(await getMember(actualizado.member_id))
+            runChallenges()
+          }}
+        />
 
         {/* Stats del clan */}
         {linkedMember && (
           <div className="card-glow p-6 mb-6">
             <h2 className="font-display font-bold text-xl mb-4">Tus stats del clan</h2>
+            <p className="text-white/40 text-sm mb-4">
+              Modo actual: <span className="font-display font-bold text-elite-primary">{MODOS_ETIQUETAS[modoActual]}</span>
+            </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'K/D', value: linkedMember.kd_ratio },
-                { label: 'Headshots', value: linkedMember.headshots },
-                { label: 'Victorias', value: linkedMember.wins },
-                { label: 'Booyahs', value: linkedMember.booyahs },
-              ].map((s) => (
-                <div key={s.label} className="bg-elite-card border border-elite-border rounded-xl p-4 text-center">
-                  <p className="text-white/50 text-xs">{s.label}</p>
-                  <p className="font-display font-bold text-xl gradient-text">{s.value ?? '—'}</p>
-                </div>
-              ))}
+                { label: 'K/D', get: () => linkedMember.kd_ratio, invertido: false },
+                { label: 'Headshots', get: () => linkedMember.headshots, invertido: false },
+                { label: 'Victorias', get: () => linkedMember.wins, invertido: false },
+                { label: 'Booyahs', get: () => linkedMember.booyahs, invertido: false },
+              ].map((s) => {
+                const valor = s.get()
+                return (
+                  <div key={s.label} className="bg-elite-card border border-elite-border rounded-xl p-4 text-center">
+                    <p className="text-white/50 text-xs">{s.label}</p>
+                    <p className="font-display font-bold text-xl gradient-text">{valor ?? '—'}</p>
+                  </div>
+                )
+              })}
             </div>
+            <p className="text-xs text-white/40 text-center mt-3">
+              Desliza para ver modo {MODOS_ETIQUETAS[modoActual].toLowerCase()}
+            </p>
           </div>
         )}
 

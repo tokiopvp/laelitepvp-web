@@ -10,7 +10,7 @@ const RANK_COLORS: Record<string, string> = {
   Diamond: '#b9f2ff',
   Master: '#ff6b6b',
   Grandmaster: '#c77dff',
-  Heroic: '#ff2e63',
+  Heroic: '#5b9dff',
 }
 
 const TIER: Record<string, number> = {

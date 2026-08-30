@@ -3,25 +3,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shield, Zap, Target, Medal } from 'lucide-react'
-import { Member, Rank } from '@/lib/types'
+import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
-import { cn } from '@/lib/utils'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
-import { RankEmblem } from '@/components/RankEmblem'
+import IconoJugador from '@/components/miembros/IconoJugador'
+import EmblemaRango from '@/components/miembros/EmblemaRango'
 import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
 import Resplandor from '@/components/layout/Resplandor'
-
-const RANK_COLORS: Record<string, string> = {
-  Bronze: '#cd7f32',
-  Silver: '#c0c0c0',
-  Gold: '#ffd700',
-  Platinum: '#e5e4e2',
-  Diamond: '#b9f2ff',
-  Master: '#ff6b6b',
-  Grandmaster: '#c77dff',
-  Heroic: '#ff2e63',
-}
 
 const ROLE_ICONS: Record<string, any> = {
   leader: Crown,
@@ -29,10 +18,6 @@ const ROLE_ICONS: Record<string, any> = {
   elder: Star,
   member: Skull,
 }
-
-// Rango Elite del clan, derivado de stats reales del barrido (kd, winrate,
-// kills y headshots). No es el rango oficial de Free Fire: el bot no lo captura
-// todavia, pero se calcula para que cada miembro luzca un rango epico.
 
 interface BadgeDef {
   key: string
@@ -44,23 +29,37 @@ interface BadgeDef {
 
 // Insignias disponibles, cada una sacada de un dato real del barrido.
 const BADGES: BadgeDef[] = [
-  { key: 'kd', label: 'Asesino', icon: Swords, color: '#ff4d4d', test: (m) => (m.kd_ratio || 0) >= 4 },
-  { key: 'hs', label: 'Francotirador', icon: Crosshair, color: '#ff4d68', test: (m) => (m.headshot_tasa || 0) >= 25 },
-  { key: 'wr', label: 'Estratega', icon: Brain, color: '#e8b33c', test: (m) => (m.winrate || 0) >= 15 },
-  { key: 'kills', label: 'Destructor', icon: Skull, color: '#ffd700', test: (m) => (m.kills || 0) >= 800 },
-  { key: 'maxk', label: 'Multikill', icon: Zap, color: '#ff9d00', test: (m) => (m.max_kills || 0) >= 12 },
-  { key: 'booyah', label: 'Rey Booyah', icon: Trophy, color: '#39ff14', test: (m) => (m.booyahs || 0) >= 100 },
+  { key: 'kd', label: 'Asesino', icon: Swords, color: '#ff4d6a', test: (m) => (m.kd_ratio || 0) >= 4 },
+  { key: 'hs', label: 'Francotirador', icon: Crosshair, color: '#5b9dff', test: (m) => (m.headshot_tasa || 0) >= 25 },
+  { key: 'wr', label: 'Estratega', icon: Brain, color: '#f0b429', test: (m) => (m.winrate || 0) >= 15 },
+  { key: 'kills', label: 'Destructor', icon: Skull, color: '#a78bfa', test: (m) => (m.kills || 0) >= 800 },
+  { key: 'maxk', label: 'Multikill', icon: Zap, color: '#ffd166', test: (m) => (m.max_kills || 0) >= 12 },
+  { key: 'booyah', label: 'Rey Booyah', icon: Trophy, color: '#3ddc97', test: (m) => (m.booyahs || 0) >= 100 },
   { key: 'rev', label: 'Salvavidas', icon: Shield, color: '#36e0ff', test: (m) => (m.revividas || 0) >= 50 },
   { key: 'part', label: 'Veterano', icon: Star, color: '#c0c0c0', test: (m) => (m.partidas || 0) >= 400 },
-  { key: 'top10', label: 'Finalista', icon: Target, color: '#ff5edb', test: (m) => (m.top10_tasa || 0) >= 15 },
+  { key: 'top10', label: 'Finalista', icon: Target, color: '#ffffff', test: (m) => (m.top10_tasa || 0) >= 15 },
 ]
+
+// Etiquetas cortas para la ficha. Las de STAT_CATEGORIES ("Headshots",
+// "Victorias") no caben en una columna de tres y salian cortadas a media
+// palabra ("HEADSH", "VICTORI"), que se lee peor que no poner nada.
+const ETIQUETA_CORTA: Record<string, string> = {
+  kd: 'K/D',
+  kills: 'Kills',
+  winrate: 'Win %',
+  headshots: 'HS',
+  wins: 'Wins',
+  booyahs: 'Booyah',
+}
 
 function getBadges(m: Member): BadgeDef[] {
   const found = BADGES.filter((b) => b.test(m))
   if (found.length === 0) {
-    return [{ key: 'novato', label: 'Recién llegado', icon: Medal, color: '#8a8aa0', test: () => true }]
+    return [{ key: 'novato', label: 'Recién llegado', icon: Medal, color: '#7f93a6', test: () => true }]
   }
-  return found
+  // Tres como maximo. Con seis insignias la tarjeta se convierte en una sopa
+  // de etiquetas y ninguna significa nada; con tres, las que salen destacan.
+  return found.slice(0, 3)
 }
 
 export default function MiembrosPage() {
@@ -70,7 +69,8 @@ export default function MiembrosPage() {
   return (
     <div className="min-h-screen pt-24 pb-16">
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#e11d3c" />
+        <Resplandor className="top-1/4 left-1/4 w-96 h-96" color="#5b9dff" />
+        <Resplandor className="bottom-1/4 right-1/5 w-80 h-80" color="#3b6fd4" />
       </div>
 
       <div className="section-container">
@@ -79,28 +79,35 @@ export default function MiembrosPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-elite-primary/10 border border-elite-primary/30 mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 ff-cut-sm bg-elite-primary/10 border border-elite-primary/40 mb-4">
             <Users className="w-4 h-4 text-elite-primary" />
-            <span className="text-sm font-medium text-elite-primary">{members.length} MIEMBROS OFICIALES</span>
+            <span className="text-sm font-medium tracking-widest uppercase neon-celeste">
+              {members.length} miembros oficiales
+            </span>
           </div>
-          <h1 className="font-display font-bold text-4xl sm:text-5xl gradient-text mb-2">Miembros Elite</h1>
-          <p className="text-white/60">El squad más letal de Free Fire. Cada uno una leyenda.</p>
+          <h1 className="font-display font-bold text-4xl sm:text-6xl gradient-text mb-2 uppercase">
+            Miembros Elite
+          </h1>
+          <p className="text-white/50">El squad más letal de Free Fire. Cada uno una leyenda.</p>
         </motion.div>
 
         {loading && members.length === 0 ? (
           <MemberGridSkeleton />
         ) : (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {members.map((member, i) => {
             const RoleIcon = ROLE_ICONS[member.role_in_clan || 'member'] || Skull
-            // El rango REAL del juego, o nada. Antes, cuando venia vacio se
-            // rellenaba con getEliteRank() -una puntuacion casera- y se pintaba
-            // con el mismo emblema y el mismo distintivo que el de verdad: el
-            // visitante no podia distinguir el rango que el jugador se gano en
-            // Free Fire de uno que calculo esta web.
-            const rankReal = (member.rank as Rank | null) ?? null
-            const color = rankReal ? (RANK_COLORS[rankReal] || '#888') : '#6b6156'
             const badges = getBadges(member)
+            // Los puntos de temporada llegan dentro de stats_json (el bot los
+            // exporta ahi junto a las demas metricas), asi que se pueden
+            // enseñar sin esperar a ninguna columna nueva en la base.
+            const puntosBR = member.puntos_br ?? member.stats_json?.puntos_br ?? null
+            // El filo va celeste cuando hay dato de rango de verdad (imagen o
+            // puntos) y apagado cuando no lo hay. NO se usa `rank` para el
+            // color: al valer "Heroic" para los 44, pintaria todas las tarjetas
+            // iguales y el color dejaria de significar nada.
+            const color = member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b'
+
             return (
               <motion.div
                 key={member.id}
@@ -108,73 +115,67 @@ export default function MiembrosPage() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
-                className="card-glow p-6 group relative overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
+                className="ff-panel p-5 group relative cursor-pointer
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary"
                 initial={{ y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -8 }}
+                transition={{ delay: Math.min(i, 12) * 0.04 }}
+                whileHover={{ y: -6 }}
               >
-                {/* Halo de rango, como degradado y no como desenfoque.
-                    Era un circulo de color con `blur-2xl` (40 px). Uno por
-                    tarjeta y 36 tarjetas son 36 desenfoques que el navegador
-                    rasteriza y guarda en memoria. Un degradado radial se ve
-                    igual -es a lo que se PARECE un circulo desenfocado- y no
-                    cuesta practicamente nada. */}
+                {/* Halo del rango, como degradado radial y no como desenfoque:
+                    se ve igual y no cuesta un `blur` por tarjeta. */}
                 <div
-                  className="absolute -top-16 -right-16 w-40 h-40 rounded-full opacity-30 pointer-events-none"
+                  className="absolute -top-14 -right-14 w-40 h-40 rounded-full opacity-25 pointer-events-none"
                   style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
                 />
+
+                {/* Cinta superior: la pestaña diagonal del juego. */}
                 <div
-                  className="-mx-6 -mt-6 mb-5 h-2 rounded-t-2xl"
-                  style={{ background: `linear-gradient(90deg, ${color}, transparent)` }}
+                  className="-mx-5 -mt-5 mb-4 h-1.5 ff-tab"
+                  style={{ background: `linear-gradient(90deg, ${color}, transparent 78%)` }}
                 />
-                <div className="flex items-start justify-between mb-4">
+
+                <div className="flex items-start gap-3 mb-4">
                   <div className="relative">
-                    {/* El icono REAL del jugador, recortado por el bot de su
-                        propio perfil. Las iniciales quedan solo para quien
-                        todavia no ha pasado por el barrido. */}
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt=""
-                        loading="lazy"
-                        className="w-16 h-16 rounded-2xl object-cover ring-1 ring-white/10"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-elite-primary/20 to-elite-secondary/20 flex items-center justify-center text-2xl font-display font-bold gradient-text ring-1 ring-white/10">
-                        {(member.nickname || '??').slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-elite-dark border border-elite-border flex items-center justify-center">
-                      <RoleIcon className="w-4 h-4 text-elite-gold" />
+                    <IconoJugador
+                      src={member.avatar_url}
+                      nombre={member.nickname}
+                      size={62}
+                      aura={color}
+                      prioritaria={i < 8}
+                    />
+                    <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 ff-cut-sm bg-elite-dark
+                                    border border-elite-primary/40 flex items-center justify-center">
+                      <RoleIcon className="w-3.5 h-3.5 text-elite-gold" />
                     </div>
                   </div>
-                  {rankReal ? (
-                    <div
-                      className="px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"
-                      style={{
-                        backgroundColor: `${color}1f`,
-                        color,
-                        boxShadow: `0 0 14px ${color}55`,
-                      }}
-                    >
-                      <RankEmblem rank={rankReal} size={18} />
-                      {rankReal}
-                    </div>
-                  ) : (
-                    <div
-                      className="px-3 py-1 rounded-full text-xs font-medium text-white/35 border border-white/10"
-                      title="El bot todavía no ha leído el rango de este jugador"
-                    >
-                      Rango pendiente
-                    </div>
-                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display font-bold text-lg leading-tight truncate uppercase text-elite-ice">
+                      {member.nickname}
+                    </h3>
+                    <p className="text-white/40 text-xs capitalize tracking-wide">
+                      {member.role_in_clan || 'member'}
+                      {member.level ? <span className="text-white/25"> · Nvl {member.level}</span> : null}
+                    </p>
+                  </div>
+
+                  {/* EL EMBLEMA REAL, arriba a la derecha y a tamaño de verdad.
+                      Es lo que el jugador se gano en el juego: merece sitio.
+                      Mientras no haya imagen se enseñan sus PUNTOS de
+                      temporada, que ya viajan en stats_json y son un dato de
+                      verdad -al contrario que `rank`, que dice "Heroic" para
+                      los 44 y no distingue a nadie-. */}
+                  <EmblemaRango
+                    imagen={member.emblema_br_url}
+                    puntos={puntosBR}
+                    temporada={member.temporada_br}
+                    size={54}
+                    className="shrink-0"
+                    prioritaria={i < 8}
+                  />
                 </div>
 
-                <h3 className="font-display font-bold text-xl mb-1">{member.nickname}</h3>
-                <p className="text-white/50 text-sm mb-3 capitalize">{member.role_in_clan}</p>
-
-                {/* insignias */}
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {badges.map((b) => {
                     const Icon = b.icon
@@ -182,8 +183,9 @@ export default function MiembrosPage() {
                       <span
                         key={b.key}
                         title={b.label}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
-                        style={{ color: b.color, borderColor: `${b.color}55`, background: `${b.color}14` }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 ff-cut-sm text-[10px]
+                                   font-semibold uppercase tracking-wider border"
+                        style={{ color: b.color, borderColor: `${b.color}44`, background: `${b.color}12` }}
                       >
                         <Icon className="w-3 h-3" />
                         {b.label}
@@ -192,23 +194,43 @@ export default function MiembrosPage() {
                   })}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {(['kd', 'wins', 'headshots', 'booyahs', 'kills', 'winrate'] as const).map((k) => {
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  {(['kd', 'kills', 'winrate'] as const).map((k) => {
                     const s = STAT_CATEGORIES.find((x) => x.key === k)!
-                    // Sin `backdrop-blur-md`: esta ficha vive DENTRO de una
-                    // tarjeta que ya tiene fondo propio, asi que el desenfoque
-                    // no tenia nada translucido que desenfocar y no se veia. Lo
-                    // que si hacia era cobrar: seis fichas por tarjeta y 36
-                    // tarjetas son 216 `backdrop-filter` que el navegador
-                    // rehace en cada fotograma al desplazarse.
                     return (
-                      <div key={k} className="rounded-lg p-3 bg-white/[0.06] border border-white/10 hover:border-white/20 transition-colors">
-                        <p className="text-white/50 text-xs flex items-center gap-1">
-                          {k === 'headshots' && <Flame className="w-3 h-3" />}
-                          {k === 'wins' && <Trophy className="w-3 h-3" />}
-                          {s.label}
+                      <div
+                        key={k}
+                        className="ff-cut-sm p-2.5 bg-white/[0.04] border border-white/10
+                                   group-hover:border-elite-primary/30 transition-colors"
+                      >
+                        <p className="text-white/40 text-[10px] uppercase tracking-wider">
+                          {ETIQUETA_CORTA[k] ?? s.label}
                         </p>
-                        <p className="font-bold text-lg">{formatStat(s.get(member), s)}</p>
+                        <p className="font-bold text-base tabular-nums text-elite-ice">
+                          {formatStat(s.get(member), s)}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-sm mt-2">
+                  {(['headshots', 'wins', 'booyahs'] as const).map((k) => {
+                    const s = STAT_CATEGORIES.find((x) => x.key === k)!
+                    return (
+                      <div
+                        key={k}
+                        className="ff-cut-sm p-2.5 bg-white/[0.04] border border-white/10
+                                   group-hover:border-elite-primary/30 transition-colors"
+                      >
+                        <p className="text-white/40 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                          {k === 'headshots' && <Flame className="w-3 h-3 shrink-0" />}
+                          {k === 'wins' && <Trophy className="w-3 h-3 shrink-0" />}
+                          {ETIQUETA_CORTA[k] ?? s.label}
+                        </p>
+                        <p className="font-bold text-base tabular-nums text-elite-ice">
+                          {formatStat(s.get(member), s)}
+                        </p>
                       </div>
                     )
                   })}

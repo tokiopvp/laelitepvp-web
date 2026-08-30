@@ -324,6 +324,38 @@ export async function dailyCheckin(): Promise<number | null> {
   return data as number
 }
 
+/**
+ * Guarda de una vez el ID de Free Fire y el WhatsApp del jugador.
+ *
+ * Es lo que ata las TRES identidades: Discord (con el que inicia sesion),
+ * Free Fire (con el que juega) y WhatsApp (con el que el bot lo etiqueta en el
+ * grupo). Mientras faltaba una, el bot no podia relacionar "el que subio de
+ * rango" con "a quien menciono", y las Elite Coins no se podian trazar.
+ *
+ * Devuelve un motivo concreto cuando falla, para poder decirle a la persona
+ * QUE esta mal en vez de un "no se pudo guardar".
+ */
+export type ResultadoVinculacion =
+  | { ok: true; premiado: boolean; nickname: string | null }
+  | { ok: false; error: 'ffid_no_esta_en_el_clan' | 'whatsapp_invalido' | 'whatsapp_en_uso' | 'fallo' }
+
+export async function guardarVinculacion(
+  ffid: string,
+  whatsapp: string,
+): Promise<ResultadoVinculacion> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'fallo' }
+  const { data, error } = await sb.rpc('guardar_vinculacion', {
+    p_ffid: ffid || null,
+    p_whatsapp: whatsapp || null,
+  })
+  if (error || !data) return { ok: false, error: 'fallo' }
+  const r = data as any
+  return r.ok
+    ? { ok: true, premiado: !!r.premiado, nickname: r.nickname ?? null }
+    : { ok: false, error: r.error ?? 'fallo' }
+}
+
 // Vincula la cuenta a un miembro del clan por Free Fire ID (RPC seguro).
 export async function linkMember(ffid: string): Promise<boolean> {
   const sb = client()
