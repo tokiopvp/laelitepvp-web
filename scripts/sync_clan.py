@@ -162,7 +162,24 @@ RANK_INDEX = {1: 'Bronze', 2: 'Silver', 3: 'Gold', 4: 'Platinum',
               5: 'Diamond', 6: 'Master', 7: 'Grandmaster', 8: 'Heroic'}
 
 
+def rangos_publicados():
+    """
+    El `rank` que ya tiene cada miembro en Supabase.
+
+    Hace falta para poder mandar la clave `rank` en TODAS las filas sin borrar
+    lo que ya habia: si el bot no sabe el rango de alguien, se reenvia el que
+    estaba. Una sola consulta para los cuarenta y tantos.
+    """
+    try:
+        filas = supabase("members", "GET", params="?select=id,rank") or []
+        return {f["id"]: f.get("rank") for f in filas}
+    except Exception as e:
+        log.warning("no pude leer los rangos actuales (%s); se mandaran sin rango", e)
+        return {}
+
+
 def extract(db_path):
+    rangos_actuales = rangos_publicados()
     if not os.path.exists(db_path):
         raise FileNotFoundError(f"No existe {db_path}")
     conn = sqlite3.connect(db_path)
@@ -315,10 +332,23 @@ def extract(db_path):
             "last_sync": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        # rank solo se actualiza si el bot tiene dato: si es NULL, no borramos
-        # el rango que ya estaba en la base (asignado manualmente o del sync anterior).
-        if rank is not None:
-            member_data["rank"] = rank
+        # `rank` va SIEMPRE en la fila, aunque el bot no tenga dato.
+        #
+        # Antes se anadia solo cuando habia valor, con la buena intencion de no
+        # borrar el rango que ya estaba en la base. El efecto era otro: en
+        # cuanto un miembro no traia rango, su fila tenia una clave menos que
+        # las demas y PostgREST rechazaba el LOTE ENTERO con
+        #   PGRST102: All object keys must match
+        #
+        # O sea que el sync no fallaba a medias: reventaba del todo, y con el
+        # se caian tambien los torneos, los productos, las tasas y las
+        # noticias, porque la excepcion aborta la pasada antes de llegar a
+        # ellos. Ese era el motivo real de que la web se quedara congelada.
+        #
+        # Para no borrar nada, cuando el bot no sabe el rango se reutiliza el
+        # que ya hay en la base. Asi todas las filas tienen las mismas claves y
+        # el valor sigue siendo el correcto.
+        member_data["rank"] = rank if rank is not None else rangos_actuales.get(mid_for(key))
         members.append(member_data)
 
     # competencias -> tournaments (+ participantes)
