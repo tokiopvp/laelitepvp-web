@@ -569,3 +569,32 @@ export async function onRequestPost(context) {
     return texto(`Algo falló. Avisa a un admin.${env.DEBUG ? ` (${String(e)})` : ''}`)
   }
 }
+
+
+/**
+ * Diagnostico TEMPORAL. Dice si la clave publica esta puesta y si se puede
+ * importar, nunca su contenido. Se retira en cuanto Discord acepte la URL.
+ */
+export async function onRequestGet(context) {
+  const env = context.env
+  const pk = env.DISCORD_PUBLIC_KEY || ''
+  const salida = {
+    DISCORD_PUBLIC_KEY: { presente: !!pk, largo: pk.length, esperado: 64 },
+    DISCORD_BOT_TOKEN: { presente: !!env.DISCORD_BOT_TOKEN },
+    DISCORD_CANAL_APUESTAS: { presente: !!env.DISCORD_CANAL_APUESTAS },
+    DISCORD_CANAL_RESULTADOS: { presente: !!env.DISCORD_CANAL_RESULTADOS },
+    SUPABASE_SERVICE_ROLE_KEY: { presente: !!env.SUPABASE_SERVICE_ROLE_KEY },
+  }
+  if (pk) {
+    try {
+      const bytes = new Uint8Array((pk.match(/.{1,2}/g) || []).map((b) => parseInt(b, 16)))
+      salida.bytes = bytes.length
+      await crypto.subtle.importKey('raw', bytes, { name: 'Ed25519' }, false, ['verify'])
+      salida.importa = true
+    } catch (e) {
+      salida.importa = false
+      salida.error = String(e)
+    }
+  }
+  return Response.json(salida)
+}
