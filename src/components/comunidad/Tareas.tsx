@@ -197,8 +197,11 @@ export default function Tareas({
                 )}
               </div>
 
+              {/* Lo que cobra ESTA persona, no lo que dice la tabla.
+                  Un no miembro cobra el 45% y un booster el doble: enseñar la
+                  cifra base y pagar otra distinta se lee como un engaño. */}
               <span className="font-mono font-bold text-sm text-elite-gold tabular-nums shrink-0">
-                +{coinsCorto(t.coins)}
+                +{coinsCorto(p?.coins ?? t.coins)}
               </span>
 
               <button

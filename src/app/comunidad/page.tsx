@@ -15,6 +15,7 @@ import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
 import Duelos from '@/components/comunidad/Duelos'
 import TopCoins from '@/components/comunidad/TopCoins'
+import CambioHonor from '@/components/comunidad/CambioHonor'
 
 /**
  * ELITE COIN: la pagina principal donde se gana, cobra y ve el progreso.
@@ -159,7 +160,14 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 2. Duelos PvP + Top Elite Coin */}
+        {/* 2. Cambiar honor por coins.
+            Va justo debajo de la tienda: se acaba de ver lo que cuestan los
+            premios, y aqui esta la palanca para acercarse a ellos. */}
+        <div className="mb-5">
+          <CambioHonor autenticado={isAuthed} onCambio={tras} />
+        </div>
+
+        {/* 3. Duelos PvP + Top Elite Coin */}
         <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Duelos />
           <TopCoins filas={topCoins} yo={user?.id} />

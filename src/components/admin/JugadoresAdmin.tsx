@@ -53,6 +53,7 @@ const TIPO: Record<string, string> = {
   discord: 'Actividad Discord',
   redeem: 'Canje',
   apuesta: 'Apuesta',
+  honor: 'Honor cambiado',
   premio: 'Premio de apuesta',
   admin: 'Ajuste manual',
 }

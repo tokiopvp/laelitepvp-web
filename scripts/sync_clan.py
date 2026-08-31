@@ -63,7 +63,10 @@ def supabase(table, method, payload=None, params=""):
     req.add_header("apikey", SERVICE_KEY)
     req.add_header("Authorization", f"Bearer {SERVICE_KEY}")
     req.add_header("Content-Type", "application/json")
-    if method in ("POST", "PATCH"):
+    # Las llamadas a funciones (rpc/...) NO llevan Prefer: ese encabezado es
+    # para upserts de tablas, y `return=minimal` vaciaria la respuesta, que es
+    # justo lo que se necesita leer de una funcion.
+    if method in ("POST", "PATCH") and not table.startswith("rpc/"):
         req.add_header("Prefer", "resolution=merge-duplicates, return=minimal")
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -97,6 +100,53 @@ def _existing_ids(table):
     except Exception as e:
         log.error("No pude listar ids de %s: %s", table, e)
         return []
+
+def acreditar_honor(members):
+    """
+    Convierte el honor leido por el bot en saldo de honor en la web.
+
+    POR QUE AQUI Y NO EN LA WEB
+    ---------------------------
+    El honor solo existe dentro del juego: lo lee el OCR del bot y no hay otra
+    forma de comprobarlo. Si la conversion se hiciera desde el navegador, el
+    jugador estaria declarando su propio honor, que es justo lo que no puede
+    ser. Aqui lo declara el sync, con la clave de servicio, y la funcion de
+    Postgres solo acredita la DIFERENCIA verificada.
+
+    El valor que se manda es `clan_honor_semana`, no `clan_honor_hoy`. El
+    segundo se dispara el dia del reinicio semanal -se ha visto honor_hoy=1768
+    con honor_semana=480- y acreditarlo regalaria honor que nadie hizo.
+    """
+    if not members:
+        return
+    hoy = datetime.now(timezone.utc).date()
+    y, w, _ = hoy.isocalendar()
+    semana = "%d-W%02d" % (y, w)
+
+    total = 0
+    tocados = 0
+    for m in members:
+        stats = m.get("stats_json") or {}
+        honor = stats.get("clan_honor_semana")
+        if honor is None:
+            continue
+        try:
+            honor = int(float(honor))
+        except (TypeError, ValueError):
+            continue
+        if honor < 0:
+            continue
+        try:
+            r = supabase("rpc/honor_acreditar", "POST", payload={
+                "p_member_id": m["id"], "p_semana": semana, "p_honor": honor})
+        except Exception:
+            continue
+        if isinstance(r, dict) and r.get("honor"):
+            total += int(r["honor"])
+            tocados += 1
+    if total:
+        log.info("Honor acreditado: %d puntos a %d jugadores", total, tocados)
+
 
 def desactivar_ausentes(keep_ids):
     """
@@ -888,6 +938,7 @@ def run_once():
         members, tournaments, participants, expulsados = [], [], [], set()
     log.info("Extraido: %d miembros, %d torneos, %d participantes", len(members), len(tournaments), len(participants))
     n_m = upsert("members", members, "id")
+    acreditar_honor(members)
     n_t = upsert("tournaments", tournaments, "id")
     n_p = upsert("tournament_participants", participants, "id")
     # members NO pasa por reconcile: borrar se lleva el rol del clan y el

@@ -90,6 +90,49 @@ export interface Progreso {
   progreso: number
   objetivo: number
   cobrada: boolean
+  /**
+   * Lo que cobra ESTA persona, no lo que dice la tabla.
+   *
+   * Un no miembro cobra el 45% y un booster el doble. Enseñar la cifra de la
+   * tabla y pagar otra distinta es la peor forma de fallar: parece un engaño.
+   * Puede venir sin valor en respuestas viejas, de ahi el opcional.
+   */
+  coins?: number
+}
+
+/**
+ * El saldo de honor y a cuanto se cambia AHORA MISMO.
+ *
+ * `tasa_efectiva` ya lleva aplicado el bonus de racha. Se manda resuelto desde
+ * Postgres a proposito: si el navegador multiplicara por su cuenta, bastaria
+ * con que el bonus cambiara para que la pagina prometiera una cifra y el boton
+ * pagara otra.
+ */
+export interface Honor {
+  disponible: number
+  ganado_total: number
+  canjeado_total: number
+  racha: number
+  bonus: number
+  tasa: number
+  tasa_efectiva: number
+  min_canje: number
+}
+
+export async function getHonor(): Promise<Honor | null> {
+  const sb = client()
+  if (!sb) return null
+  const { data, error } = await sb.rpc('mi_honor')
+  if (error || !data) return null
+  return data as Honor
+}
+
+export async function cambiarHonor(honor: number): Promise<Resultado> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Sin conexión' }
+  const { data, error } = await sb.rpc('canjear_honor', { p_honor: honor })
+  if (error) return { ok: false, error: error.message }
+  return data as Resultado
 }
 
 export interface FilaTop {
@@ -302,6 +345,10 @@ export interface Resultado {
   faltan?: number
   item?: string
   restante?: number
+  honor?: number
+  bonus?: number
+  racha?: number
+  factor?: number
 }
 
 export async function cobrarTarea(taskId: string): Promise<Resultado> {
