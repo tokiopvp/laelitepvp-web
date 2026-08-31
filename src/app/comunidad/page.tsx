@@ -21,13 +21,19 @@ import Boosters from '@/components/comunidad/Boosters'
 /**
  * ELITE COIN: la pagina principal donde se gana, cobra y ve el progreso.
  *
- * ORDEN (movil primero):
- *   1. Tienda Elite — lo que la gente quiere COMPRAR/CANJEAR
- *   2. Duelos PvP — historial de lo que han jugado
- *   3. Grafico Trading — el mercado en tiempo real
- *   4. ComoGano — explicacion para nuevos
- *   5. Tareas — misiones diarias
- *   6. Top Elite Coin — ranking
+ * ORDEN (el mismo en movil y en PC):
+ *   1. Tienda Elite
+ *   2. Duelos PvP + Top Elite Coin
+ *   3. Como gano Elite Coin
+ *   4. Tareas
+ *   5. Boosters de Discord
+ *   6. Cambiar honor por coins
+ *   7. Grafico del mercado
+ *   8. Top Elite Coin (enlace a /tops)
+ *
+ * En PC no cambia el orden, cambia el ANCHO: los duelos y el top van a dos
+ * columnas, y la lista de tareas tambien. Reordenar por tamano de pantalla
+ * obligaria a mantener dos historias distintas de la misma pagina.
  */
 
 export default function ComunidadPage() {
@@ -147,15 +153,19 @@ export default function ComunidadPage() {
 
         {/* ═══════════════════════════════════════════════════════════
             ORDEN DE LA PAGINA (movil primero):
-            1. Tienda Elite — lo que la gente quiere canjear
-            2. Duelos PvP — historial de partidas jugadas
-            3. Grafico Trading — mercado en tiempo real
-            4. ComoGano — explicacion para nuevos
-            5. Tareas — misiones diarias
-            6. Top Elite Coin — ranking
+            1. Tienda Elite — el premio, que es el motivo de todo lo demas
+            2. Duelos PvP + Top Elite Coin — la prueba de que se juega de verdad
+            3. Como gano — el como, para quien acaba de llegar
+            4. Tareas — todo lo cobrable, en una sola lista
+            5. Boosters — la palanca que duplica lo anterior
+            6. Cambiar honor por coins
+            7. Grafico del mercado
+            8. Top Elite Coin (enlace a /tops)
            ═══════════════════════════════════════════════════════════ */}
 
-        {/* 1. Tienda Elite */}
+        {/* 1. Tienda Elite — lo que se quiere conseguir. Va primero porque
+            es el motivo de todo lo demas: sin ver el premio, la lista de
+            tareas es trabajo sin razon. */}
         <div className="mb-5">
           <TiendaCoins
             items={tienda}
@@ -167,30 +177,22 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 2. Cambiar honor por coins.
-            Va justo debajo de la tienda: se acaba de ver lo que cuestan los
-            premios, y aqui esta la palanca para acercarse a ellos. */}
-        <div className="mb-5">
-          <CambioHonor autenticado={isAuthed} onCambio={tras} />
-        </div>
-
-        {/* 3. Duelos PvP + Top Elite Coin */}
+        {/* 2. Duelos PvP + Top Elite Coin — la prueba de que esto lo juega
+            gente de verdad, con nombres y cifras reales. */}
         <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Duelos />
           <TopCoins filas={topCoins} yo={user?.id} />
         </div>
 
-        {/* 3. Grafico Trading */}
-        <div className="mb-5">
-          <GraficoMercado />
-        </div>
-
-        {/* 4. Como Gano */}
+        {/* 3. Como gano — el como, para quien acaba de llegar. */}
         <div className="mb-5">
           <ComoGano />
         </div>
 
-        {/* 5. Tareas */}
+        {/* 4. Tareas + 5. Boosters, juntos y en este orden.
+            Primero todo lo que se puede cobrar, y justo despues la palanca que
+            lo duplica. Al reves, el boost seria una oferta sobre algo que
+            todavia no se ha visto. */}
         <div className="mb-5">
           <Tareas
             tareas={tareasNormales}
@@ -202,9 +204,6 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 6. Boosters de Discord.
-            Va justo debajo de las tareas: se acaba de ver todo lo que se puede
-            cobrar, y aqui esta la palanca que lo duplica entero. */}
         <div className="mb-5">
           <Boosters
             tareas={tareasBooster}
@@ -216,7 +215,17 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 7. Top Elite Coin (enlace a /tops) */}
+        {/* 6. Cambiar honor por coins. */}
+        <div className="mb-5">
+          <CambioHonor autenticado={isAuthed} onCambio={tras} />
+        </div>
+
+        {/* 7. Grafico del mercado. */}
+        <div className="mb-5">
+          <GraficoMercado />
+        </div>
+
+        {/* 8. Top Elite Coin (enlace a /tops) */}
         <Link
           href="/tops"
           className="ff-panel flex flex-col items-center justify-center gap-2 p-8 text-center
