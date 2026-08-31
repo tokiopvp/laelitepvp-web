@@ -277,6 +277,38 @@ def extract(db_path):
             continue
         honor_hoy[r["uid"]] = max(0, int(alto - bajo))
 
+    # LA PAPELERA MANDA
+    # -----------------
+    # Los miembros salen de `roster`, pero quien esta o no en el clan se decide
+    # en `miembros.papelera`, que es la tabla que toca el panel. Nadie leia esa
+    # marca aqui: mandar a alguien a la papelera lo quitaba de los tops del bot
+    # y de la competencia, pero en la web seguia igual. Borrarlo desde el admin
+    # tampoco valia, porque el sync lo volvia a subir sesenta segundos despues.
+    #
+    # Al saltarlo aqui, su id deja de estar en la lista de publicados y
+    # `desactivar_ausentes` lo pone is_active=false. La web solo muestra los
+    # activos, asi que desaparece sin borrar su rol del clan ni su WhatsApp: si
+    # se restaura desde el panel, vuelve entero.
+    try:
+        cur.execute("SELECT uid FROM miembros WHERE papelera=1 AND uid IS NOT NULL")
+        en_papelera = {str(r["uid"]) for r in cur.fetchall()}
+    except Exception:
+        en_papelera = set()
+
+    # Baja DEFINITIVA: a estos no se les desactiva, se les borra la fila. Es lo
+    # que pidio el admin al pulsar "eliminar definitivamente", y la unica forma
+    # de que no quede nada suyo en la web.
+    try:
+        cur.execute("SELECT v FROM kv WHERE k='expulsados'")
+        fila = cur.fetchone()
+        expulsados = {str(u) for u in json.loads(fila["v"])} if fila else set()
+    except Exception:
+        expulsados = set()
+
+    if en_papelera or expulsados:
+        log.info("Excluidos de la web: %d en papelera, %d con baja definitiva",
+                 len(en_papelera), len(expulsados))
+
     # roster -> members
     cur.execute("SELECT nick, uid, actividad_semana, estado, visto_hace_horas, presente, entro_en FROM roster")
     rows = cur.fetchall()
@@ -296,6 +328,8 @@ def extract(db_path):
         # No se borran de la base: siguen ahi, invisibles, hasta que el barrido
         # les abra el perfil. Asi no se pierde a nadie por sospecha.
         if not uid:
+            continue
+        if str(uid) in en_papelera or str(uid) in expulsados:
             continue
         key = uid
         if key in seen:
@@ -450,7 +484,7 @@ def extract(db_path):
             tournaments[-1]["participants_count"] = len(base)
 
     conn.close()
-    return members, tournaments, participants
+    return members, tournaments, participants, expulsados
 
 
 # ---------------------------------------------------------------- products (FreeFireBot inventario)
@@ -848,10 +882,10 @@ def sync_leaks(max_items: int = 24):
 # ---------------------------------------------------------------- run
 def run_once():
     try:
-        members, tournaments, participants = extract(DB_PATH)
+        members, tournaments, participants, expulsados = extract(DB_PATH)
     except Exception as e:
         log.error("Extraccion fallo (DB bloqueada?): %s", e)
-        members, tournaments, participants = [], [], []
+        members, tournaments, participants, expulsados = [], [], [], set()
     log.info("Extraido: %d miembros, %d torneos, %d participantes", len(members), len(tournaments), len(participants))
     n_m = upsert("members", members, "id")
     n_t = upsert("tournaments", tournaments, "id")
@@ -859,6 +893,17 @@ def run_once():
     # members NO pasa por reconcile: borrar se lleva el rol del clan y el
     # WhatsApp, que son lo unico que no se puede recuperar del juego.
     desactivar_ausentes({m["id"] for m in members})
+    # Los de baja definitiva SI se borran de la web. Se hace en cada pasada y no
+    # una sola vez a proposito: asi da igual que el sync estuviera parado el dia
+    # que se pulso el boton, o que la fila reaparezca por lo que sea. Es
+    # idempotente: si ya no esta, el DELETE no encuentra nada y no cuesta nada.
+    for _uid in expulsados:
+        try:
+            supabase("members", "DELETE", params="?id=eq." + mid_for(_uid))
+        except Exception as e:
+            log.error("borrado definitivo uid=%s fallo: %s", _uid, e)
+    if expulsados:
+        log.info("Bajas definitivas borradas de la web: %d", len(expulsados))
     reconcile("tournaments", {t["id"] for t in tournaments})
     reconcile("tournament_participants", {p["id"] for p in participants})
 
