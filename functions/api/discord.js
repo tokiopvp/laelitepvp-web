@@ -596,5 +596,35 @@ export async function onRequestGet(context) {
       salida.error = String(e)
     }
   }
+
+  // Prueba de extremo a extremo de `firmaValida`, con una clave generada aqui:
+  // firma un cuerpo y lo verifica pasando por EXACTAMENTE el mismo camino que
+  // recorre una peticion de Discord. Si esto sale bien, la logica es correcta y
+  // cualquier fallo restante esta en la configuracion, no en el codigo.
+  try {
+    const par = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])
+    const pubBytes = new Uint8Array(await crypto.subtle.exportKey('raw', par.publicKey))
+    const hex = (b) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
+    const cuerpo = '{"type":1}'
+    const momento = String(Math.floor(Date.now() / 1000))
+    const firma = new Uint8Array(
+      await crypto.subtle.sign('Ed25519', par.privateKey,
+        new TextEncoder().encode(momento + cuerpo))
+    )
+    const falsa = new Request('https://x/', {
+      headers: { 'x-signature-ed25519': hex(firma), 'x-signature-timestamp': momento },
+    })
+    salida.verificaFirmaBuena = await firmaValida(falsa, cuerpo, hex(pubBytes))
+    // Y que RECHACE una mala: si aceptara cualquier cosa seria mucho peor que
+    // no funcionar.
+    const mala = new Request('https://x/', {
+      headers: { 'x-signature-ed25519': hex(firma), 'x-signature-timestamp': momento },
+    })
+    salida.rechazaFirmaMala = !(await firmaValida(mala, cuerpo + 'x', hex(pubBytes)))
+  } catch (e) {
+    salida.verificaFirmaBuena = false
+    salida.errorFirma = String(e)
+  }
+
   return Response.json(salida)
 }
