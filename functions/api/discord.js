@@ -196,6 +196,75 @@ async function borrar(env, canal, mensaje) {
 }
 
 /**
+ * Sala de voz para los dos que se van a enfrentar.
+ *
+ * VISIBLE PARA TODOS, ENTRAN SOLO ELLOS
+ * -------------------------------------
+ * Esa es la gracia: que el servidor entero vea quien se esta jugando que, pero
+ * que nadie pueda meterse a molestar en mitad del combate. Discord lo permite
+ * separando dos permisos distintos: `ver canal` se le da a todo el mundo y
+ * `conectar` solo a los dos.
+ *
+ * Los numeros son mascaras de bits de Discord:
+ *   1<<10 ver canal   ·   1<<20 conectar   ·   1<<21 hablar
+ *
+ * Si falla -por permisos o por el limite de canales del servidor- se sigue sin
+ * sala: un duelo sin canal de voz funciona igual, y bloquear la apuesta por
+ * esto seria desproporcionado.
+ */
+const VER = 1 << 10
+const CONECTAR = 1 << 20
+const HABLAR = 1 << 21
+
+async function crearSala(env, guild, a, b, etiqueta, categoria) {
+  if (!guild || !env.DISCORD_BOT_TOKEN) return null
+  const permisos = [
+    // @everyone: el id del rol de todos es el propio id del servidor.
+    { id: guild, type: 0, allow: String(VER), deny: String(CONECTAR) },
+  ]
+  for (const m of [a, b]) {
+    if (m) permisos.push({ id: m, type: 1, allow: String(VER | CONECTAR | HABLAR), deny: '0' })
+  }
+  try {
+    const r = await fetch(`${API}/guilds/${guild}/channels`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-Audit-Log-Reason': 'Duelo de apuesta',
+      },
+      body: JSON.stringify({
+        name: `⚔ ${etiqueta}`.slice(0, 100),
+        type: 2, // canal de voz
+        // Dos plazas: segundo cerrojo por si alguien heredara permiso de
+        // conectar por otro rol.
+        user_limit: 2,
+        permission_overwrites: permisos,
+        ...(categoria ? { parent_id: categoria } : {}),
+      }),
+    })
+    return r.ok ? await r.json() : null
+  } catch {
+    return null
+  }
+}
+
+async function borrarSala(env, canalId) {
+  if (!canalId || !env.DISCORD_BOT_TOKEN) return
+  try {
+    await fetch(`${API}/channels/${canalId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+        'X-Audit-Log-Reason': 'Duelo terminado',
+      },
+    })
+  } catch {
+    /* si no se puede borrar, queda una sala vacia; no rompe nada */
+  }
+}
+
+/**
  * Si quien pulsa puede dar un veredicto.
  *
  * Se mira el permiso "Gestionar mensajes" que Discord manda dentro de la propia
@@ -338,6 +407,19 @@ async function aceptar(env, it, id, ctx) {
 
   ctx.waitUntil(
     (async () => {
+      // La sala primero, para poder enlazarla en el aviso de resultados.
+      // La categoria se hereda del canal donde esta el reto, asi queda junto a
+      // los demas canales de apuestas y no suelta al final de la lista.
+      const sala = await crearSala(
+        env,
+        it.guild_id,
+        r.creador_discord,
+        r.rival_discord,
+        `${String(r.creador).slice(0, 20)} vs ${String(r.rival).slice(0, 20)}`,
+        it.channel?.parent_id || null
+      )
+      if (sala) await actualizar(env, 'bets', id, { voz_id: String(sala.id) })
+
       // El reto se reescribe en vez de mandar otro: asi el canal no acumula
       // ofertas muertas y siempre se ve el estado real.
       await editar(env, canal, mensaje, {
@@ -440,6 +522,9 @@ async function veredicto(env, it, id, lado, ctx) {
         ],
         components: [],
       })
+      // El duelo acabo: la sala ya no pinta nada y dejarla llenaria la lista
+      // de canales de salas muertas.
+      await borrarSala(env, b.voz_id)
       // El "EN COMBATE" del tablon ya no significa nada.
       await borrar(env, b.canal_id, b.mensaje_id)
       // Y el anuncio publico del pago, que SI se queda: es el registro.
@@ -454,7 +539,7 @@ async function veredicto(env, it, id, lado, ctx) {
 
 async function anular(env, it, id, ctx) {
   if (!esModerador(it, env)) return texto('Solo un moderador puede anular una apuesta.')
-  const filas = await tabla(env, `bets?id=eq.${id}&select=canal_id,mensaje_id`)
+  const filas = await tabla(env, `bets?id=eq.${id}&select=canal_id,mensaje_id,voz_id`)
   const r = await rpc(env, 'bet_cancel', {
     p_bet: id,
     p_discord: it.member.user.id,
@@ -476,7 +561,10 @@ async function anular(env, it, id, ctx) {
         ],
         components: [],
       })
-      if (filas[0]) await borrar(env, filas[0].canal_id, filas[0].mensaje_id)
+      if (filas[0]) {
+        await borrarSala(env, filas[0].voz_id)
+        await borrar(env, filas[0].canal_id, filas[0].mensaje_id)
+      }
     })()
   )
   return texto('Anulada y devuelto a los dos.')
