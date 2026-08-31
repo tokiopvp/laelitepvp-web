@@ -114,6 +114,14 @@ export interface Honor {
   canjeado_total: number
   racha: number
   bonus: number
+  /**
+   * Los bonus SUMAN, no multiplican: 1 + racha(0..0,5) + booster(0 o 0,5).
+   * Multiplicandolos, un booster con racha maxima sacaria 100 -> 225 y
+   * "100 de honor son 150" dejaria de ser cierto. Sumando, el techo es el
+   * doble y se entiende de un vistazo.
+   */
+  bonus_booster?: number
+  es_booster?: boolean
   tasa: number
   tasa_efectiva: number
   min_canje: number

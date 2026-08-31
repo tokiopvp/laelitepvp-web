@@ -68,8 +68,8 @@ export default function Boosters({
             </h2>
             <p className="text-white/50 text-sm mt-1 max-w-2xl">
               Si le das un <b className="text-fuchsia-200">Boost</b> al Discord de La Elite PvP,
-              todo lo que ganes se multiplica por 2 y se te abren tres misiones que nadie más
-              puede cobrar.
+              cobras el doble en tareas y actividad, cambias tu honor un 50% mejor, y se te
+              abren tres misiones que nadie más puede cobrar.
             </p>
           </div>
 
@@ -88,14 +88,21 @@ export default function Boosters({
 
         {/* El trato, en cifras. Decir "el doble" sin decir el doble DE QUE no
             convence a nadie a gastar dinero en un refuerzo. */}
-        <div className="grid sm:grid-cols-3 gap-2.5 mt-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mt-4">
+          {/* Los dos multiplicadores son distintos a proposito y hay que
+              decirlo: el x2 es de tareas y actividad, el +50% es de cambiar
+              honor. Poner "x2 en todo" seria mentir en la mitad. */}
           <Ventaja
-            titulo="×2 en todo"
-            texto="Tareas, honor, voz y mensajes. Cada minuto en un canal de voz pasa de 1 a 2 coins."
+            titulo="×2 en tareas y actividad"
+            texto="Cada minuto en un canal de voz pasa de 1 a 2 coins, y cada tarea paga el doble."
           />
           <Ventaja
             titulo="Aunque no seas del clan"
             texto="De fuera se cobra el 45%. Con boost, el 90%: casi lo mismo que un miembro."
+          />
+          <Ventaja
+            titulo="+50% al cambiar honor"
+            texto="100 de honor pasan a valer 150 coins. Y si además llevas racha, 200."
           />
           <Ventaja
             titulo="Misiones propias"

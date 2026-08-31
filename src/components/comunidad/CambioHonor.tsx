@@ -82,6 +82,15 @@ export default function CambioHonor({
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+        {h.es_booster && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-400/30">
+            <span className="text-xs font-display font-bold text-fuchsia-200">Booster</span>
+            <span className="text-xs font-mono text-elite-success">
+              +{Math.round((h.bonus_booster ?? 0) * 100)}%
+            </span>
+          </div>
+        )}
         {h.racha > 0 && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-elite-gold/10 border border-elite-gold/30">
             <Zap className="w-3.5 h-3.5 text-elite-gold" />
@@ -95,6 +104,7 @@ export default function CambioHonor({
             )}
           </div>
         )}
+        </div>
       </header>
 
       <div className="grid sm:grid-cols-3 gap-3 mb-5">
@@ -102,7 +112,15 @@ export default function CambioHonor({
         <Dato
           etiqueta="Cambio actual"
           valor={`1 → ${h.tasa_efectiva} coins`}
-          nota={h.bonus > 0 ? `base ${h.tasa} + racha` : undefined}
+          nota={
+            [
+              `base ${h.tasa}`,
+              h.bonus > 0 ? `racha +${Math.round(h.bonus * 100)}%` : null,
+              h.bonus_booster ? `boost +${Math.round(h.bonus_booster * 100)}%` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
         />
         <Dato etiqueta="Ya cambiado" valor={(h.canjeado_total ?? 0).toLocaleString('es')} />
       </div>
@@ -163,8 +181,8 @@ export default function CambioHonor({
           {h.racha < 10 && (
             <p className="text-xs text-white/35 mt-3">
               Haz honor {10 - h.racha} {10 - h.racha === 1 ? 'día' : 'días'} más seguidos
-              y el cambio te sube hasta{' '}
-              <b className="text-elite-gold">{Math.round(h.tasa * 1.5)} coins</b> por honor.
+              y sumas <b className="text-elite-gold">+50%</b> al cambio.
+              {!h.es_booster && ' Con boost del servidor, otro +50%.'}
             </p>
           )}
         </>
