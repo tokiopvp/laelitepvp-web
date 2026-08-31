@@ -16,6 +16,7 @@ import ComoGano from '@/components/comunidad/ComoGano'
 import Duelos from '@/components/comunidad/Duelos'
 import TopCoins from '@/components/comunidad/TopCoins'
 import CambioHonor from '@/components/comunidad/CambioHonor'
+import Boosters from '@/components/comunidad/Boosters'
 
 /**
  * ELITE COIN: la pagina principal donde se gana, cobra y ve el progreso.
@@ -73,6 +74,12 @@ export default function ComunidadPage() {
 
   const saldo = perfil?.points ?? 0
   const esMiembro = !!perfil?.is_member
+  const esBooster = !!perfil?.booster_hasta && new Date(perfil.booster_hasta) > new Date()
+
+  // Las de booster salen de la lista general y van a su propia seccion, donde
+  // el trato se explica antes de enseñar el candado.
+  const tareasNormales = tareas.filter((t) => t.publico !== 'booster')
+  const tareasBooster = tareas.filter((t) => t.publico === 'booster')
 
   return (
     <div className="min-h-screen pt-24 pb-24">
@@ -186,7 +193,7 @@ export default function ComunidadPage() {
         {/* 5. Tareas */}
         <div className="mb-5">
           <Tareas
-            tareas={tareas}
+            tareas={tareasNormales}
             progreso={progreso}
             autenticado={isAuthed}
             esMiembro={esMiembro}
@@ -195,7 +202,21 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 6. Top Elite Coin (enlace a /tops) */}
+        {/* 6. Boosters de Discord.
+            Va justo debajo de las tareas: se acaba de ver todo lo que se puede
+            cobrar, y aqui esta la palanca que lo duplica entero. */}
+        <div className="mb-5">
+          <Boosters
+            tareas={tareasBooster}
+            progreso={progreso}
+            autenticado={isAuthed}
+            esBooster={esBooster}
+            onCobro={tras}
+            onEntrar={signIn}
+          />
+        </div>
+
+        {/* 7. Top Elite Coin (enlace a /tops) */}
         <Link
           href="/tops"
           className="ff-panel flex flex-col items-center justify-center gap-2 p-8 text-center

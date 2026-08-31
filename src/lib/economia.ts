@@ -37,7 +37,7 @@ export interface Tarea {
   objetivo: number
   coins: number
   periodo: Periodo
-  publico: 'clan' | 'todos'
+  publico: 'clan' | 'todos' | 'booster'
   nivel: number
   icono: string | null
   activa: boolean
@@ -391,7 +391,14 @@ export async function operarCasa(lado: 'compra' | 'venta', coins: number): Promi
  * impone en un ranking, y con `tabular-nums` las columnas siguen cuadrando.
  */
 export function coinsCorto(n: number): string {
-  return Math.round(n).toLocaleString('es-ES')
+  // El agrupado se hace a mano, no con toLocaleString.
+  //
+  // El espanol no separa los numeros de CUATRO cifras: 1500 se escribe asi,
+  // sin punto. Es correcto, pero en una lista donde al lado hay "+12.000" y
+  // "+50.000" el 1500 parece de otra escala y cuesta compararlos de un
+  // vistazo, que es justo para lo que esta la cifra.
+  const x = Math.round(n)
+  return (x < 0 ? '-' : '') + String(Math.abs(x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')
 }
 
 /** El precio es minúsculo por diseño: hacen falta muchos decimales. */

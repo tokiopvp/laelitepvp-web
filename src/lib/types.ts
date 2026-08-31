@@ -61,6 +61,14 @@ export interface Profile {
   points: number
   last_checkin: string | null
   is_member: boolean
+  /**
+   * Hasta cuando vale el privilegio de booster de Discord.
+   *
+   * Es una fecha y no un si/no a proposito: la renueva el bot cada media hora
+   * con 2 dias de margen, asi que tener el bot apagado una noche no le quita
+   * el multiplicador a quien si esta pagando el refuerzo del servidor.
+   */
+  booster_hasta: string | null
   created_at: string
   updated_at: string
 }
