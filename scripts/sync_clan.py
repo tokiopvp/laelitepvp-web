@@ -154,6 +154,27 @@ def mid_for(key):
 def tid_for(comp_id):
     return str(uuid5(NS, f"laelitepvp.com:comp:{comp_id}"))
 
+def _iso(valor):
+    """
+    Pasa la marca de tiempo del bot a ISO con zona horaria.
+
+    La base del bot guarda unas con zona y otras sin ella. Una fecha sin zona
+    la interpreta Postgres como UTC, y en Peru eso son cinco horas de mas: el
+    distintivo diria "hace 5 h" sobre una lectura de hace un minuto.
+    """
+    if not valor:
+        return None
+    texto = str(valor).strip().replace(" ", "T")
+    try:
+        t = datetime.fromisoformat(texto)
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        # Sin zona: el bot escribe en hora local del equipo.
+        t = t.astimezone()
+    return t.astimezone(timezone.utc).isoformat()
+
+
 def pid_for(tid, uid):
     return str(uuid5(NS, f"laelitepvp.com:part:{tid}:{uid}"))
 
@@ -191,6 +212,18 @@ def extract(db_path):
     metrics = {}
     for r in cur.fetchall():
         metrics.setdefault(r["uid"], {})[r["clave"]] = r["valor"]
+
+    # Cuando leyo el bot a cada jugador, por uid.
+    #
+    # `last_sync` es lo que alimenta el distintivo EN VIVO de la web. Se estaba
+    # rellenando con la hora del SYNC, no con la de la LECTURA: si el bot se
+    # apagaba y el sync seguia, el distintivo decia "EN VIVO" sobre datos
+    # congelados. Justo lo que ese distintivo existe para evitar.
+    #
+    # Con la hora real de captura el distintivo dice la verdad pase lo que pase:
+    # si el bot esta parado, se ve envejecer aunque el sync siga subiendo.
+    cur.execute("SELECT uid, MAX(tomada_en) t FROM metricas GROUP BY uid")
+    leido_en = {r["uid"]: r["t"] for r in cur.fetchall()}
 
     # miembros (region/nivel) por uid
     cur.execute("SELECT uid, nivel, region FROM miembros")
@@ -329,7 +362,10 @@ def extract(db_path):
             "revividas": int(revividas) if revividas is not None else None,
             "stats_json": stats_json,
             "is_active": is_active,
-            "last_sync": datetime.now(timezone.utc).isoformat(),
+            # La hora de la LECTURA del bot, no la del sync. Si no hay
+            # ninguna -jugador recien detectado, sin metricas aun- se cae a la
+            # hora actual: es lo unico que se sabe de el.
+            "last_sync": _iso(leido_en.get(uid)) or datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         # `rank` va SIEMPRE en la fila, aunque el bot no tenga dato.

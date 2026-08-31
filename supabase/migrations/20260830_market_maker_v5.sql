@@ -1,3 +1,17 @@
+-- ############################################################
+-- ##  NO CORRER ESTE FICHERO. SUSTITUIDO POR:
+-- ##      20260830_reparar_mercado_v6.sql
+-- ##
+-- ##  Esta version tiene un fallo de signo en el PASO 1 de
+-- ##  market_tick(): con impacto pendiente NEGATIVO (una venta),
+-- ##  empujaba el precio HACIA ARRIBA y hacia crecer el pendiente
+-- ##  un 15% por vela en vez de gastarlo. Una venta de 2.000.000
+-- ##  de coins llevo el precio a 2.964 millones de dolares,
+-- ##  desbordo numeric(18,8) y tumbo el bot de Discord.
+-- ##
+-- ##  Se deja aqui solo como historia de lo que paso.
+-- ############################################################
+
 -- ============================================================
 -- MARKET MAKER V5 - COMPORTAMIENTO REALISTA
 -- ============================================================
