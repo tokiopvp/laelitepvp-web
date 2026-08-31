@@ -224,3 +224,60 @@ SELECT titulo, objetivo, coins,
   FROM tasks
  WHERE metrica IN ('honor_dia', 'honor_semana', 'honor_total')
  ORDER BY orden;
+
+-- ============================================================
+-- 4) LA TIENDA, A LA MISMA ESCALA
+--
+-- Con 1 honor = 1 coin, el que mas juega pasa de 114.000 a ~8.700 coins al
+-- dia. Dejando los precios como estaban, los 6.160 diamantes costarian 229
+-- dias en vez de los ~20 que se buscaban, y un jugador medio tardaria cuatro
+-- anos: los premios grandes dejarian de existir en la practica.
+--
+-- Los DIAMANTES se dividen entre 10, que es lo que devuelve el objetivo.
+--
+-- Los premios en DINERO y las cuentas no siguen esa division: se calculan
+-- aparte para que sigan cayendo a un ano o mas, que es lo que se pidio desde
+-- el principio. Dividir los 10.000.000 del premio de 100 USD entre 10 lo
+-- dejaria en 115 dias, y regalar cien dolares cada cuatro meses no era la
+-- idea.
+--
+--     premio            precio     Ballena  Activo   Medio
+--     110 diamantes     10.000        1d      2d      7d
+--     310 diamantes     20.000        2d      4d     15d
+--     572 diamantes     25.000        3d      5d     18d
+--     1.166 diamantes   47.000        5d     10d     34d
+--     2.398 diamantes   90.000       10d     19d     66d
+--     6.160 diamantes  200.000       23d     43d    146d
+--     100 USD        3.200.000      1,0a    1,9a    6,4a
+--     300 USD       10.000.000      3,1a    5,9a   20,0a
+--     Cuenta Sakura  4.000.000      1,3a    2,4a    8,0a
+--     Sakura+HipHop  6.000.000      1,9a    3,6a   12,0a
+-- ============================================================
+UPDATE shop_items SET precio_coins =  10000 WHERE nombre ILIKE '%110 Diamantes%';
+UPDATE shop_items SET precio_coins =  20000 WHERE nombre ILIKE '%310 Diamantes%';
+UPDATE shop_items SET precio_coins =  25000 WHERE nombre ILIKE '%572 Diamantes%';
+UPDATE shop_items SET precio_coins =  25000 WHERE nombre ILIKE '%Pase Elite%';
+UPDATE shop_items SET precio_coins =  47000 WHERE nombre ILIKE '%1.166 Diamantes%';
+UPDATE shop_items SET precio_coins =  90000 WHERE nombre ILIKE '%2.398 Diamantes%';
+UPDATE shop_items SET precio_coins = 200000 WHERE nombre ILIKE '%6.160 Diamantes%';
+
+UPDATE shop_items SET precio_coins =  3200000 WHERE nombre ILIKE '%100 USD%';
+UPDATE shop_items SET precio_coins = 10000000 WHERE nombre ILIKE '%300 USD%';
+UPDATE shop_items SET precio_coins =  4000000 WHERE nombre = 'Cuenta Sakura';
+UPDATE shop_items SET precio_coins =  6000000 WHERE nombre ILIKE '%Sakura + HipHop%';
+
+-- El orden se rehace por precio: si no, la vitrina deja de ir de barato a caro
+-- justo cuando mas cambian los precios.
+WITH orden AS (
+  SELECT id, row_number() OVER (ORDER BY precio_coins) AS n FROM shop_items
+)
+UPDATE shop_items s SET orden = o.n FROM orden o WHERE o.id = s.id;
+
+-- ============================================================
+-- COMPROBACION: comprar grande debe rendir SIEMPRE mas por coin
+-- ============================================================
+SELECT nombre, precio_coins, diamantes,
+       round(diamantes::numeric / precio_coins * 1000, 3) AS diamantes_por_1000_coins
+  FROM shop_items
+ WHERE activo AND diamantes IS NOT NULL
+ ORDER BY precio_coins;
