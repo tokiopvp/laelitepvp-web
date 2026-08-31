@@ -32,6 +32,18 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    // `src/lib` FALTABA, y no era inofensivo.
+    //
+    // Tailwind solo genera las clases que encuentra escritas en los ficheros
+    // de esta lista. La paleta de rarezas de la tienda vive en
+    // `src/lib/economia.ts`, asi que `border-amber-400/45` y compania NUNCA se
+    // llegaron a generar: los premios epicos y legendarios salian con el borde
+    // gris por defecto y sin fondo. Los raros se veian bien de pura
+    // casualidad, porque `border-sky-400/30` tambien se usa en un componente.
+    //
+    // El sintoma era el contrario del que tocaba: cuanto mas caro el premio,
+    // mas apagado se veia.
+    './src/lib/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {

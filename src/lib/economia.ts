@@ -401,7 +401,9 @@ export function precioTexto(p: number): string {
 }
 
 export const COLOR_RAREZA: Record<Rareza, { borde: string; texto: string; fondo: string; etiqueta: string }> = {
-  basura:     { borde: 'border-white/15',      texto: 'text-white/50',    fondo: 'bg-white/[0.03]',    etiqueta: 'Común' },
+  // 'basura' iba en text-white/50 y el premio de entrada -el unico que casi
+  // todos pueden pagar- era el que peor se leia de la vitrina.
+  basura:     { borde: 'border-white/20',      texto: 'text-white/80',    fondo: 'bg-white/[0.05]',    etiqueta: 'Común' },
   normal:     { borde: 'border-sky-400/30',    texto: 'text-sky-300',     fondo: 'bg-sky-400/[0.06]',  etiqueta: 'Raro' },
   epico:      { borde: 'border-fuchsia-400/35',texto: 'text-fuchsia-300', fondo: 'bg-fuchsia-500/[0.07]', etiqueta: 'Épico' },
   legendario: { borde: 'border-amber-400/45',  texto: 'text-amber-300',   fondo: 'bg-amber-400/[0.08]', etiqueta: 'Legendario' },
