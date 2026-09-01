@@ -32,15 +32,18 @@ COMMENT ON COLUMN products.coins_entrega IS
 -- ------------------------------------------------------------
 -- Los cuatro packs. El DELETE previo hace la migracion idempotente:
 -- correrla dos veces no duplica el catalogo.
+--
+-- gestion_web = true: sin la marca, el sync del bot los borraria en su
+-- proxima pasada (solo reconcilia lo que el bot maneja).
 -- ------------------------------------------------------------
 DELETE FROM products WHERE coins_entrega IS NOT NULL;
 
-INSERT INTO products (name, category, price_usd, coins_entrega, stock, discount_percent, is_active, is_featured, description)
+INSERT INTO products (name, category, price_usd, coins_entrega, stock, discount_percent, is_active, is_featured, description, gestion_web)
 VALUES
-  ('20,000 Elite Coins',    'bundle',   5,   20000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.'),
-  ('50,000 Elite Coins',    'bundle',  10,   50000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.'),
-  ('300,000 Elite Coins',   'bundle',  50,  300000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.'),
-  ('1,000,000 Elite Coins', 'bundle', 100, 1000000, -1, 0, true, true,  'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.');
+  ('20,000 Elite Coins',    'bundle',   5,   20000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.', true),
+  ('50,000 Elite Coins',    'bundle',  10,   50000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.', true),
+  ('300,000 Elite Coins',   'bundle',  50,  300000, -1, 0, true, false, 'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.', true),
+  ('1,000,000 Elite Coins', 'bundle', 100, 1000000, -1, 0, true, true,  'Recarga de Elite Coin. Se acreditan en tu cuenta al confirmar el pago.', true);
 
 
 -- ------------------------------------------------------------

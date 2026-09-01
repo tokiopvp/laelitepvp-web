@@ -968,11 +968,11 @@ def run_once():
     n_prod = 0
     if products:
         n_prod = upsert("products", products, "id")
-        # Solo se reconcilian los productos que maneja el bot (los de
-        # diamantes). Los packs de Elite Coin llevan coins_entrega y se crean
-        # a mano en la web: sin este filtro, el reconcile los borraba en cada
-        # pasada y la tienda de coins aparecia y desaparecia.
-        reconcile("products", {p["id"] for p in products}, params="&coins_entrega=is.null")
+        # El sync solo BORRA lo suyo: las filas sin marca. Todo lo que se crea
+        # en la web (packs de Elite Coin, packs grandes de diamantes) lleva
+        # gestion_web=true y queda fuera: sin este filtro el reconcile los
+        # borraba en cada pasada y la tienda aparecia y desaparecia.
+        reconcile("products", {p["id"] for p in products}, params="&gestion_web=eq.false")
         log.info("Store: %d productos sincronizados", n_prod)
     else:
         log.info("Store: sin cambios (config no disponible)")

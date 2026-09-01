@@ -104,7 +104,9 @@ function ProductosAdmin() {
       const { error } = await sb.from('products').update(payload).eq('id', editing)
       if (error) { setMsg(error.message); return }
     } else {
-      const { error } = await sb.from('products').insert(payload)
+      // Lo que se crea aqui es de la web: sin la marca, el sync del bot lo
+      // borraria en su proxima pasada (solo reconcilia lo que el bot maneja).
+      const { error } = await sb.from('products').insert({ ...payload, gestion_web: true })
       if (error) { setMsg(error.message); return }
     }
     setForm(VACIO); setEditing(null); setNuevoAbierto(false); setMsg('Guardado ✓'); load()

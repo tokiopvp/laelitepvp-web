@@ -129,6 +129,12 @@ export interface Product {
   diamonds_amount: number | null
   /** Coins que acredita al entregarse el pedido. Solo packs de Elite Coin. */
   coins_entrega?: number | null
+  /**
+   * true = lo creó el panel web, no el bot. El sync del clan solo reconcilia
+   * (borra) filas sin esta marca; sin ella, el producto desaparece del
+   * catálogo en la próxima pasada del sync.
+   */
+  gestion_web?: boolean
   price_usd: number
   discount_percent: number
   stock: number
