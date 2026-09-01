@@ -28,17 +28,9 @@ import { agregarPendientes, leerDatos, guardarDatos } from '@/lib/carrito'
  * ------------
  * El mismo circuito que la tienda de diamantes: metodo del pais, pedido con
  * referencia, pantalla con los datos para pagar y el comprobante por WhatsApp.
- *
- * EL ESTILO ES EL DE "COMO GANO"
- * ------------------------------
- * Mismo panel (gradiente primario→oro, rejilla de fondo), mismos iconos con
- * glow por color y la entrada en cadena. La via gratuita y la de pago se ven
- * como dos caras de lo mismo, no como un anuncio pegado encima.
+ * Las mismas piezas, reusadas: PantallaPago, metodos de `pagos_json`, tasas en
+ * vivo y el aviso al Discord del clan.
  */
-
-// Un color por nivel de pack: la rampa termina en oro, que es el de 1M.
-const COLORES = ['#00d4ff', '#5b9dff', '#8b5cf6', '#f0b429']
-
 export default function CompraCoins() {
   const { user, isAuthed, signIn } = useAuth()
 
@@ -158,113 +150,93 @@ export default function CompraCoins() {
   if (!cargando && packs.length === 0) return null
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-elite-primary/[0.07] via-transparent to-elite-gold/[0.05] p-4 sm:p-5">
-      {/* Rejilla de fondo: la misma de "Como gano", para que la via de pago
-          se vea como parte de la misma pagina y no como un anuncio. */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.15]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px)',
-          backgroundSize: '30px 30px',
-        }}
-      />
-
-      <div className="relative">
-        <h2 className="font-display font-bold text-lg sm:text-xl text-center mb-5">
-          ¿Sin tiempo de grindear? <span className="text-elite-gold">Compra coins</span>
-          <span className="text-white/35 font-normal text-sm ml-2">Directo a tu cuenta.</span>
-        </h2>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {cargando
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl h-24 animate-pulse bg-white/[0.04]" />
-              ))
-            : packs.map((p, i) => {
-                const color = COLORES[Math.min(i, COLORES.length - 1)]
-                return (
-                  <motion.button
-                    key={p.id}
-                    type="button"
-                    onClick={() => abrir(p)}
-                    className="relative text-center group"
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-60px' }}
-                    // El escalonado de "Como gano": los packs entran en orden
-                    // de menor a mayor y la rampa se lee sola.
-                    transition={{ delay: i * 0.12, duration: 0.45, ease: 'easeOut' }}
-                    aria-label={`Comprar ${p.name}`}
-                  >
-                    {!!p.is_featured && (
-                      <span className="absolute -top-1.5 right-0 z-10 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-elite-gold/15 text-elite-gold border border-elite-gold/30">
-                        TOP
-                      </span>
-                    )}
-                    <div
-                      className="mx-auto w-10 h-10 rounded-xl grid place-items-center mb-2 border transition-transform group-hover:scale-110"
-                      style={{
-                        borderColor: color + '55',
-                        background: color + '14',
-                        boxShadow: `0 0 28px ${color}22`,
-                      }}
-                    >
-                      <Coins className="w-5 h-5" style={{ color }} />
-                    </div>
-                    <p className="font-display font-bold text-base sm:text-lg leading-tight tabular-nums">
-                      {(p.coins_entrega ?? 0).toLocaleString('es')}
-                    </p>
-                    <p className="text-white/40 text-[10px] uppercase tracking-wide mb-1.5">Elite Coins</p>
-                    <p className="font-mono font-semibold text-elite-gold text-sm">{precioLocal(p)}</p>
-                  </motion.button>
-                )
-              })}
+    <section className="card-glow p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div>
+          <h2 className="font-display font-bold text-xl flex items-center gap-2">
+            <Coins className="w-5 h-5 text-elite-gold" /> Compra Elite Coins
+          </h2>
+          <p className="text-white/40 text-sm mt-0.5">
+            Pagas, mandas el comprobante y las coins caen directo en tu cuenta.
+          </p>
         </div>
-
-        {/* El pais define el metodo de pago y el precio local: una sola
-            eleccion para los cuatro packs. Chiquito, abajo, sin competir con
-            el titulo. */}
-        <div className="flex justify-center mt-4">
-          <select
-            value={country}
-            onChange={(e) => {
-              setCountry(e.target.value)
-              if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
-            }}
-            className="bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs font-semibold text-white/70 focus:outline-none cursor-pointer"
-            aria-label="Elige tu país"
-          >
-            {[PAIS_INTERNACIONAL, ...PAISES].map((x) => (
-              <option key={x.code} value={x.code} className="bg-elite-dark">
-                {banderaDe(x.code)} {x.nombre}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Sin login no se puede comprar coins: el pedido nace ligado a la
-            cuenta para acreditarla al entregar. El boton es el MISMO de la
-            cabecera de la pagina: si la puerta de entrada se ve igual en
-            todos lados, nadie duda de a donde lleva. */}
-        {!isAuthed && (
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={signIn}
-              className="inline-flex items-center gap-3 rounded-xl px-6 py-3.5 font-display font-bold text-base text-white transition-transform hover:scale-[1.03] active:scale-100"
-              style={{
-                background: 'linear-gradient(135deg,#5865F2,#4148c4)',
-                boxShadow: '0 10px 30px rgba(88,101,242,.35)',
-              }}
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M20.317 4.369A19.79 19.79 0 0 0 15.885 3c-.213.382-.46.898-.63 1.307a18.27 18.27 0 0 0-5.51 0A12.6 12.6 0 0 0 9.11 3 19.74 19.74 0 0 0 4.677 4.37C1.83 8.59 1.05 12.7 1.47 16.75a19.9 19.9 0 0 0 6.04 3.04c.49-.66.927-1.36 1.302-2.096-.716-.27-1.4-.6-2.043-.998.171-.125.338-.256.5-.39a14.2 14.2 0 0 0 12.142 0c.164.136.33.267.5.39-.644.4-1.327.73-2.044.999.375.736.81 1.436 1.302 2.096a19.86 19.86 0 0 0 6.046-3.04c.47-4.67-.787-8.74-3.135-12.381ZM8.52 14.33c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.955 2.42-2.157 2.42Zm6.96 0c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.946 2.42-2.157 2.42Z" />
-              </svg>
-              Entra con Discord para comprar coins
-            </button>
-          </div>
-        )}
+        {/* El pais define el metodo de pago y el precio local: se elige aqui,
+            una vez, y vale para cualquier pack. */}
+        <select
+          value={country}
+          onChange={(e) => {
+            setCountry(e.target.value)
+            if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
+          }}
+          className="bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs font-semibold text-white/70 focus:outline-none cursor-pointer"
+          aria-label="Elige tu país"
+        >
+          {[PAIS_INTERNACIONAL, ...PAISES].map((x) => (
+            <option key={x.code} value={x.code} className="bg-elite-dark">
+              {banderaDe(x.code)} {x.nombre}
+            </option>
+          ))}
+        </select>
       </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {cargando
+          ? Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-white/10 h-28 animate-pulse bg-white/[0.03]" />
+            ))
+          : packs.map((p, i) => (
+              <motion.button
+                key={p.id}
+                type="button"
+                onClick={() => abrir(p)}
+                // Entrada suave en cadena: cuatro tarjetas que aparecen de una
+                // en una se sienten cuidadas sin robarle atencion al grafico.
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.07, duration: 0.35, ease: 'easeOut' }}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                className="relative rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left transition-colors hover:border-elite-gold/50 hover:bg-elite-gold/[0.06]"
+                aria-label={`Comprar ${p.name}`}
+              >
+                {!!p.is_featured && (
+                  <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-elite-gold/15 text-elite-gold border border-elite-gold/30">
+                    TOP
+                  </span>
+                )}
+                <p className="font-display font-bold text-lg leading-tight tabular-nums">
+                  {(p.coins_entrega ?? 0).toLocaleString('es')}
+                </p>
+                {/* El filo dorado bajo la cifra: es lo que separa el pack de
+                    una caja gris cualquiera. Solo una linea, no un icono mas. */}
+                <div className="w-8 h-px bg-gradient-to-r from-elite-gold/70 to-transparent my-2" />
+                <p className="text-[11px] text-white/35">Elite Coins</p>
+                <p className="font-mono font-semibold text-elite-gold mt-1.5">{precioLocal(p)}</p>
+              </motion.button>
+            ))}
+      </div>
+
+      {/* Sin login no se puede comprar coins: el pedido nace ligado a la
+          cuenta para acreditarla al entregar. El boton es el MISMO de la
+          cabecera de la pagina: si la puerta de entrada se ve igual en todos
+          lados, nadie duda de a donde lleva. */}
+      {!isAuthed && (
+        <div className="flex justify-center mt-5">
+          <button
+            onClick={signIn}
+            className="inline-flex items-center gap-3 rounded-xl px-6 py-3.5 font-display font-bold text-base text-white transition-transform hover:scale-[1.03] active:scale-100"
+            style={{
+              background: 'linear-gradient(135deg,#5865F2,#4148c4)',
+              boxShadow: '0 10px 30px rgba(88,101,242,.35)',
+            }}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+              <path d="M20.317 4.369A19.79 19.79 0 0 0 15.885 3c-.213.382-.46.898-.63 1.307a18.27 18.27 0 0 0-5.51 0A12.6 12.6 0 0 0 9.11 3 19.74 19.74 0 0 0 4.677 4.37C1.83 8.59 1.05 12.7 1.47 16.75a19.9 19.9 0 0 0 6.04 3.04c.49-.66.927-1.36 1.302-2.096-.716-.27-1.4-.6-2.043-.998.171-.125.338-.256.5-.39a14.2 14.2 0 0 0 12.142 0c.164.136.33.267.5.39-.644.4-1.327.73-2.044.999.375.736.81 1.436 1.302 2.096a19.86 19.86 0 0 0 6.046-3.04c.47-4.67-.787-8.74-3.135-12.381ZM8.52 14.33c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.955 2.42-2.157 2.42Zm6.96 0c-1.183 0-2.157-1.085-2.157-2.42 0-1.334.955-2.42 2.157-2.42 1.21 0 2.176 1.095 2.157 2.42 0 1.335-.946 2.42-2.157 2.42Z" />
+            </svg>
+            Entra con Discord para comprar coins
+          </button>
+        </div>
+      )}
 
       {/* Modal del checkout. El fondo es OPACO a proposito: con el cristal de
           card-glow el contenido de la pagina se transparentaba y el
