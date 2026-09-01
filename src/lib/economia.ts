@@ -83,6 +83,14 @@ export interface Casa {
   nombre: string
   avatar_url: string | null
   coins: number
+  /**
+   * Si sale en el ranking publico.
+   *
+   * No apaga la cuenta: sigue moviendo el mercado igual. Solo decide si el
+   * ranking enseña el techo o no. Puede llegar sin valor de una fila creada
+   * antes de la columna, y en ese caso se asume que si.
+   */
+  visible_top?: boolean
 }
 
 export interface Progreso {
@@ -211,7 +219,7 @@ export async function getCasa(): Promise<Casa | null> {
   if (!sb) return null
   const { data } = await sb
     .from('house_account')
-    .select('nombre, avatar_url, coins')
+    .select('nombre, avatar_url, coins, visible_top')
     .eq('id', 1)
     .maybeSingle()
   return (data as Casa) ?? null
@@ -270,7 +278,10 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
     es_casa: false,
   }))
 
-  if (casa) {
+  // `visible_top === false` la saca del ranking. Se comprueba asi y no con un
+  // `if (casa.visible_top)` porque una fila anterior a la columna llega sin el
+  // campo, y eso no puede significar "ocultala".
+  if (casa && casa.visible_top !== false) {
     filas.push({
       id: 'casa',
       nombre: casa.nombre,
@@ -376,6 +387,21 @@ export async function canjear(itemId: string, ffid?: string): Promise<Resultado>
   })
   if (error) return { ok: false, error: error.message }
   return data as Resultado
+}
+
+/**
+ * Enseñar u ocultar la cuenta grande en el ranking.
+ *
+ * Escribe directo a la tabla en vez de pasar por una funcion: la politica
+ * "house staff" ya limita el UPDATE a owner y admin, asi que una funcion no
+ * añadiria ninguna proteccion, solo una pieza mas que mantener.
+ */
+export async function verCasaEnTop(visible: boolean): Promise<Resultado> {
+  const sb = client()
+  if (!sb) return { ok: false, error: 'Sin conexión' }
+  const { error } = await sb.from('house_account').update({ visible_top: visible }).eq('id', 1)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
 }
 
 /** La palanca del owner: mover el mercado a mano. */
