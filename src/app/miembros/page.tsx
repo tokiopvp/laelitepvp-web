@@ -174,7 +174,16 @@ export default function MiembrosPage() {
                     pseudoelemento a proposito: `.ff-panel` ya usa ::before y
                     ::after para su borde y su relleno, y declarar otros encima
                     dejaba la tarjeta del lider sin chaflan y sin fondo. */}
-                {INTENSIDAD_ROL[role] != null && <div className="galon-rango" />}
+                {INTENSIDAD_ROL[role] != null && (
+                  <>
+                    <div className="galon-rango" />
+                    {/* La corriente: un destello que cruza el canto superior.
+                        Cuanta mas corriente (lider 100%, interino 40%, decano
+                        20%), mas rapido y mas vivo. Las reglas viven en
+                        globals.css junto al resto del sistema de rangos. */}
+                    <div className="corriente-rango" />
+                  </>
+                )}
 
                 {/* El rango NO se pinta por encima de la tarjeta.
                     Los rayos se salian por los bordes y se metian sobre las

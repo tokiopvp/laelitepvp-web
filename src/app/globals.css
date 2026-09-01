@@ -424,6 +424,61 @@
   clip-path: polygon(0 0, 100% 0, 100% 62%, calc(100% - 6px) 100%, 0 100%);
 }
 
+/* --- LA CORRIENTE ---------------------------------------------------------
+   Un destello que cruza el canto superior de la tarjeta, de izquierda a
+   derecha, como la luz que recorre las placas del juego al subir de rango.
+
+   La INTENSIDAD manda en todo: cuanto mas rango, mas opaca, mas ancha y mas
+   rapida. El lider (i=1) recibe un rayo vivo cada 4 segundos; el decano
+   (i=0.2) un fulgor tenue que se toma su tiempo. Es la misma animacion para
+   los tres, solo que la variable decide cuanta corriente lleva.
+
+   Solo mueve `transform`: una cinta de 120 px escalando de sitio no cuesta
+   nada al compositor. */
+.corriente-rango {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 34%;
+  height: 2px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 3;
+  background: linear-gradient(90deg, transparent, var(--luz) 45%, #ffffff 50%, var(--luz) 55%, transparent);
+  opacity: calc(0.28 + 0.7 * var(--i));
+  animation: corriente-rango calc(8s - 4.5s * var(--i)) linear infinite;
+  filter: drop-shadow(0 0 7px var(--tono));
+}
+@keyframes corriente-rango {
+  0%   { transform: translateX(-115%); }
+  60%, 100% { transform: translateX(310%); }
+}
+
+/* --- EL GALON RESPIRA ------------------------------------------------------
+   El liston lateral del cargo ya decia cual era; ahora ademas LATE. El brillo
+   crece y se calma, y la amplitud va con --i: el lider casi enciende el canto,
+   el decano apenas insinua. La caja mide 3 px de ancho, asi que el resplandor
+   animado no cuesta nada. */
+.galon-rango {
+  animation: galon-pulso calc(5.5s - 2.5s * var(--i)) ease-in-out infinite;
+}
+@keyframes galon-pulso {
+  0%, 100% { box-shadow: 0 0 calc(6px + 5px * var(--i)) var(--tono);  opacity: calc(0.7 + 0.3 * var(--i)); }
+  50%      { box-shadow: 0 0 calc(10px + 14px * var(--i)) var(--luz); opacity: 1; }
+}
+
+/* En gama baja o con "reducir movimiento" la estructura sigue marcando el
+   rango igual: borde, galon y chapa no dependen de que nada se mueva. */
+:root[data-gama="bajo"] .corriente-rango,
+:root[data-quieto="si"] .corriente-rango,
+:root[data-gama="bajo"] .galon-rango,
+:root[data-quieto="si"] .galon-rango {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .corriente-rango, .galon-rango { animation: none; }
+}
+
 /* --- LA INCLINACION ---------------------------------------------------
    Las variables --rx y --ry las escribe la propia tarjeta al moverse el
    puntero por encima. Solo las de mando: si se inclinaran las cuarenta y

@@ -157,6 +157,13 @@ export default function RootLayout({
             las reglas que apagan lo caro en maquinas justas. */}
         <AjusteRendimiento />
         <AnimatedBackground />
+        {/*
+          El velo nocturno: en escritorio el fondo se veia lavado junto al
+          movil, porque las estrellas y los halos cubren una pantalla mucho
+          mas ancha. Una lamina negra al 28% -solo en pantallas grandes-
+          devuelve el negro limpio del telefono sin tocar una sola pagina.
+        */}
+        <div aria-hidden className="hidden lg:block fixed inset-0 z-0 pointer-events-none bg-black/30" />
         <AuthProvider>
           <SiteNav />
           <main className="flex-1">{children}</main>
