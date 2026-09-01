@@ -325,9 +325,15 @@
    llevan tres o cuatro tarjetas de las cuarenta y tantas.
 */
 
-.member-leader  { --i: 1;   --luz: rgba(226, 236, 255, 0.98); --tono: rgba(167, 139, 250, 0.75); }
-.member-interim { --i: 0.4; --luz: rgba(198, 218, 255, 0.72); --tono: rgba(129, 140, 248, 0.5); }
-.member-elder   { --i: 0.2; --luz: rgba(176, 199, 236, 0.5);  --tono: rgba(100, 130, 200, 0.36); }
+/* Cada rango tiene su METAL. Antes los tres compartian violeta/azul y la
+   escala de mando se leia igual en todas; ahora se ve de lejos quien es quien:
+
+     lider    -> ORO.   La corona manda; su luz tiene que ser la del trofeo.
+     interino -> HIELO. Plata fria: tiene el puesto, no la investidura.
+     decano   -> BRONCE. El veterano: mas tenue, mas antiguo. */
+.member-leader  { --i: 1;   --luz: rgba(255, 232, 160, 0.98); --tono: rgba(240, 180, 41, 0.75); }
+.member-interim { --i: 0.4; --luz: rgba(214, 231, 255, 0.85); --tono: rgba(138, 180, 255, 0.5); }
+.member-elder   { --i: 0.2; --luz: rgba(255, 206, 160, 0.68); --tono: rgba(205, 127, 50, 0.45); }
 
 .member-leader,
 .member-interim,
@@ -372,18 +378,31 @@
     rgba(91, 157, 255, 0.22) 100%) !important;
 }
 
-/* El relleno: un punto mas claro por la esquina de arriba, para que la
-   tarjeta tenga algo de luz propia. Muy poco: teñir el fondo le quita
-   contraste a las cifras, que es lo unico que la gente viene a leer. */
-.member-leader::after,
-.member-interim::after,
+/* El relleno: la luz propia de cada metal entra por la esquina de arriba. Va
+   por clase y no por la formula compartida porque el oro del lider puede
+   permitirse mas presencia: el halo del broncino apenas se nota, que es justo
+   lo que debe significar "veterano". */
+.member-leader::after {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(240, 180, 41, 0.16) 0%, transparent 55%),
+    linear-gradient(160deg,
+      rgba(240, 180, 41, 0.07) 0%,
+      rgba(10, 16, 23, 0.92) 55%,
+      rgba(4, 7, 12, 0.96) 100%) !important;
+}
+.member-interim::after {
+  background:
+    radial-gradient(120% 80% at 0% 0%, rgba(138, 180, 255, 0.10) 0%, transparent 55%),
+    linear-gradient(160deg,
+      rgba(91, 157, 255, 0.05) 0%,
+      rgba(10, 16, 23, 0.92) 55%,
+      rgba(4, 7, 12, 0.96) 100%) !important;
+}
 .member-elder::after {
   background:
-    radial-gradient(120% 80% at 0% 0%,
-      rgba(167, 139, 250, calc(0.16 * var(--i))) 0%,
-      transparent 55%),
+    radial-gradient(120% 80% at 0% 0%, rgba(205, 127, 50, 0.07) 0%, transparent 55%),
     linear-gradient(160deg,
-      rgba(91, 157, 255, 0.07) 0%,
+      rgba(91, 157, 255, 0.04) 0%,
       rgba(10, 16, 23, 0.92) 55%,
       rgba(4, 7, 12, 0.96) 100%) !important;
 }

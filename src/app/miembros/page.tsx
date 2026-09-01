@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shield, Zap, Target, Medal } from 'lucide-react'
+import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shield, Zap, Target, Medal, Percent } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
 import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
@@ -41,6 +41,15 @@ const ROLE_CLASS: Record<string, string> = {
   elder: 'member-elder',
 }
 
+/* El metal de cada rango, del mismo tono que su marco y su galon. El aro del
+   avatar y la marca de agua toman este color, asi toda la tarjeta de un mando
+   respira en una sola luz: oro el lider, hielo el interino, bronce el decano. */
+const AURA_ROL: Record<string, string> = {
+  leader: '#f0b429',
+  interim_leader: '#8ab4ff',
+  elder: '#cd7f32',
+}
+
 interface BadgeDef {
   key: string
   label: string
@@ -72,6 +81,18 @@ const ETIQUETA_CORTA: Record<string, string> = {
   headshots: 'HS',
   wins: 'Wins',
   booyahs: 'Booyah',
+}
+
+// Un icono por cifra. Antes la primera fila iba sin iconos y la segunda con
+// algunos: dos filas de lo mismo con dos tratos distintos. Con el seis
+// completo, la rejilla se lee como una sola tabla.
+const STAT_ICONO: Record<string, any> = {
+  kd: Zap,
+  kills: Skull,
+  winrate: Percent,
+  headshots: Flame,
+  wins: Trophy,
+  booyahs: Crown,
 }
 
 function getBadges(m: Member): BadgeDef[] {
@@ -123,7 +144,12 @@ export default function MiembrosPage() {
             const roleClass = ROLE_CLASS[role] || ''
             const badges = getBadges(member)
             const puntosBR = member.puntos_br ?? member.stats_json?.puntos_br ?? null
-            const color = member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b'
+            // El aro del avatar: el metal del rango si es mando; si no, el azul
+            // del emblema de todos. Los miembros comparten aro, los mandos lo
+            // heredan de su cargo: la rejilla se puede leer sin abrir una sola.
+            const esMando = INTENSIDAD_ROL[role] != null
+            const aura = AURA_ROL[role] ?? (member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b')
+            const color = esMando ? AURA_ROL[role] : (member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b')
 
             return (
               <motion.div
@@ -132,7 +158,7 @@ export default function MiembrosPage() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
-                className={`ff-panel p-5 group relative cursor-pointer
+                className={`ff-panel overflow-hidden p-5 group relative cursor-pointer
                            focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary ${roleClass}`}
                 /*
                   La entrada se hace en SITIO, sin desplazamiento.
@@ -197,6 +223,18 @@ export default function MiembrosPage() {
                   style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
                 />
 
+                {/* La marca de agua del cargo: el icono del rango impreso
+                    gigante y tenue en la esquina, como el sello en el dorso de
+                    una placa de identificacion. Solo mandos: la tarjeta de un
+                    miembro de a pie va limpia. */}
+                {esMando && (
+                  <RoleIcon
+                    aria-hidden
+                    className="absolute -bottom-4 -right-4 w-28 h-28 rotate-12 pointer-events-none"
+                    style={{ color, opacity: 0.055 }}
+                  />
+                )}
+
                 {/* Cinta superior: la pestaña diagonal del juego. */}
                 <div
                   className="-mx-5 -mt-5 mb-4 h-1.5 ff-tab"
@@ -209,7 +247,7 @@ export default function MiembrosPage() {
                       src={member.avatar_url}
                       nombre={member.nickname}
                       size={62}
-                      aura={color}
+                      aura={aura}
                       prioritaria={i < 8}
                     />
                     {/* Icono de rol: el líder muestra el águila real */}
@@ -283,29 +321,14 @@ export default function MiembrosPage() {
                   })}
                 </div>
 
+                {/* Las seis cifras en UNA tabla: antes eran dos bloques con
+                    logica duplicada y la segunda fila llevaba iconos y la
+                    primera no. El K/D va encendido porque es la cifra que
+                    resume al jugador; el resto manda la lectura. */}
                 <div className="grid grid-cols-3 gap-2 text-sm">
-                  {(['kd', 'kills', 'winrate'] as const).map((k) => {
+                  {(['kd', 'kills', 'winrate', 'headshots', 'wins', 'booyahs'] as const).map((k) => {
                     const s = STAT_CATEGORIES.find((x) => x.key === k)!
-                    return (
-                      <div
-                        key={k}
-                        className="ff-cut-sm p-2.5 bg-white/[0.04] border border-white/10
-                                   group-hover:border-elite-primary/30 transition-colors"
-                      >
-                        <p className="text-white/40 text-[10px] uppercase tracking-wider">
-                          {ETIQUETA_CORTA[k] ?? s.label}
-                        </p>
-                        <p className="font-bold text-base tabular-nums text-elite-ice">
-                          {formatStat(s.get(member), s)}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-sm mt-2">
-                  {(['headshots', 'wins', 'booyahs'] as const).map((k) => {
-                    const s = STAT_CATEGORIES.find((x) => x.key === k)!
+                    const IconoStat = STAT_ICONO[k]
                     return (
                       <div
                         key={k}
@@ -313,11 +336,10 @@ export default function MiembrosPage() {
                                    group-hover:border-elite-primary/30 transition-colors"
                       >
                         <p className="text-white/40 text-[10px] uppercase tracking-wider flex items-center gap-1">
-                          {k === 'headshots' && <Flame className="w-3 h-3 shrink-0" />}
-                          {k === 'wins' && <Trophy className="w-3 h-3 shrink-0" />}
+                          <IconoStat className="w-3 h-3 shrink-0" />
                           {ETIQUETA_CORTA[k] ?? s.label}
                         </p>
-                        <p className="font-bold text-base tabular-nums text-elite-ice">
+                        <p className={`font-bold text-base tabular-nums ${k === 'kd' ? 'neon-celeste' : 'text-elite-ice'}`}>
                           {formatStat(s.get(member), s)}
                         </p>
                       </div>
