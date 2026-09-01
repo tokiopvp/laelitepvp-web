@@ -12,6 +12,8 @@
  * comunes en vez de exigir la palabra exacta.
  */
 
+import { generarEntradasArmas } from './generador'
+
 export interface Entrada {
   id: string
   /** Palabras que disparan la entrada. Se comparan normalizadas. */
@@ -25,7 +27,15 @@ export interface Entrada {
   categoria: 'armas' | 'personajes' | 'mascotas' | 'rango' | 'mapa' | 'tactica' | 'ajustes' | 'tienda' | 'clan' | 'general'
 }
 
-export const BASE: Entrada[] = [
+/**
+ * Entradas escritas a mano. Cubren lo que no sale de una ficha: tacticas,
+ * mapa, rango, ajustes, clan.
+ *
+ * Las de ARMAS se generan aparte, desde `datos/armas.ts`: 33 fichas dan 528
+ * comparaciones y escribirlas una a una acaba en repeticion y en datos que se
+ * contradicen entre si.
+ */
+const ESCRITAS: Entrada[] = [
   // ─────────────────────────────── ARMAS
   {
     id: 'mp40',
@@ -392,3 +402,12 @@ export const SUGERENCIAS = [
   '¿Qué gráficos pongo?',
   '¿Cómo mejoro mi puntería?',
 ]
+
+/**
+ * La base completa: lo escrito a mano MAS lo derivado de las fichas.
+ *
+ * Las generadas van despues a proposito. Cuando dos entradas empatan en
+ * relevancia gana la primera, y una respuesta escrita para un caso concreto
+ * casi siempre encaja mejor que una derivada.
+ */
+export const BASE: Entrada[] = [...ESCRITAS, ...generarEntradasArmas()]
