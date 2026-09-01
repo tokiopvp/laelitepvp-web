@@ -803,9 +803,33 @@ h2.font-display {
   opacity: 0;
 }
 
+/* ============================================
+   EL DIAMANTE QUE LATE (tienda)
+   ============================================
+   Halo azul fijo (un drop-shadow gratis) y un pulso lento de escala/opacidad
+   sobre un emoji de 16px: dos propiedades que van por GPU y una capa diminuta.
+   Cuesta lo que cuesta parpadear el cursor de un input.
+*/
+.brillo-diamante {
+  display: inline-block;
+  filter: drop-shadow(0 0 6px rgba(91, 157, 255, 0.6));
+  animation: brillo-diamante 2.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes brillo-diamante {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.12); opacity: 1; }
+}
+
+:root[data-gama="bajo"] .brillo-diamante,
+:root[data-quieto="si"] .brillo-diamante {
+  animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .neon-border::before { animation: none; }
   .ff-scan:hover::before { animation: none; opacity: 0; }
+  .brillo-diamante { animation: none; }
 }
 
 /* ============================================

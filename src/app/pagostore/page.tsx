@@ -179,7 +179,13 @@ export default function PagoStorePage() {
   //
   // Se sigue filtrando por categoria en el DATO -no en la interfaz- por si en
   // el panel se crea algo que no es una recarga: no debe colarse en la tienda.
-  const filtered = products.filter((p) => p.category === 'diamonds')
+  //
+  // ORDEN: de menor a mayor. La base los trae como caigan y los packs
+  // llegaban barajados (6160 antes que 341): una tienda lee de abajo a arriba
+  // la escalera de precios, y desordenada parece rota.
+  const filtered = products
+    .filter((p) => p.category === 'diamonds')
+    .sort((a, b) => (a.diamonds_amount ?? 0) - (b.diamonds_amount ?? 0))
 
   // Cada cambio del carrito se guarda: recargar, tocar atras o que el movil
   // descargue la pestaña ya no vacia la compra.
@@ -444,7 +450,7 @@ export default function PagoStorePage() {
                       ? product.diamonds_amount.toLocaleString('es')
                       : product.name}
                   </span>
-                  {!!product.diamonds_amount && <span className="text-base leading-none">💎</span>}
+                  {!!product.diamonds_amount && <span className="brillo-diamante text-base leading-none">💎</span>}
                 </div>
                 {!!product.diamonds_amount && (
                   <p className="text-[11px] text-white/35 truncate mb-2.5">{product.name}</p>
