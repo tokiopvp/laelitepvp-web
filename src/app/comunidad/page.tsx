@@ -163,9 +163,9 @@ export default function ComunidadPage() {
 
         {/* ═══════════════════════════════════════════════════════════
             ORDEN DE LA PAGINA (movil primero):
-            1. Comprar coins — la via rapida, para quien no quiere grindear
-            2. Tienda Elite — el premio, que es el motivo de todo lo demas
-            3. Duelos PvP + Top Elite Coin — la prueba de que se juega de verdad
+            1. Tienda Elite — el premio, que es el motivo de todo lo demas
+            2. Duelos PvP + Top Elite Coin — la prueba de que se juega de verdad
+            3. Comprar coins — la via rapida, para quien no quiere grindear
             4. Como gano — el como, para quien acaba de llegar
             5. Tareas — todo lo cobrable, en una sola lista
             6. Boosters — la palanca que duplica lo anterior
@@ -174,13 +174,7 @@ export default function ComunidadPage() {
             9. Top Elite Coin (enlace a /tops)
            ═══════════════════════════════════════════════════════════ */}
 
-        {/* 1. Comprar coins. Va primero entre los bloques: quien entra a
-            pagar no debe tener que bajar toda la pagina para encontrarlo. */}
-        <div className="mb-5">
-          <CompraCoins />
-        </div>
-
-        {/* 2. Tienda Elite — lo que se quiere conseguir. Sin ver el premio,
+        {/* 1. Tienda Elite — lo que se quiere conseguir. Sin ver el premio,
             la lista de tareas es trabajo sin razon. */}
         <div className="mb-5">
           <TiendaCoins
@@ -198,6 +192,13 @@ export default function ComunidadPage() {
         <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Duelos />
           <TopCoins filas={topCoins} yo={user?.id} />
+        </div>
+
+        {/* 3b. Comprar coins. Va justo despues del top: quien mira a los de
+            arriba piensa "y yo cuando llego ahi" - la respuesta de pago va
+            aqui, antes de la explicacion del como. */}
+        <div className="mb-5">
+          <CompraCoins />
         </div>
 
         {/* 4. Como gano — el como, para quien acaba de llegar. */}

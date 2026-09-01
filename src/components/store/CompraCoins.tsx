@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Coins, X, Zap } from 'lucide-react'
+import { X, Zap } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import {
   getMetodosPago, getRates, getSetting, createOrder,
@@ -151,43 +151,26 @@ export default function CompraCoins() {
 
   return (
     <section className="card-glow p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
-        <h2 className="font-display font-bold text-xl flex items-center gap-2">
-          <Coins className="w-5 h-5 text-elite-gold" /> Compra Elite Coins
+      <div className="text-center mb-5">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl">
+          ¿Sin tiempo de grindear? <span className="text-elite-gold">Compra coins</span>
         </h2>
-        {/* El pais define el metodo de pago y el precio local: se elige aqui,
-            una vez, y vale para cualquier pack. */}
-        <select
-          value={country}
-          onChange={(e) => {
-            setCountry(e.target.value)
-            if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
-          }}
-          className="bg-elite-card border border-elite-border rounded-lg px-2 py-1.5 text-sm font-semibold focus:outline-none cursor-pointer"
-          aria-label="Elige tu país"
-        >
-          {[PAIS_INTERNACIONAL, ...PAISES].map((x) => (
-            <option key={x.code} value={x.code} className="bg-elite-dark">
-              {banderaDe(x.code)} {x.nombre}
-            </option>
-          ))}
-        </select>
+        <p className="text-white/40 text-sm mt-1">
+          Pagas, mandas el comprobante y las coins caen directo en tu cuenta.
+        </p>
       </div>
-      <p className="text-white/40 text-sm mb-5">
-        Salto directo al premio. Pagas, mandas el comprobante y las coins caen en tu cuenta.
-      </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {cargando
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-white/10 h-36 animate-pulse bg-white/[0.03]" />
+              <div key={i} className="rounded-xl border border-white/10 h-24 animate-pulse bg-white/[0.03]" />
             ))
           : packs.map((p) => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => abrir(p)}
-                className="relative rounded-xl border border-white/10 bg-white/[0.03] p-4 text-left hover:border-elite-gold/50 hover:bg-elite-gold/[0.06] transition-colors group"
+                className="relative rounded-xl border border-white/10 bg-white/[0.03] py-4 px-3 text-center hover:border-elite-gold/50 hover:bg-elite-gold/[0.06] transition-colors"
               >
                 {!!p.is_featured && (
                   <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider bg-elite-gold/15 text-elite-gold border border-elite-gold/30">
@@ -197,10 +180,31 @@ export default function CompraCoins() {
                 <p className="font-display font-bold text-lg leading-tight tabular-nums">
                   {(p.coins_entrega ?? 0).toLocaleString('es')}
                 </p>
-                <p className="text-[11px] text-white/35 mb-3">Elite Coins</p>
-                <p className="font-mono font-semibold text-elite-gold">{precioLocal(p)}</p>
+                <p className="text-[10px] text-white/35 uppercase tracking-wide">Elite Coins</p>
+                <p className="font-mono font-semibold text-elite-gold mt-2">{precioLocal(p)}</p>
               </button>
             ))}
+      </div>
+
+      {/* El pais define el metodo de pago y el precio local: una sola eleccion
+          para los cuatro packs. Va chiquito abajo para no competir con el
+          titulo. */}
+      <div className="flex justify-center mt-4">
+        <select
+          value={country}
+          onChange={(e) => {
+            setCountry(e.target.value)
+            if (typeof window !== 'undefined') localStorage.setItem('store_country', e.target.value)
+          }}
+          className="bg-white/[0.04] border border-white/10 rounded-lg px-2 py-1.5 text-xs font-semibold text-white/70 focus:outline-none cursor-pointer"
+          aria-label="Elige tu país"
+        >
+          {[PAIS_INTERNACIONAL, ...PAISES].map((x) => (
+            <option key={x.code} value={x.code} className="bg-elite-dark">
+              {banderaDe(x.code)} {x.nombre}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Sin login no se puede comprar coins: el pedido nace ligado a la

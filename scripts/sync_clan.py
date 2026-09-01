@@ -89,10 +89,10 @@ def upsert(table, rows, conflict):
         total += len(chunk)
     return total
 
-def _existing_ids(table):
+def _existing_ids(table, params=""):
     try:
         req = urllib.request.Request(
-            f"{SUPABASE_URL}/rest/v1/{table}?select=id",
+            f"{SUPABASE_URL}/rest/v1/{table}?select=id{params}",
             headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}"},
         )
         with urllib.request.urlopen(req, timeout=30) as r:
@@ -182,15 +182,20 @@ def desactivar_ausentes(keep_ids):
         log.info("miembros ausentes desactivados (no borrados): %d", len(ausentes))
 
 
-def reconcile(table, keep_ids):
+def reconcile(table, keep_ids, params=""):
     """Elimina filas cuya id NO este en keep_ids (hace al sync autoritativo).
     Borra de a una con id=eq. para evitar fallos del filtro in.() de 1 valor.
+
+    `params` limita QUE filas se consideran para borrar. Sin el, el sync se
+    llevaria por delante filas que no le pertenecen: los packs de Elite Coin
+    (products con coins_entrega) no vienen del bot, y la primera version de
+    esto los borraba en cada pasada.
 
     OJO: no usar con `members`. Ver desactivar_ausentes()."""
     if not keep_ids:
         return
     keep = set(keep_ids)
-    orphans = [i for i in _existing_ids(table) if i not in keep]
+    orphans = [i for i in _existing_ids(table, params) if i not in keep]
     for oid in orphans:
         try:
             supabase(table, "DELETE", params=f"?id=eq.{oid}")
@@ -963,7 +968,11 @@ def run_once():
     n_prod = 0
     if products:
         n_prod = upsert("products", products, "id")
-        reconcile("products", {p["id"] for p in products})
+        # Solo se reconcilian los productos que maneja el bot (los de
+        # diamantes). Los packs de Elite Coin llevan coins_entrega y se crean
+        # a mano en la web: sin este filtro, el reconcile los borraba en cada
+        # pasada y la tienda de coins aparecia y desaparecia.
+        reconcile("products", {p["id"] for p in products}, params="&coins_entrega=is.null")
         log.info("Store: %d productos sincronizados", n_prod)
     else:
         log.info("Store: sin cambios (config no disponible)")
