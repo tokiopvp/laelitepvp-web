@@ -443,6 +443,81 @@
   clip-path: polygon(0 0, 100% 0, 100% 62%, calc(100% - 6px) 100%, 0 100%);
 }
 
+/* --- EL AURA DEL LIDER ----------------------------------------------------
+   Cuatro arcos de corriente recorriendo los bordes de la placa, uno por
+   lado. Es el mismo gesto de la palabra ELITE COIN del menu: zigzag por
+   clip-path, destello a golpes, apagado casi todo el ciclo.
+
+   SE SIENTE AL AZAR sin una linea de JavaScript: cada borde lleva una
+   duracion y un desfase distintos (3.2s, 4.7s, 3.9s, 5.3s), asi que los
+   chispazos nunca coinciden ni se repiten en el mismo orden. Cuatro relojes
+   sin sincronia al ojo son indistinguibles del azar.
+
+   Colores por VARIABLES de rango: hereda el metal del cargo (hoy oro; si
+   manana se le pone a otro rol, saldra en su luz, no en la del lider). */
+.rayo-aura {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--tono) 22%,
+    var(--luz) 46%,
+    #ffffff 50%,
+    var(--luz) 54%,
+    var(--tono) 78%,
+    transparent 100%);
+  opacity: 0;
+  filter: drop-shadow(0 0 6px var(--tono));
+}
+
+/* Zigzag horizontal, el mismo perfil quebrado del arco del menu. */
+.rayo-aura.hora {
+  clip-path: polygon(
+    0% 55%, 9% 20%, 17% 62%, 26% 12%, 35% 58%,
+    45% 22%, 54% 66%, 63% 16%, 72% 60%, 81% 24%,
+    90% 64%, 100% 30%,
+    100% 48%, 90% 82%, 81% 42%, 72% 88%, 63% 40%,
+    54% 84%, 45% 44%, 35% 86%, 26% 38%, 17% 90%, 9% 46%, 0% 78%);
+}
+.rayo-aura.top    { top: -2px;    left: 7%; right: 7%;  height: 11px; animation: aura-destello 3.2s steps(1, end) infinite; }
+.rayo-aura.bottom { bottom: -2px; left: 10%; right: 10%; height: 11px; transform: scaleY(-1); animation: aura-destello 4.7s steps(1, end) infinite 1.4s; }
+
+/* El mismo rayo de pie: coordenadas intercambiadas, no otra forma. */
+.rayo-aura.vert {
+  clip-path: polygon(
+    55% 0%, 20% 9%, 62% 17%, 12% 26%, 58% 35%,
+    22% 45%, 66% 54%, 16% 63%, 60% 72%, 24% 81%,
+    64% 90%, 30% 100%,
+    48% 100%, 82% 90%, 42% 81%, 88% 72%, 40% 63%,
+    84% 54%, 44% 45%, 86% 35%, 38% 26%, 90% 17%, 46% 9%, 78% 0%);
+}
+.rayo-aura.left  { left: -2px;  top: 10%; bottom: 10%; width: 11px; animation: aura-destello 3.9s steps(1, end) infinite 0.7s; }
+.rayo-aura.right { right: -2px; top: 7%;  bottom: 7%;  width: 11px; animation: aura-destello 5.3s steps(1, end) infinite 2.2s; }
+
+/* Triple chispazo en el centro del ciclo: enciende, tiembla, enciende y se va.
+   Opacidad solamente: el navegador no recalcula forma ni posicion jamas. */
+@keyframes aura-destello {
+  0%, 55%    { opacity: 0; }
+  58%        { opacity: 1; }
+  61%        { opacity: 0.15; }
+  64%        { opacity: 0.95; }
+  67%        { opacity: 0.25; }
+  70%        { opacity: 1; }
+  74%, 100%  { opacity: 0; }
+}
+
+/* Apagado se queda DIBUJADO, no escondido: es la leccion que quedo escrita
+   con el menu: quien pide menos movimiento no pide menos rango. */
+:root[data-gama="bajo"] .rayo-aura,
+:root[data-quieto="si"] .rayo-aura {
+  animation: none;
+  opacity: 0.22;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rayo-aura { animation: none; opacity: 0.2; }
+}
+
 /* --- LA CORRIENTE ---------------------------------------------------------
    Un destello que cruza el canto superior de la tarjeta, de izquierda a
    derecha, como la luz que recorre las placas del juego al subir de rango.

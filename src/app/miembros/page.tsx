@@ -211,6 +211,19 @@ export default function MiembrosPage() {
                   </>
                 )}
 
+                {/* El aura del lider: cuatro arcos de corriente, uno por borde,
+                    con ritmos desfasados para que los chispazos no coincidan
+                    nunca. Solo la placa del que manda: si el aura la tuvieran
+                    todos, la corriente no diria nada. */}
+                {role === 'leader' && (
+                  <>
+                    <span className="rayo-aura hora top" />
+                    <span className="rayo-aura hora bottom" />
+                    <span className="rayo-aura vert left" />
+                    <span className="rayo-aura vert right" />
+                  </>
+                )}
+
                 {/* El rango NO se pinta por encima de la tarjeta.
                     Los rayos se salian por los bordes y se metian sobre las
                     vecinas; quietos parecian garabatos sueltos. Ahora lo
