@@ -15,6 +15,7 @@ import { WHATSAPP, enlaceWhatsApp } from '@/lib/contacto'
 import PedidosPendientes from '@/components/store/PedidosPendientes'
 import Resplandor from '@/components/layout/Resplandor'
 import PuenteEliteCoin from '@/components/store/PuenteEliteCoin'
+import CompraCoins from '@/components/store/CompraCoins'
 import {
   guardarCarrito, leerCarrito, reconstruirCarrito,
   agregarPendientes, guardarDatos, leerDatos,
@@ -473,6 +474,14 @@ export default function PagoStorePage() {
               </motion.button>
             )
           })}
+        </div>
+
+        {/* Los packs de coins: lo segundo que vende la tienda. Va despues del
+            catalogo de diamantes porque quien llega aqui viene por ellos; las
+            coins son la compra impulsiva de quien ya esta con la tarjeta en la
+            mano. */}
+        <div className="mt-6">
+          <CompraCoins />
         </div>
 
         {/* Los mismos diamantes, ganables jugando. Va aqui abajo y no

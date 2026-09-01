@@ -64,6 +64,25 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 /**
+ * Los packs de Elite Coin a la venta, ordenados de menor a mayor precio.
+ *
+ * Son productos normales de la tienda que se distinguen por `coins_entrega`:
+ * el panel los edita igual que un pack de diamantes, sin tocar codigo.
+ */
+export async function getPacksCoins(): Promise<Product[]> {
+  const sb = client()
+  if (!sb) return []
+  const { data, error } = await sb
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+    .gt('coins_entrega', 0)
+    .order('price_usd')
+  if (error || !data) return []
+  return data as Product[]
+}
+
+/**
  * Momento de la ultima sincronizacion del bot, para poder decir en pantalla
  * hace cuanto que el dato es real en vez de un puntito que dice LIVE sin
  * consultar nada.
@@ -154,6 +173,12 @@ export interface NewOrder {
   status?: string
   payment_method?: string | null
   notes?: string | null
+  /**
+   * Cuenta del comprador logueado. Solo las compras de Elite Coins la llevan:
+   * sin ella no habria donde acreditar. Los diamantes no la necesitan: se
+   * entregan por el ID de Free Fire.
+   */
+  created_by?: string | null
 }
 
 export async function createOrder(order: NewOrder): Promise<{ error: string | null }> {

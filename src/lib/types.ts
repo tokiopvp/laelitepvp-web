@@ -127,6 +127,8 @@ export interface Product {
   name: string
   category: ProductCategory
   diamonds_amount: number | null
+  /** Coins que acredita al entregarse el pedido. Solo packs de Elite Coin. */
+  coins_entrega?: number | null
   price_usd: number
   discount_percent: number
   stock: number

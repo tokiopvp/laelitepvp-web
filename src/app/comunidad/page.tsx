@@ -10,6 +10,7 @@ import { getTareas, getTienda, getProgreso, coinsCorto, getTop, getCasa, verCasa
 import type { Tarea, ItemTienda, Progreso } from '@/lib/economia'
 import type { Profile } from '@/lib/types'
 import TiendaCoins from '@/components/comunidad/TiendaCoins'
+import CompraCoins from '@/components/store/CompraCoins'
 import Tareas from '@/components/comunidad/Tareas'
 import GraficoMercado from '@/components/comunidad/GraficoMercado'
 import ComoGano from '@/components/comunidad/ComoGano'
@@ -162,19 +163,25 @@ export default function ComunidadPage() {
 
         {/* ═══════════════════════════════════════════════════════════
             ORDEN DE LA PAGINA (movil primero):
-            1. Tienda Elite — el premio, que es el motivo de todo lo demas
-            2. Duelos PvP + Top Elite Coin — la prueba de que se juega de verdad
-            3. Como gano — el como, para quien acaba de llegar
-            4. Tareas — todo lo cobrable, en una sola lista
-            5. Boosters — la palanca que duplica lo anterior
-            6. Cambiar honor por coins
-            7. Grafico del mercado
-            8. Top Elite Coin (enlace a /tops)
+            1. Comprar coins — la via rapida, para quien no quiere grindear
+            2. Tienda Elite — el premio, que es el motivo de todo lo demas
+            3. Duelos PvP + Top Elite Coin — la prueba de que se juega de verdad
+            4. Como gano — el como, para quien acaba de llegar
+            5. Tareas — todo lo cobrable, en una sola lista
+            6. Boosters — la palanca que duplica lo anterior
+            7. Cambiar honor por coins
+            8. Grafico del mercado
+            9. Top Elite Coin (enlace a /tops)
            ═══════════════════════════════════════════════════════════ */}
 
-        {/* 1. Tienda Elite — lo que se quiere conseguir. Va primero porque
-            es el motivo de todo lo demas: sin ver el premio, la lista de
-            tareas es trabajo sin razon. */}
+        {/* 1. Comprar coins. Va primero entre los bloques: quien entra a
+            pagar no debe tener que bajar toda la pagina para encontrarlo. */}
+        <div className="mb-5">
+          <CompraCoins />
+        </div>
+
+        {/* 2. Tienda Elite — lo que se quiere conseguir. Sin ver el premio,
+            la lista de tareas es trabajo sin razon. */}
         <div className="mb-5">
           <TiendaCoins
             items={tienda}
@@ -186,19 +193,19 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 2. Duelos PvP + Top Elite Coin — la prueba de que esto lo juega
+        {/* 3. Duelos PvP + Top Elite Coin — la prueba de que esto lo juega
             gente de verdad, con nombres y cifras reales. */}
         <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <Duelos />
           <TopCoins filas={topCoins} yo={user?.id} />
         </div>
 
-        {/* 3. Como gano — el como, para quien acaba de llegar. */}
+        {/* 4. Como gano — el como, para quien acaba de llegar. */}
         <div className="mb-5">
           <ComoGano />
         </div>
 
-        {/* 4. Tareas + 5. Boosters, juntos y en este orden.
+        {/* 5. Tareas + 6. Boosters, juntos y en este orden.
             Primero todo lo que se puede cobrar, y justo despues la palanca que
             lo duplica. Al reves, el boost seria una oferta sobre algo que
             todavia no se ha visto. */}
@@ -224,12 +231,12 @@ export default function ComunidadPage() {
           />
         </div>
 
-        {/* 6. Cambiar honor por coins. */}
+        {/* 7. Cambiar honor por coins. */}
         <div className="mb-5">
           <CambioHonor autenticado={isAuthed} onCambio={tras} />
         </div>
 
-        {/* 7. Grafico del mercado. */}
+        {/* 8. Grafico del mercado. */}
         <section className="card-glow p-6 mb-5">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -262,7 +269,7 @@ export default function ComunidadPage() {
           <GraficoMercado />
         </section>
 
-        {/* 8. Top Elite Coin (enlace a /tops) */}
+        {/* 9. Top Elite Coin (enlace a /tops) */}
         <Link
           href="/tops"
           className="ff-panel flex flex-col items-center justify-center gap-2 p-8 text-center

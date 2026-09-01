@@ -110,6 +110,9 @@ function PedidosAdmin() {
   const [sonido, setSonido] = useState(true)
   const [cargando, setCargando] = useState(true)
   const [nuevos, setNuevos] = useState(0)
+  // producto_id -> coins que entrega. Permite ver en cada pedido si es una
+  // recarga de Elite Coins y cuanto hay que acreditar al entregarla.
+  const [coinsDe, setCoinsDe] = useState<Record<string, number>>({})
 
   // Para detectar pedidos nuevos hay que comparar contra lo que ya se vio. Va
   // en una ref y no en el estado: cambiarlo no debe repintar la pagina.
@@ -121,9 +124,13 @@ function PedidosAdmin() {
   const load = useCallback(async () => {
     const sb = supabaseBrowser()
     if (!sb) { setCargando(false); return }
-    const { data } = await sb.from('orders').select('*')
-      .order('created_at', { ascending: false }).limit(300)
+    const [{ data }, { data: packs }] = await Promise.all([
+      sb.from('orders').select('*')
+        .order('created_at', { ascending: false }).limit(300),
+      sb.from('products').select('id, coins_entrega').gt('coins_entrega', 0),
+    ])
     const filas = data || []
+    setCoinsDe(Object.fromEntries(((packs as any[]) || []).map((p) => [p.id, p.coins_entrega])))
 
     if (primeraCarga.current) {
       primeraCarga.current = false
@@ -161,6 +168,23 @@ function PedidosAdmin() {
     const { error } = await sb.from('orders').update({ status }).eq('id', id)
     if (error) { setRows(previo); setMsg('No se pudo guardar: ' + error.message); return }
     setMsg('Actualizado ✓')
+  }
+
+  /**
+   * Entregar una recarga de Elite Coins: la base acredita las coins en la
+   * cuenta del comprador y cierra el pedido en la misma operacion. No se hace
+   * con dos UPDATEs desde aqui porque una falla a mitad dejaria las coins
+   * abonadas con el pedido aun abierto -o al reves- y la reclamacion llega
+   * seguro.
+   */
+  const entregarCoins = async (o: any) => {
+    const sb = supabaseBrowser()
+    if (!sb) return
+    const { data, error } = await sb.rpc('admin_entregar_coins_pedido', { p_pedido: o.id })
+    const r = data as { ok?: boolean; error?: string; coins?: number; nombre?: string } | null
+    if (error || !r?.ok) { setMsg(error?.message || r?.error || 'No se pudo entregar.'); return }
+    setRows((rs) => rs.map((x) => (x.id === o.id ? { ...x, status: 'delivered' } : x)))
+    setMsg(`${(r.coins ?? 0).toLocaleString('es')} coins acreditadas a ${r.nombre} ✓`)
   }
 
   // El aviso no se queda pegado en pantalla para siempre.
@@ -318,6 +342,9 @@ function PedidosAdmin() {
         {visibles.map((o) => {
           const sig = SIGUIENTE[o.status as Estado]
           const urgente = o.status === 'pending'
+          // Pedido de Elite Coins: el producto dice cuantas acreditar.
+          const coins = (o.product_id ? coinsDe[o.product_id] : 0) * Math.max(o.quantity ?? 1, 1) || 0
+          const cerrado = o.status === 'delivered' || o.status === 'cancelled'
           return (
             <motion.div key={o.id} layout className={`card-glow p-4 ${urgente ? 'border-yellow-400/25' : ''}`}>
               <div className="flex items-start justify-between flex-wrap gap-3">
@@ -335,6 +362,7 @@ function PedidosAdmin() {
                   {/* QUE compro. Sin esto habia que abrir la base para saber
                       cuantos diamantes mandar. */}
                   <p className="text-white/75 text-sm mt-1">
+                    {coins > 0 && <span title="Recarga de Elite Coins">🪙 </span>}
                     {o.notes || `${o.quantity ?? 1} artículo(s)`} ·{' '}
                     <span className="font-semibold">{formatUSD(o.total_usd)}</span> ·{' '}
                     {o.payment_method || 'sin método'}
@@ -384,14 +412,31 @@ function PedidosAdmin() {
                   )}
 
                   {/* Un toque para el paso siguiente; el desplegable queda para
-                      los casos raros (cancelar, corregir). */}
-                  {sig && (
-                    <button
-                      onClick={() => setStatus(o.id, sig.a)}
-                      className="btn-primary text-sm py-2 px-3 whitespace-nowrap"
-                    >
-                      {sig.texto}
-                    </button>
+                      los casos raros (cancelar, corregir).
+                      Las recargas de coins saltan directo a entregar: la
+                      funcion acredita y cierra en la misma operacion. */}
+                  {coins > 0 && !cerrado ? (
+                    o.created_by ? (
+                      <button
+                        onClick={() => entregarCoins(o)}
+                        className="btn-primary text-sm py-2 px-3 whitespace-nowrap"
+                      >
+                        Entregar {coins.toLocaleString('es')} coins
+                      </button>
+                    ) : (
+                      <span className="text-xs text-amber-400 max-w-[180px] text-right">
+                        Sin cuenta ligada: acredita a mano desde Economía
+                      </span>
+                    )
+                  ) : (
+                    sig && (
+                      <button
+                        onClick={() => setStatus(o.id, sig.a)}
+                        className="btn-primary text-sm py-2 px-3 whitespace-nowrap"
+                      >
+                        {sig.texto}
+                      </button>
+                    )
                   )}
                   <select
                     className="input w-auto text-sm"
