@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Crown, Medal, Coins } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
-import { cn } from '@/lib/utils'
 import {
   GRUPOS_RANKING, rankingsDeArmas, formatearRanking,
   type RankingSpec,
@@ -16,6 +15,22 @@ import Resplandor from '@/components/layout/Resplandor'
 import IconoJugador from '@/components/miembros/IconoJugador'
 
 const COLOR_PUESTO = ['#f0b429', '#c9d4de', '#cd7f32']
+
+/**
+ * Un color por MODO. La jerarquia de la pagina se lee por color: la categoria
+ * grande lleva el acento de su modo, y las metricas de abajo heredan ese
+ * mismo color. Asi se ve de un vistazo que las de abajo pertenecen a la de
+ * arriba y no son seis botones sueltos mas.
+ */
+const COLOR_GRUPO: Record<string, string> = {
+  clan: '#f0b429',     // oro: el clan manda
+  br_temp: '#00d4ff',  // voltaje: la temporada esta viva
+  br_total: '#8ab4ff', // hielo: la historia
+  duelo: '#ff6b6b',    // rojo: el duelo
+  coins: '#ffd700',    // oro puro: la economia
+  armas: '#ff8c42',    // fuego: el arsenal
+}
+const colorDe = (k: string) => COLOR_GRUPO[k] ?? '#5b9dff'
 
 /** Fila de podio o de lista, según el puesto. */
 function Puesto({ i }: { i: number }) {
@@ -109,48 +124,89 @@ export default function TopsPage() {
           </p>
         </motion.div>
 
-        {/* Nivel 1: el MODO. Antes había treinta botones en una sola fila y no
-            se encontraba nada; la pregunta real es "¿quién manda en lo mío?",
-            y lo de uno es un modo concreto. */}
-        <div className="flex flex-wrap justify-center gap-2 mb-4">
+        {/* Nivel 1: el MODO. Son las PESTAÑAS grandes, cada una con el color
+            de su modo y un icono con placa propia. La activa lleva glow
+            intenso y una barra que se desliza debajo: asi el ojo sabe donde
+            esta parado sin leer nada. */}
+        <div className="relative flex flex-wrap justify-center gap-x-2 gap-y-3 mb-2">
           {grupos.map((g) => {
             const Icon = g.icon
+            const activo = grupo === g.key
+            const c = colorDe(g.key)
             return (
               <button
                 key={g.key}
                 onClick={() => elegirGrupo(g.key)}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2.5 ff-cut-sm font-display font-semibold text-sm uppercase tracking-wide transition-all border',
-                  grupo === g.key
-                    ? 'bg-elite-primary/15 border-elite-primary text-elite-primary'
-                    : 'bg-elite-card/60 border-elite-border text-white/50 hover:text-white hover:border-elite-primary/40',
-                )}
+                className="relative flex items-center gap-2.5 px-5 pt-2.5 pb-4 font-display font-bold text-sm uppercase tracking-wider transition-all"
+                style={{
+                  color: activo ? c : 'rgba(255,255,255,0.45)',
+                }}
+                aria-pressed={activo}
               >
-                <Icon className="w-4 h-4" />
+                <span
+                  className="grid place-items-center w-7 h-7 rounded-lg border transition-all"
+                  style={{
+                    borderColor: activo ? c + '88' : 'rgba(255,255,255,0.1)',
+                    background: activo ? c + '1f' : 'rgba(255,255,255,0.03)',
+                    boxShadow: activo ? `0 0 20px ${c}44` : 'none',
+                  }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: activo ? c : 'rgba(255,255,255,0.5)' }} />
+                </span>
                 {g.label}
+                {/* La barra que se desliza: viaja de modo en modo con la
+                    identidad del color de cada uno. */}
+                {activo && (
+                  <motion.span
+                    layoutId="top-modo-activo"
+                    className="absolute inset-x-3 bottom-0 h-[3px] rounded-full"
+                    style={{ background: `linear-gradient(90deg, transparent, ${c}, transparent)`, boxShadow: `0 0 14px ${c}` }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                  />
+                )}
               </button>
             )
           })}
         </div>
 
-        {/* Nivel 2: la MÉTRICA dentro de ese modo. */}
+        {/* Nivel 2: la METRICA dentro del modo. Chips pequeños, redondos y del
+            color del modo activo: cualquiera ve que son sub-opciones del modo
+            de arriba, no otras pestañas. El caption lo dice en palabras. */}
         {grupoActual.rankings.length > 1 && (
-          <div className="flex flex-wrap justify-center gap-1.5 mb-3">
-            {grupoActual.rankings.map((r) => (
-              <button
-                key={r.key}
-                onClick={() => setMetrica(r.key)}
-                title={r.ayuda}
-                className={cn(
-                  'px-3 py-1.5 ff-cut-sm text-xs font-semibold uppercase tracking-wider transition-colors border',
-                  metrica === r.key
-                    ? 'border-elite-primary/60 text-elite-ice bg-elite-primary/10'
-                    : 'border-white/10 text-white/40 hover:text-white/80 hover:border-white/25',
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
+          <div className="mb-6">
+            <p className="text-center text-[10px] uppercase tracking-[0.2em] text-white/25 mb-2">
+              {grupoActual.label} · elige la métrica
+            </p>
+            <div className="relative flex flex-wrap justify-center gap-1.5 max-w-3xl mx-auto">
+              {grupoActual.rankings.map((r) => {
+                const activo = metrica === r.key
+                const c = colorDe(grupoActual.key)
+                return (
+                  <button
+                    key={r.key}
+                    onClick={() => setMetrica(r.key)}
+                    title={r.ayuda}
+                    className="relative px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wide transition-colors border"
+                    style={{
+                      color: activo ? c : 'rgba(255,255,255,0.4)',
+                      borderColor: activo ? c + '55' : 'rgba(255,255,255,0.08)',
+                      background: activo ? c + '12' : 'transparent',
+                    }}
+                  >
+                    {/* El relleno que se desliza detras del chip activo. */}
+                    {activo && (
+                      <motion.span
+                        layoutId="top-metrica-activa"
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: `${c}1f`, boxShadow: `0 0 12px ${c}26` }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                      />
+                    )}
+                    <span className="relative">{r.label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
