@@ -254,6 +254,25 @@ def rangos_publicados():
         return {}
 
 
+def _clanes_ocultos():
+    """
+    Clanes cuyo dueño apago su visibilidad en la web desde el panel del bot
+    (config.json -> clanes[].visible_web=false). Sus miembros NO se publican:
+    como dejan de salir en la lista de abajo, desactivar_ausentes los marca
+    is_active=false y la web los quita en esta misma pasada. Reversible: al
+    mostrarlos otra vez vuelven solos. Si no hay columna clan en la base (o no
+    hay config), no se oculta nada.
+    """
+    try:
+        cfgp = os.path.join(os.path.dirname(DEFAULT_DB), "config.json")
+        with open(cfgp, encoding="utf-8") as f:
+            cfg = json.load(f)
+        return {c.get("id") for c in (cfg.get("clanes") or [])
+                if not c.get("visible_web", True)}
+    except Exception:
+        return set()
+
+
 def extract(db_path):
     rangos_actuales = rangos_publicados()
     if not os.path.exists(db_path):
@@ -365,8 +384,20 @@ def extract(db_path):
                  len(en_papelera), len(expulsados))
 
     # roster -> members
-    cur.execute("SELECT nick, uid, actividad_semana, estado, visto_hace_horas, presente, entro_en FROM roster")
-    rows = cur.fetchall()
+    # Multi-clan: la lista deja fuera a los clanes ocultos en el panel (ver
+    # _clanes_ocultos). `clan` viaja dentro de stats_json: asi la web podria
+    # agrupar por clan sin migrar el esquema de Supabase.
+    ocultos = _clanes_ocultos()
+    if ocultos:
+        log.info("clanes ocultos en la web: %s", sorted(ocultos))
+    try:
+        cur.execute("SELECT nick, uid, actividad_semana, estado, "
+                    "visto_hace_horas, presente, entro_en, clan FROM roster")
+        rows = cur.fetchall()
+    except sqlite3.OperationalError:
+        cur.execute("SELECT nick, uid, actividad_semana, estado, "
+                    "visto_hace_horas, presente, entro_en FROM roster")
+        rows = cur.fetchall()
     members = []
     seen = set()
     for r in rows:
@@ -385,6 +416,13 @@ def extract(db_path):
         if not uid:
             continue
         if str(uid) in en_papelera or str(uid) in expulsados:
+            continue
+        clan_de_fila = None
+        try:
+            clan_de_fila = r["clan"]
+        except (KeyError, IndexError):
+            clan_de_fila = None
+        if clan_de_fila and clan_de_fila in ocultos:
             continue
         key = uid
         if key in seen:
@@ -423,6 +461,9 @@ def extract(db_path):
         # Va dentro de stats_json y no en una columna nueva: la web lo lee
         # igual y no hay que migrar el esquema por un entero.
         stats_json["clan_honor_hoy"] = honor_hoy.get(uid, 0) if uid else 0
+        # Multi-clan: a que clan pertenece (elite1, elite2...). La web puede
+        # ignorarlo o usarlo para agrupar; va aqui para no migrar esquema.
+        stats_json["clan"] = clan_de_fila
         # El semanal disparatado tampoco debe llegar a la web.
         if uid and honor_ultimo.get(uid, 0) > TOPE:
             stats_json.pop("clan_honor_semana", None)

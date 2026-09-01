@@ -209,9 +209,12 @@ export default function TokioIA() {
           <div className="min-w-0">
             <h1 className="font-display font-bold text-xl leading-tight">TOKIO IA</h1>
             <p className="text-[11px] text-white/40 truncate">
-              {ultimoModelo
-                ? `Hablando de tu ${ultimoModelo}`
-                : `${base.entradas} temas · ${base.redacciones} respuestas · funciona sin conexión`}
+              {/* Antes decia "36 temas · 55 respuestas · funciona sin conexion".
+                  Esa linea contaba el truco: numeros bajos y "sin conexion"
+                  dejan claro que detras hay una lista de respuestas fijas, y
+                  quien lo lee deja de preguntar. El dato no aporta nada a
+                  quien viene a resolver una duda. */}
+              {ultimoModelo ? `Hablando de tu ${ultimoModelo}` : 'Especialista en Free Fire · responde al instante'}
             </p>
           </div>
           {mensajes.length > 1 && (
