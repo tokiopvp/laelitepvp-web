@@ -249,8 +249,16 @@ export const GRUPOS_RANKING: GrupoRanking[] = [
  * se miran las claves que trae la gente y se arma la lista con las armas que
  * de verdad usa el clan. Así una escopeta nueva aparece sola en cuanto alguien
  * la juega.
+ *
+ * El escaner trae unas OCHENTA claves por modo (puntuacion, kills y headshot
+ * de una veintena larga de armas). Cortar a catorce era dejar la mitad del
+ * arsenal invisible; se baja el minimo a 4 jugadores y ya no hay tope: si el
+ * clan la juega, sale.
+ *
+ * La etiqueta lleva solo el NOMBRE del arma: el modo lo anuncia la columna en
+ * la que aparece (BR a un lado, CS al otro), no el propio chip.
  */
-export function rankingsDeArmas(miembros: Member[], minimo = 8): RankingSpec[] {
+export function rankingsDeArmas(miembros: Member[], minimo = 4): RankingSpec[] {
   // Un objeto plano y no un Map: el tsconfig del proyecto apunta por debajo de
   // ES2015 y ahi no se puede recorrer un Map sin `downlevelIteration`.
   const cuenta: Record<string, number> = {}
@@ -270,16 +278,15 @@ export function rankingsDeArmas(miembros: Member[], minimo = 8): RankingSpec[] {
     .map((k) => [k, cuenta[k]] as [string, number])
     .filter(([, n]) => n >= minimo)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 14)
     .map(([clave]) => {
       const p = clave.match(/^arma_(br|cs)_temp_(.+)_puntuacion$/)!
       const nombre = p[2].replace(/_/g, ' ').toUpperCase()
       return {
         key: clave,
-        label: `${nombre} · ${p[1].toUpperCase()}`,
+        label: nombre,
         icon: Crosshair,
         decimals: 0,
-        ayuda: `Puntuación más alta con ${nombre} en ${p[1] === 'br' ? 'Battle Royale' : 'Duelo de Escuadras'}.`,
+        ayuda: `Puntuación más alta con ${nombre} en ${p[1] === 'br' ? 'Battle Royale' : 'Duelo de Escuadras'}, esta temporada.`,
         get: (m: Member) => uno(m, clave),
       } as RankingSpec
     })

@@ -172,7 +172,7 @@ export default function TopsPage() {
         {/* Nivel 2: la METRICA dentro del modo. Chips pequeños, redondos y del
             color del modo activo: cualquiera ve que son sub-opciones del modo
             de arriba, no otras pestañas. El caption lo dice en palabras. */}
-        {grupoActual.rankings.length > 1 && (
+        {grupoActual.rankings.length > 1 && grupo !== 'armas' && (
           <div className="mb-6">
             <p className="text-center text-[10px] uppercase tracking-[0.2em] text-white/25 mb-2">
               {grupoActual.label} · elige la métrica
@@ -207,6 +207,63 @@ export default function TopsPage() {
                 )
               })}
             </div>
+          </div>
+        )}
+
+        {/* Arsenal: el mismo arma puede tener top en BR y en CS, y en una
+            sola fila mezcladas se leia "MP40·BR, MP40·CS" como si fueran cosas
+            distintas repetidas. Van en dos columnas, cada una con su color
+            (BR cian, CS rojo) y su propio contador. */}
+        {grupo === 'armas' && (
+          <div className="mb-6">
+          <div className="grid sm:grid-cols-2 gap-x-6 gap-y-5 max-w-4xl mx-auto">
+            {(['br', 'cs'] as const).map((modo) => {
+              const c = modo === 'br' ? '#00d4ff' : '#ff6b6b'
+              const lista = grupoActual.rankings.filter((r) => r.key.startsWith(`arma_${modo}_`))
+              if (lista.length === 0) return null
+              return (
+                <div key={modo}>
+                  <p
+                    className="text-center font-display font-bold text-xs uppercase tracking-[0.18em] mb-2.5"
+                    style={{ color: c, textShadow: `0 0 14px ${c}55` }}
+                  >
+                    {modo === 'br' ? 'Battle Royale' : 'Duelo de Escuadras'}
+                    <span className="text-white/25 font-normal normal-case tracking-normal ml-2">
+                      {lista.length} armas
+                    </span>
+                  </p>
+                  <div className="relative flex flex-wrap justify-center gap-1.5">
+                    {lista.map((r) => {
+                      const activo = metrica === r.key
+                      return (
+                        <button
+                          key={r.key}
+                          onClick={() => setMetrica(r.key)}
+                          title={r.ayuda}
+                          className="relative px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide transition-colors border"
+                          style={{
+                            color: activo ? c : 'rgba(255,255,255,0.4)',
+                            borderColor: activo ? c + '55' : 'rgba(255,255,255,0.08)',
+                            background: activo ? c + '12' : 'transparent',
+                          }}
+                        >
+                          {activo && (
+                            <motion.span
+                              layoutId="top-metrica-activa"
+                              className="absolute inset-0 rounded-full"
+                              style={{ background: `${c}1f`, boxShadow: `0 0 12px ${c}26` }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                            />
+                          )}
+                          <span className="relative">{r.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
           </div>
         )}
 
