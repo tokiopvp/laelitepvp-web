@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabaseBrowser } from '@/lib/supabase/client'
 import { AdminGuard, AdminHeader } from '@/components/admin/AdminGuard'
-import { operarCasa, coinsCorto, precioTexto } from '@/lib/economia'
+import { operarCasa, coinsCorto, precioTexto, verCasaEnTop } from '@/lib/economia'
 import type { Tarea, ItemTienda, Casa } from '@/lib/economia'
 import TiendaAdmin from '@/components/admin/TiendaAdmin'
 import JugadoresAdmin from '@/components/admin/JugadoresAdmin'
@@ -50,6 +50,7 @@ function EconomiaAdmin() {
   const [canjes, setCanjes] = useState<any[]>([])
   const [monto, setMonto] = useState('50000')
   const [msg, setMsg] = useState('')
+  const [visibleTop, setVisibleTop] = useState(true)
 
   const sb = () => supabaseBrowser()
 
@@ -70,6 +71,7 @@ function EconomiaAdmin() {
     setCasa((h.data as Casa) ?? null)
     setCanjes((r.data as any[]) || [])
     setPrecio(Number(p.data) || 0)
+    setVisibleTop(((h.data as Casa)?.visible_top) !== false)
   }
 
   useEffect(() => {
@@ -142,6 +144,17 @@ function EconomiaAdmin() {
     cargar()
   }
 
+  const toggleVisibleTop = async () => {
+    const nuevo = !visibleTop
+    const r = await verCasaEnTop(nuevo)
+    if (r.ok) {
+      setVisibleTop(nuevo)
+      avisar(nuevo ? 'Casa visible en el top ✓' : 'Casa ocultada del top ✓')
+    } else {
+      avisar(r.error || 'Error al cambiar visibilidad')
+    }
+  }
+
   return (
     <div className="min-h-screen pt-24 pb-16 section-container">
       <AdminHeader title="Economía Elite Coin" subtitle="Tareas, tienda, mercado y canjes" />
@@ -202,6 +215,18 @@ function EconomiaAdmin() {
           >
             Vender (baja)
           </button>
+          <div className="ml-auto">
+            <button
+              onClick={toggleVisibleTop}
+              className={`px-4 py-2 rounded-lg border font-display font-bold transition-colors ${
+                visibleTop
+                  ? 'border-elite-gold/40 text-elite-gold hover:bg-elite-gold/10'
+                  : 'border-white/20 text-white/40 hover:bg-white/5'
+              }`}
+            >
+              {visibleTop ? '👁 Visible en Top' : '🚫 Oculto del Top'}
+            </button>
+          </div>
         </div>
       </section>
 
