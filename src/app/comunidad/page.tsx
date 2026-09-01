@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { Trophy, Coins } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { getMyProfile } from '@/lib/data'
-import { getTareas, getTienda, getProgreso, coinsCorto, getTop, type FilaTop } from '@/lib/economia'
+import { getTareas, getTienda, getProgreso, coinsCorto, getTop, getCasa, verCasaEnTop, type FilaTop } from '@/lib/economia'
 import type { Tarea, ItemTienda, Progreso } from '@/lib/economia'
 import type { Profile } from '@/lib/types'
 import TiendaCoins from '@/components/comunidad/TiendaCoins'
@@ -46,20 +46,23 @@ export default function ComunidadPage() {
   const [perfil, setPerfil] = useState<Profile | null>(null)
   const [cargando, setCargando] = useState(true)
   const [aviso, setAviso] = useState<{ texto: string; ok: boolean } | null>(null)
+  const [visibleTop, setVisibleTop] = useState(true)
 
   const cargar = useCallback(async () => {
-    const [ts, sh, cb, tc, pf] = await Promise.all([
+    const [ts, sh, cb, tc, pf, casa] = await Promise.all([
       getTareas(),
       getTienda(),
       isAuthed ? getProgreso() : Promise.resolve(new Map<string, Progreso>()),
       getTop(),
       isAuthed ? getMyProfile() : Promise.resolve(null),
+      getCasa(),
     ])
     setTareas(ts)
     setTienda(sh)
     setProgreso(cb)
     setTopCoins(tc)
     setPerfil(pf)
+    setVisibleTop(casa?.visible_top !== false)
     setCargando(false)
   }, [isAuthed])
 
@@ -72,6 +75,12 @@ export default function ComunidadPage() {
     const t = setTimeout(() => setAviso(null), 4500)
     return () => clearTimeout(t)
   }, [aviso])
+
+  const avisar = (t: string) => {
+    setAviso({ texto: t, ok: true })
+    const tRef = setTimeout(() => setAviso(null), 3000)
+    return () => clearTimeout(tRef)
+  }
 
   const tras = (texto: string, ok: boolean) => {
     setAviso({ texto, ok })
@@ -221,9 +230,37 @@ export default function ComunidadPage() {
         </div>
 
         {/* 7. Grafico del mercado. */}
-        <div className="mb-5">
+        <section className="card-glow p-6 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-display font-bold text-xl">Mercado</h2>
+              <p className="text-white/40 text-sm">
+                Vender baja el precio, comprar lo sube. Tus operaciones salen en la cinta con billetera anónima.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                const nuevo = !visibleTop
+                verCasaEnTop(nuevo).then((r) => {
+                  if (r.ok) {
+                    setVisibleTop(nuevo)
+                    avisar(nuevo ? 'Casa visible en el top ✓' : 'Casa ocultada del top ✓')
+                  } else {
+                    avisar(r.error || 'Error al cambiar visibilidad')
+                  }
+                })
+              }}
+              className={`px-4 py-2 rounded-lg border font-display font-bold text-sm transition-colors shrink-0 ${
+                visibleTop
+                  ? 'border-elite-gold/40 text-elite-gold hover:bg-elite-gold/10'
+                  : 'border-white/20 text-white/40 hover:bg-white/5'
+              }`}
+            >
+              {visibleTop ? '👁 Visible en Top' : '🚫 Oculto del Top'}
+            </button>
+          </div>
           <GraficoMercado />
-        </div>
+        </section>
 
         {/* 8. Top Elite Coin (enlace a /tops) */}
         <Link
