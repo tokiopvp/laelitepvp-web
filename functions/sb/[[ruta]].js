@@ -150,21 +150,26 @@ export async function onRequest({ request, env }) {
   if (destinoRedir) {
     let nueva = aProxy(destinoRedir, origen, base)
 
-    // El salto a Discord lleva dentro la direccion de vuelta. Es la pieza
-    // clave: sin reescribirla, Discord devolveria al jugador directo a
-    // supabase.co y todo esto no habria servido de nada.
-    if (nueva.includes('redirect_uri=')) {
-      try {
-        const u = new URL(nueva)
-        const vuelta = u.searchParams.get('redirect_uri')
-        if (vuelta && vuelta.startsWith(origen)) {
-          u.searchParams.set('redirect_uri', aProxy(vuelta, origen, base))
-          nueva = u.toString()
-        }
-      } catch {
-        /* si no es una URL valida se deja como estaba */
-      }
-    }
+    // EL `redirect_uri` NO SE TOCA. Se intento y rompio el login entero.
+    //
+    // La idea era desviar tambien la vuelta de Discord, para que el navegador
+    // no tuviera que resolver supabase.co en ningun momento. Discord aceptaba
+    // el desvio y el jugador llegaba aqui con su codigo. Pero despues Supabase
+    // canjea ese codigo hablando con Discord, y en ese canje manda SU propio
+    // `redirect_uri` -el de supabase.co, que es el unico que conoce-.
+    //
+    // Discord exige que el `redirect_uri` del canje sea identico al de la
+    // autorizacion. Al no coincidir, rechazaba el canje y Supabase devolvia
+    // "Unable to exchange external code". Fallaba para TODOS, no solo para
+    // quien tenia el problema de DNS.
+    //
+    // No hay forma de arreglarlo desde aqui: quien manda ese segundo
+    // `redirect_uri` es Supabase, y solo cambia con un dominio propio de
+    // Supabase, que es de pago.
+    //
+    // Asi que el salto de vuelta de Discord pasa por supabase.co, como
+    // siempre. Todo lo demas -datos, imagenes, refresco de sesion- sigue por
+    // el proxy, que es la mayor parte del uso.
     salida.set('location', nueva)
   }
 
