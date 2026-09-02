@@ -6,6 +6,7 @@ import {
   demoNews,
 } from './demo-data'
 import type { Member, Tournament, Product, News, PaymentMethod, Setting, Profile, PointEvent } from './types'
+import { consultar, marcarConexion } from './conexion'
 
 function client() {
   try {
@@ -18,12 +19,14 @@ function client() {
 export async function getMembers(): Promise<Member[]> {
   const sb = client()
   if (!sb) return demoMembers
-  const { data, error } = await sb
-    .from('members')
-    .select('*')
-    .eq('is_active', true)
-  if (error) return []
-  if (!data || data.length === 0) return []
+  // `consultar` devuelve null SOLO si no se pudo hablar con el servidor. Antes
+  // esto era `if (error) return []`, y un fallo de red se veia igual que un
+  // clan vacio: la pagina decia "0 MIEMBROS OFICIALES" con los datos intactos.
+  const data = await consultar<Member[]>(
+    sb.from('members').select('*').eq('is_active', true),
+  )
+  if (data === null) return []
+  if (data.length === 0) return []
   // Orden: líder primero, luego interino, luego decanos, luego por kills
   const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
   const sorted = [...(data as Member[])].sort((a, b) => {
@@ -335,9 +338,16 @@ export async function getMyProfile(): Promise<Profile | null> {
   const { data: u } = await sb.auth.getUser()
   const uid = u.user?.id
   if (!uid) return null
-  const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle()
-  if (error || !data) return null
-  return data as Profile
+  try {
+    const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle()
+    if (error && !error.code) marcarConexion(false)
+    else marcarConexion(true)
+    if (error || !data) return null
+    return data as Profile
+  } catch {
+    marcarConexion(false)
+    return null
+  }
 }
 
 // Otorga puntos de check-in (10/dia) via RPC seguro. Devuelve saldo nuevo o null.
@@ -636,11 +646,13 @@ export async function getMember(id: string): Promise<Member | null> {
 export async function getMembersLigero(): Promise<Member[]> {
   const sb = client()
   if (!sb) return demoMembers
-  const { data, error } = await sb
-    .from('members')
-    .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at,role_in_clan')
-    .eq('is_active', true)
-  if (error || !data) return []
+  const data = await consultar<Member[]>(
+    sb
+      .from('members')
+      .select(CAMPOS_PERFIL_MIEMBRO + ',is_active,joined_at,role_in_clan')
+      .eq('is_active', true) as never,
+  )
+  if (!data) return []
   const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
   const sorted = [...(data as unknown as Member[])].sort((a, b) => {
     const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3

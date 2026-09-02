@@ -7,6 +7,7 @@ import SiteNav from '@/components/layout/SiteNav'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedBackground from '@/components/layout/AnimatedBackground'
 import AjusteRendimiento from '@/components/layout/AjusteRendimiento'
+import AvisoSinConexion from '@/components/AvisoSinConexion'
 
 // Cuerpo: Inter. Es la sans de las interfaces que se ven caras (Linear,
 // Vercel, Stripe) por un motivo concreto: se disenio para leerse en pantalla a
@@ -169,6 +170,9 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <SiteFooter />
         </AuthProvider>
+        {/* Avisa cuando el navegador no llega a la base. Va en el layout
+            para que salga en CUALQUIER pagina: el fallo no es de una. */}
+        <AvisoSinConexion />
       </body>
     </html>
   )
