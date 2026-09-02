@@ -37,7 +37,16 @@
   # arranque; sin ellos la web no funciona. Aun así la política sigue valiendo:
   # lo que bloquea es traer código de un dominio ajeno, que es como llegan
   # prácticamente todos los ataques reales.
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net https://*.googlesyndication.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' wss://www.laelitepvp.com wss://laelitepvp.com https://*.supabase.co wss://*.supabase.co https://pagead2.googlesyndication.com; frame-src https://googleads.g.doubleclick.net https://*.googlesyndication.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+
+# El WebSocket propio va explicito aunque 'self' deberia cubrirlo: la norma
+# dice que 'self' incluye ws/wss del mismo origen, pero no todos los
+# navegadores lo aplican igual, y el unico sitio que usa "en vivo" es el panel
+# de admin. Un fallo ahi se notaria tarde y costaria encontrarlo.
+#
+# Las entradas de supabase.co se quedan: mientras el proxy esta en pruebas la
+# web puede apuntar a cualquiera de los dos, y quitarlas antes de tiempo
+# romperia justo lo que todavia funciona.
 
 # El panel no se guarda en ninguna caché, ni del navegador ni intermedia.
 # En un móvil compartido, el pedido de un cliente no debe quedar recuperable
