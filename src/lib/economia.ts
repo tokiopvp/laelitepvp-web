@@ -13,6 +13,7 @@
  */
 
 import { supabaseBrowser } from './supabase/client'
+import { media } from './media'
 
 function client() {
   try {
@@ -273,7 +274,7 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
     id: p.id,
     nombre: nombrePublico(p),
     coins: p.points ?? 0,
-    avatar_url: p.avatar_url ?? null,
+    avatar_url: media(p.avatar_url),
     es_miembro: !!p.is_member,
     es_casa: false,
   }))
@@ -286,7 +287,7 @@ export async function getTop(limite = 50): Promise<FilaTop[]> {
       id: 'casa',
       nombre: casa.nombre,
       coins: casa.coins,
-      avatar_url: casa.avatar_url,
+      avatar_url: media(casa.avatar_url),
       // Se presenta como comunidad, igual que cualquier otro: marcarla como
       // miembro del clan la señalaría, y la gracia es que no destaque por nada
       // salvo por su saldo.
