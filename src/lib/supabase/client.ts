@@ -87,15 +87,16 @@ function migrarDesdeCookies(clave: string): void {
 }
 
 /**
- * Borra los verificadores de logins que quedaron a medias.
+ * Borra verificadores PKCE viejos, dejando siempre al menos 5 recientes.
  *
- * Cada intento crea una clave `...-flow-<state>-code-verifier`. Si el login se
- * abandona -se cierra la pestaña, se cancela en Discord- esa clave se queda
- * ahí para siempre. No rompe nada, pero se acumulan sin límite y ensucian el
- * almacenamiento del navegador.
+ * Cada intento de login crea una clave `...-flow-<state>-code-verifier`. Si el
+ * login se abandona (se cierra la pestaña, se cancela en Discord) esa clave se
+ * queda para siempre. No rompe nada, pero acumula basura.
  *
- * Se conservan las tres más recientes: un login en curso puede tener la suya
- * viva, y borrarla sería tirar piedras al propio tejado.
+ * IMPORTANTE: Antes se conservaban solo 3 verificadores. Si una usuaria tenía
+ * múltiples intentos de login (por ejemplo, cerró y reabrió la app de Discord),
+ * el verificador de su flujo activo se borraba y Supabase fallaba con
+ * "Unable to exchange external code". Ahora se conservan 5 para evitar esto.
  */
 function limpiarFlujosViejos(base: string): void {
   try {
@@ -104,8 +105,8 @@ function limpiarFlujosViejos(base: string): void {
       const k = localStorage.key(i)
       if (k && k.startsWith(`${base}-flow-`) && k.endsWith('-code-verifier')) flujos.push(k)
     }
-    if (flujos.length <= 3) return
-    for (const k of flujos.slice(0, flujos.length - 3)) localStorage.removeItem(k)
+    if (flujos.length <= 5) return
+    for (const k of flujos.slice(0, flujos.length - 5)) localStorage.removeItem(k)
   } catch {
     // Almacenamiento bloqueado: no hay nada que limpiar.
   }

@@ -55,6 +55,12 @@ const TRADUCCIONES: { patron: RegExp; texto: string }[] = [
       'pulsar el botón de entrar: a la segunda funciona.',
   },
   {
+    patron: /unable to exchange external code|exchange.*external.*code/i,
+    texto:
+      'El código de acceso de Discord ya fue usado o caducó. ' +
+      'Si este error persiste, cierra la app de Discord y vuelve a intentar.',
+  },
+  {
     patron: /email/i,
     texto:
       'No pudimos completar el acceso con Discord. Vuelve a pulsar el botón de entrar.',
@@ -129,23 +135,24 @@ function CallbackInner() {
     }
 
     /**
-     * Reintento automático, UNA sola vez.
+     * Reintento automático, hasta DOS veces.
      *
-     * Cuando falta el verificador no hay nada que recuperar: ese código ya no
-     * se puede canjear. Pero volver a empezar el login desde el mismo navegador
-     * funciona casi siempre, así que llevar a alguien a un callejón sin salida
-     * y pedirle que pulse un botón es un paso de más — y un paso de más, en un
-     * móvil, es gente que se va.
+     * Cuando falta el verificador o el código ya fue usado, no hay nada que
+     * recuperar: ese código ya no se puede canjear. Pero volver a empezar el
+     * login desde el mismo navegador funciona casi siempre.
      *
      * El pestillo en `sessionStorage` es imprescindible: sin él, un fallo
      * persistente (almacenamiento bloqueado, modo privado) reintentaría en
-     * bucle infinito entre Discord y la web.
+     * bucle infinito entre Discord y la web. Se permiten 2 reintentos porque
+     * el error "Unable to exchange external code" puede ocurrir la primera
+     * vez si el verificador fue limpiado, y el segundo intento ya funciona.
      */
     const CLAVE_REINTENTO = 'elite_login_reintento'
     const reintentar = () => {
       try {
-        if (sessionStorage.getItem(CLAVE_REINTENTO)) return false
-        sessionStorage.setItem(CLAVE_REINTENTO, '1')
+        const intentos = parseInt(sessionStorage.getItem(CLAVE_REINTENTO) || '0', 10)
+        if (intentos >= 2) return false
+        sessionStorage.setItem(CLAVE_REINTENTO, String(intentos + 1))
       } catch {
         return false
       }
@@ -188,7 +195,21 @@ function CallbackInner() {
         // 1. Discord puede volver con un error explícito (normalmente porque
         //    la persona pulsó "Cancelar").
         const errUrl = params.get('error_description') || params.get('error')
-        if (errUrl) return rendirse(traducir(decodeURIComponent(errUrl)))
+        if (errUrl) {
+          // Si el error es de canje de código, reintentar automáticamente
+          if (/unable to exchange external code|exchange.*external.*code/i.test(decodeURIComponent(errUrl))) {
+            if (reintentar()) return
+          }
+          return rendirse(traducir(decodeURIComponent(errUrl)))
+        }
+
+        // 1b. Verificar que el state no esté corrupto (ej: "FuZZ" al final)
+        const state = params.get('state')
+        if (state && !/^[a-zA-Z0-9_-]+$/.test(state)) {
+          // State corrupto: limpiar y reintentar
+          if (reintentar()) return
+          return rendirse('El enlace de acceso se dañó. Vuelve a pulsar el botón de entrar.')
+        }
 
         // 2. Se espera a que la LIBRERIA canjee el código.
         //
@@ -212,9 +233,14 @@ function CallbackInner() {
 
         terminar(await destinoSegun(sb))
       } catch (e) {
+        const msg = String(e)
+        // Si el error es de canje de código, reintentar automáticamente
+        if (/unable to exchange external code|exchange.*external.*code/i.test(msg)) {
+          if (reintentar()) return
+        }
         rendirse(
           'Se cortó la conexión mientras entrábamos. Inténtalo otra vez.' +
-            (process.env.NODE_ENV === 'development' ? ` (${String(e)})` : '')
+            (process.env.NODE_ENV === 'development' ? ` (${msg})` : '')
         )
       }
     })()

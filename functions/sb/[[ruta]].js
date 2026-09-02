@@ -24,24 +24,35 @@
  * politicas RLS, no este archivo. Aqui NO se añade la clave de servicio ni
  * ninguna otra credencial.
  *
- * EL ENREDO DEL LOGIN CON DISCORD
- * -------------------------------
- * El ida y vuelta de OAuth toca el dominio de Supabase DOS veces, y las dos
- * hay que desviarlas:
+ * LO QUE ESTE PROXY NO PUEDE ARREGLAR: LA VUELTA DE DISCORD
+ * ---------------------------------------------------------
+ * Se intento desviar tambien ese salto, para que el navegador no tocara
+ * supabase.co en ningun momento. Rompio el login A TODOS y hubo que revertirlo
+ * en caliente. Queda escrito aqui para que nadie lo vuelva a intentar:
  *
- *   1. La web manda al navegador a `/sb/auth/v1/authorize`. Eso ya pasa por
- *      aqui. Supabase responde "vete a Discord", y en esa respuesta mete un
- *      `redirect_uri` que apunta a `<ref>.supabase.co/auth/v1/callback`.
- *      Si se deja, Discord devolveria al jugador a ese dominio y estariamos
- *      igual que antes. Se reescribe para que apunte aqui.
+ *   1. Se reescribia el `redirect_uri` que Supabase manda hacia Discord, para
+ *      que Discord devolviera al jugador a `/sb/auth/v1/callback`.
+ *   2. Discord lo aceptaba. El jugador volvia aqui con su codigo. Hasta ahi,
+ *      perfecto.
+ *   3. Pero entonces Supabase canjea ese codigo hablando con Discord, y en el
+ *      canje manda SU propio `redirect_uri` -el de supabase.co, el unico que
+ *      conoce-. Discord exige que sea identico al del paso 1. Al no coincidir,
+ *      rechaza el canje: "Unable to exchange external code".
  *
- *   2. Discord devuelve al jugador a `/sb/auth/v1/callback`. Eso tambien pasa
- *      por aqui y se reenvia a Supabase, que termina el intercambio y responde
- *      con la vuelta a /auth/callback de la web.
+ * El fallo ocurre DESPUES de que el usuario acepta, en una llamada de servidor
+ * a servidor. Por eso seguir la cadena con curl hasta la pantalla de Discord
+ * pasaba sin problemas: solo se ve entrando de verdad con una cuenta.
  *
- * Para que el paso 1 funcione, en el portal de Discord tiene que estar dada de
- * alta la URL `https://www.laelitepvp.com/sb/auth/v1/callback` como redirect
- * valida. Sin eso, Discord rechaza la peticion con "invalid redirect_uri".
+ * Quien manda ese segundo `redirect_uri` es Supabase, y solo cambia con un
+ * dominio propio de Supabase, que es de pago. Sin eso, ese unico salto tiene
+ * que ir a supabase.co.
+ *
+ * QUE SIGUE CUBIERTO
+ * ------------------
+ * Todo lo demas, que es casi todo el uso: consultas, imagenes, refresco de
+ * sesion y llamadas a funciones. Quien tenga el problema de DNS podra usar la
+ * web entera con sus datos y sus fotos; lo unico que le fallara es el momento
+ * de iniciar sesion por primera vez.
  */
 
 /** Cabeceras que NO se reenvian: las pone Cloudflare y confunden al destino. */
