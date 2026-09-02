@@ -56,10 +56,29 @@ const FUERA = new Set([
   'content-length',
 ])
 
-/** El origen real de Supabase, a partir de la variable ya configurada. */
-function destino(env) {
-  const u = env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || ''
-  return u.replace(/\/+$/, '')
+/**
+ * El origen real de Supabase.
+ *
+ * OJO CON EL BUCLE
+ * ----------------
+ * Al activar el proxy, `NEXT_PUBLIC_SUPABASE_URL` pasa a valer
+ * `https://www.laelitepvp.com/sb`, que es ESTA MISMA funcion. Si se cayera a
+ * esa variable, el proxy se llamaria a si mismo hasta agotar la peticion: la
+ * web entera dejaria de responder y el motivo no se veria por ningun lado.
+ *
+ * Por eso manda `SUPABASE_URL`, que es de servidor y sigue apuntando al
+ * dominio de verdad; y por eso, si lo que sale de aqui apunta a nuestro propio
+ * dominio, se descarta en vez de usarse.
+ */
+function destino(env, propioOrigen) {
+  const u = (env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/+$/, '')
+  if (!u) return ''
+  try {
+    if (new URL(u).origin === propioOrigen) return ''
+  } catch {
+    return ''
+  }
+  return u
 }
 
 /**
@@ -75,13 +94,18 @@ function aProxy(url, origenSupabase, basePublica) {
 }
 
 export async function onRequest({ request, env }) {
-  const origen = destino(env)
-  if (!origen) {
-    return new Response('Proxy sin configurar.', { status: 503 })
-  }
-
   const entrada = new URL(request.url)
   const base = entrada.origin
+
+  const origen = destino(env, base)
+  if (!origen) {
+    // Mensaje explicito y no un 500 mudo: si esto salta, lo que falta es
+    // `SUPABASE_URL` en Cloudflare apuntando al dominio real de Supabase.
+    return new Response(
+      'Proxy mal configurado: falta SUPABASE_URL con el dominio real de Supabase.',
+      { status: 503, headers: { 'cache-control': 'no-store' } },
+    )
+  }
 
   // /sb/rest/v1/members  ->  https://<ref>.supabase.co/rest/v1/members
   const ruta = entrada.pathname.replace(/^\/sb/, '') || '/'
