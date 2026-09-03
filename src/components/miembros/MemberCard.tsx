@@ -67,6 +67,10 @@ function getBadges(m: Member): BadgeDef[] {
   return found.slice(0, 3)
 }
 
+function getTopBadge(m: Member): BadgeDef {
+  return getBadges(m)[0]
+}
+
 function getTopWeapon(m: Member): { name: string; kills: number } | null {
   const br = armasDe(m, 'br', 'temp')
   const cs = armasDe(m, 'cs', 'temp')
@@ -143,11 +147,7 @@ export default function MemberCard({ member, index, onClick }: Props) {
         </>
       )}
 
-      {/* Halo del rango */}
-      <div
-        className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-25 pointer-events-none"
-        style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
-      />
+      {/* Halo del rango — eliminado, glow ahora en el emblema */}
 
       {/* Marca de agua del cargo */}
       {esMando && (
@@ -265,26 +265,41 @@ export default function MemberCard({ member, index, onClick }: Props) {
         ))}
       </div>
 
-      {/* Emblems + Elite Coins + Top Weapon */}
-      <div className="flex items-center gap-2.5">
+      {/* Emblema + Badge + Elite Coins + Top Weapon */}
+      <div className="relative flex items-center gap-2.5">
+        {/* Glow del rango alineado con el emblema */}
+        <div
+          className="absolute -left-4 -top-3 w-16 h-16 rounded-full opacity-30 pointer-events-none"
+          style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
+        />
         <EmblemaRango
           imagen={member.emblema_br_url}
           puntos={puntosBR}
           temporada={member.temporada_br}
           size={50}
-          className="shrink-0"
+          className="shrink-0 relative z-10"
           prioritaria={index < 8}
         />
-        <div className="min-w-0 flex-1">
-          <p className="font-display font-bold text-[12px] text-elite-ice leading-tight">
-            {member.rank || 'Heroico'}
-          </p>
-          {member.temporada_br ? (
-            <p className="text-[8.5px] uppercase tracking-[0.12em] text-white/30">
-              Temp. {String(member.temporada_br).replace(/^S/i, '')}
-            </p>
-          ) : null}
-        </div>
+        {(() => {
+          const topBadge = getTopBadge(member)
+          const BadgeIcon = topBadge.icon
+          return (
+            <div className="min-w-0 flex-1 relative z-10">
+              <div className="flex items-center gap-1.5">
+                <BadgeIcon className="w-3 h-3 shrink-0" style={{ color: topBadge.color }} />
+                <p className="font-display font-bold text-[12px] leading-tight truncate"
+                   style={{ color: topBadge.color }}>
+                  {topBadge.label}
+                </p>
+              </div>
+              {member.temporada_br ? (
+                <p className="text-[8.5px] uppercase tracking-[0.12em] text-white/30 mt-0.5">
+                  Temp. {String(member.temporada_br).replace(/^S/i, '')}
+                </p>
+              ) : null}
+            </div>
+          )
+        })()}
         {member.coins != null && member.coins > 0 && (
           <div className="flex items-center gap-1.5 pl-1.5 pr-2 py-1
                           border border-elite-gold/30 bg-elite-gold/[0.08]
