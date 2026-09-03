@@ -41,7 +41,6 @@ export default function OutfitModal({
     () => (member ? armasDe(member, modo, periodo) : []),
     [member, modo, periodo]
   )
-  const maxKills = armas[0]?.kills || 1
 
   const imagen = member?.outfit_image_url || member?.avatar_url
 
@@ -156,10 +155,10 @@ export default function OutfitModal({
                       <button
                         key={o.id}
                         onClick={() => setModo(o.id)}
-                        className={`px-2 py-1 text-[10px] font-semibold rounded transition-colors ${
+                        className={`px-2.5 py-1.5 text-[10px] font-semibold rounded-lg transition-all ${
                           modo === o.id
-                            ? 'bg-elite-primary text-white'
-                            : 'bg-white/[0.05] text-white/50 hover:text-white/80'
+                            ? 'bg-elite-primary text-white shadow-lg shadow-elite-primary/25'
+                            : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
                         }`}
                       >
                         {o.id.toUpperCase()}
@@ -170,10 +169,10 @@ export default function OutfitModal({
                       <button
                         key={o.id}
                         onClick={() => setPeriodo(o.id)}
-                        className={`px-2 py-1 text-[10px] font-semibold rounded transition-colors ${
+                        className={`px-2.5 py-1.5 text-[10px] font-semibold rounded-lg transition-all ${
                           periodo === o.id
-                            ? 'bg-elite-primary text-white'
-                            : 'bg-white/[0.05] text-white/50 hover:text-white/80'
+                            ? 'bg-elite-primary text-white shadow-lg shadow-elite-primary/25'
+                            : 'bg-white/[0.05] text-white/50 hover:text-white/80 hover:bg-white/[0.08]'
                         }`}
                       >
                         {o.label}
@@ -181,43 +180,63 @@ export default function OutfitModal({
                     ))}
                   </div>
 
-                  {armas.length === 0 ? (
+                    {armas.length === 0 ? (
                     <p className="text-white/35 text-xs">
                       Sin lecturas para esta combinación.
                     </p>
                   ) : (
-                    <div className="space-y-1">
-                      {armas.map((a, i) => (
-                        <div
-                          key={a.arma}
-                          className="relative rounded-lg overflow-hidden border border-white/[0.06] px-2.5 py-1.5"
-                        >
-                          <motion.div
-                            className="absolute inset-y-0 left-0 pointer-events-none"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${(a.kills / maxKills) * 100}%` }}
-                            transition={{ delay: 0.1 + i * 0.04, duration: 0.6 }}
-                            style={{
-                              background:
-                                'linear-gradient(90deg, rgba(91,157,255,0.20), rgba(91,157,255,0.02))',
-                            }}
-                          />
-                          <div className="relative flex items-center gap-2">
-                            <span className="font-display font-semibold text-xs w-[4.5rem] shrink-0 truncate">
-                              {nombreArma(a.arma)}
-                            </span>
-                            <span className="font-mono tabular-nums text-xs text-white/80 w-12 text-right">
-                              {a.kills.toLocaleString('es')}
-                            </span>
-                            <span className="text-[9px] text-white/30">kills</span>
-                            {a.headshot > 0 && (
-                              <span className="ml-auto font-mono tabular-nums text-[10px] text-elite-gold shrink-0">
-                                {a.headshot.toFixed(0)}% hs
-                              </span>
-                            )}
+                    <div className="space-y-2">
+                      {armas.map((a, i) => {
+                        const esPrincipal = i === 0
+                        return (
+                          <div
+                            key={a.arma}
+                            className={`weapon-card px-3 py-2.5 ${
+                              esPrincipal ? 'border-elite-gold/30' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 ${
+                                esPrincipal ? 'weapon-placeholder border-elite-gold/20' : 'bg-white/[0.04]'
+                              }`}>
+                                <svg className="w-6 h-6 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                                    d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                </svg>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`font-display font-bold text-xs ${
+                                    esPrincipal ? 'text-elite-gold' : 'text-elite-ice'
+                                  }`}>
+                                    {nombreArma(a.arma)}
+                                  </span>
+                                  {esPrincipal && (
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-elite-gold bg-elite-gold/10 px-1.5 py-0.5 rounded">
+                                      Más letal
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <span className="font-mono tabular-nums text-[11px] text-white/70">
+                                    {a.kills.toLocaleString('es')} <span className="text-white/30 text-[9px]">kills</span>
+                                  </span>
+                                  {a.headshot > 0 && (
+                                    <span className="font-mono tabular-nums text-[11px] text-elite-primary">
+                                      {a.headshot.toFixed(1)}% <span className="text-white/30 text-[9px]">hs</span>
+                                    </span>
+                                  )}
+                                  {a.puntuacion > 0 && (
+                                    <span className="font-mono tabular-nums text-[11px] text-white/50">
+                                      {a.puntuacion.toLocaleString('es')} <span className="text-white/30 text-[9px]">pts</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>

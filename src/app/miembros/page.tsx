@@ -2,112 +2,36 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Crown, Flame, Trophy, Users, Star, Skull, Swords, Crosshair, Brain, Shield, Zap, Target, Medal, Percent } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
-import { STAT_CATEGORIES, formatStat } from '@/lib/stats'
-import IconoJugador from '@/components/miembros/IconoJugador'
-import EmblemaRango from '@/components/miembros/EmblemaRango'
+import MemberCard from '@/components/miembros/MemberCard'
 import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
 import Resplandor from '@/components/layout/Resplandor'
 
-const ROLE_ICONS: Record<string, any> = {
-  leader: Crown,
-  interim_leader: Flame,
-  elder: Star,
-  member: Skull,
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  leader: 'Líder',
-  interim_leader: 'Líder Interino',
-  elder: 'Decano',
-  member: 'Miembro',
-}
-
-// Clases CSS para los efectos de cada rol
-// Cuanta corriente lleva cada rango. Los miembros sin cargo no llevan: si
-// todos brillaran, brillar dejaria de significar nada.
-const INTENSIDAD_ROL: Record<string, number> = {
-  leader: 1,
-  interim_leader: 0.4,
-  elder: 0.2,
-}
-
-const ROLE_CLASS: Record<string, string> = {
-  leader: 'member-leader',
-  interim_leader: 'member-interim',
-  elder: 'member-elder',
-}
-
-/* El metal de cada rango, del mismo tono que su marco y su galon. El aro del
-   avatar y la marca de agua toman este color, asi toda la tarjeta de un mando
-   respira en una sola luz: oro el lider, hielo el interino, bronce el decano. */
-const AURA_ROL: Record<string, string> = {
-  leader: '#f0b429',
-  interim_leader: '#8ab4ff',
-  elder: '#cd7f32',
-}
-
-interface BadgeDef {
-  key: string
-  label: string
-  icon: any
-  color: string
-  test: (m: Member) => boolean
-}
-
-// Insignias disponibles, cada una sacada de un dato real del barrido.
-const BADGES: BadgeDef[] = [
-  { key: 'kd', label: 'Asesino', icon: Swords, color: '#ff4d6a', test: (m) => (m.kd_ratio || 0) >= 4 },
-  { key: 'hs', label: 'Francotirador', icon: Crosshair, color: '#5b9dff', test: (m) => (m.headshot_tasa || 0) >= 25 },
-  { key: 'wr', label: 'Estratega', icon: Brain, color: '#f0b429', test: (m) => (m.winrate || 0) >= 15 },
-  { key: 'kills', label: 'Destructor', icon: Skull, color: '#a78bfa', test: (m) => (m.kills || 0) >= 800 },
-  { key: 'maxk', label: 'Multikill', icon: Zap, color: '#ffd166', test: (m) => (m.max_kills || 0) >= 12 },
-  { key: 'booyah', label: 'Rey Booyah', icon: Trophy, color: '#3ddc97', test: (m) => (m.booyahs || 0) >= 100 },
-  { key: 'rev', label: 'Salvavidas', icon: Shield, color: '#36e0ff', test: (m) => (m.revividas || 0) >= 50 },
-  { key: 'part', label: 'Veterano', icon: Star, color: '#c0c0c0', test: (m) => (m.partidas || 0) >= 400 },
-  { key: 'top10', label: 'Finalista', icon: Target, color: '#ffffff', test: (m) => (m.top10_tasa || 0) >= 15 },
-]
-
-// Etiquetas cortas para la ficha. Las de STAT_CATEGORIES ("Headshots",
-// "Victorias") no caben en una columna de tres y salian cortadas a media
-// palabra ("HEADSH", "VICTORI"), que se lee peor que no poner nada.
-const ETIQUETA_CORTA: Record<string, string> = {
-  kd: 'K/D',
-  kills: 'Kills',
-  winrate: 'Win %',
-  headshots: 'HS',
-  wins: 'Wins',
-  booyahs: 'Booyah',
-}
-
-// Un icono por cifra. Antes la primera fila iba sin iconos y la segunda con
-// algunos: dos filas de lo mismo con dos tratos distintos. Con el seis
-// completo, la rejilla se lee como una sola tabla.
-const STAT_ICONO: Record<string, any> = {
-  kd: Zap,
-  kills: Skull,
-  winrate: Percent,
-  headshots: Flame,
-  wins: Trophy,
-  booyahs: Crown,
-}
-
-function getBadges(m: Member): BadgeDef[] {
-  const found = BADGES.filter((b) => b.test(m))
-  if (found.length === 0) {
-    return [{ key: 'novato', label: 'Recién llegado', icon: Medal, color: '#7f93a6', test: () => true }]
-  }
-  // Tres como maximo. Con seis insignias la tarjeta se convierte en una sopa
-  // de etiquetas y ninguna significa nada; con tres, las que salen destacan.
-  return found.slice(0, 3)
-}
-
 export default function MiembrosPage() {
   const { members, loading } = useMembers()
   const [verOutfit, setVerOutfit] = useState<Member | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+  const [filtroRango, setFiltroRango] = useState<string>('todos')
+  const [ordenarPor, setOrdenarPor] = useState<string>('nombre')
+
+  const miembrosFiltrados = members
+    .filter((m) => {
+      if (busqueda && !m.nickname.toLowerCase().includes(busqueda.toLowerCase())) return false
+      if (filtroRango !== 'todos' && m.role_in_clan !== filtroRango) return false
+      return true
+    })
+    .sort((a, b) => {
+      switch (ordenarPor) {
+        case 'nivel': return (b.level || 0) - (a.level || 0)
+        case 'kd': return (b.kd_ratio || 0) - (a.kd_ratio || 0)
+        case 'kills': return (b.kills ?? 0) - (a.kills ?? 0)
+        case 'headshot': return (b.headshot_tasa ?? 0) - (a.headshot_tasa ?? 0)
+        default: return a.nickname.localeCompare(b.nickname)
+      }
+    })
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -134,234 +58,56 @@ export default function MiembrosPage() {
           <p className="text-white/50">El squad más letal de Free Fire. Cada uno una leyenda.</p>
         </motion.div>
 
+        {/* Barra de búsqueda y filtros */}
+        <div className="mb-8 flex flex-col sm:flex-row gap-3 items-center justify-center">
+          <div className="relative w-full sm:w-72">
+            <input
+              type="search"
+              placeholder="Buscar miembro..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="input pl-10"
+            />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <select
+            value={filtroRango}
+            onChange={(e) => setFiltroRango(e.target.value)}
+            className="input w-auto"
+          >
+            <option value="todos">Todos los rangos</option>
+            <option value="leader">Líder</option>
+            <option value="interim_leader">Interino</option>
+            <option value="elder">Decano</option>
+            <option value="member">Miembro</option>
+          </select>
+          <select
+            value={ordenarPor}
+            onChange={(e) => setOrdenarPor(e.target.value)}
+            className="input w-auto"
+          >
+            <option value="nombre">Nombre</option>
+            <option value="nivel">Nivel</option>
+            <option value="kd">K/D</option>
+            <option value="kills">Kills</option>
+            <option value="headshot">Headshot %</option>
+          </select>
+        </div>
+
         {loading && members.length === 0 ? (
           <MemberGridSkeleton />
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {members.map((member, i) => {
-            const role = member.role_in_clan || 'member'
-            const RoleIcon = ROLE_ICONS[role] || Skull
-            const roleClass = ROLE_CLASS[role] || ''
-            const badges = getBadges(member)
-            const puntosBR = member.puntos_br ?? member.stats_json?.puntos_br ?? null
-            // El aro del avatar: el metal del rango si es mando; si no, el azul
-            // del emblema de todos. Los miembros comparten aro, los mandos lo
-            // heredan de su cargo: la rejilla se puede leer sin abrir una sola.
-            const esMando = INTENSIDAD_ROL[role] != null
-            const aura = AURA_ROL[role] ?? (member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b')
-            const color = esMando ? AURA_ROL[role] : (member.emblema_br_url || puntosBR ? '#5b9dff' : '#44586b')
-
-            return (
-              <motion.div
-                key={member.id}
-                onClick={() => setVerOutfit(member)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setVerOutfit(member) }}
-                className={`ff-panel overflow-hidden p-5 group relative cursor-pointer
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-elite-primary ${roleClass}`}
-                /*
-                  La entrada se hace en SITIO, sin desplazamiento.
-
-                  Antes cada tarjeta subia 30 px al aparecer. En escritorio, con
-                  cuatro por fila, se ve elegante. En el movil son 44 tarjetas
-                  en una sola columna subiendo escalonadas mientras intentas
-                  leer: la pagina parece moverse por su cuenta.
-
-                  Y el `initial` no llevaba `opacity: 0` aunque el `animate` si
-                  ponia `opacity: 1`, asi que no habia ni fundido: solo el
-                  brinco. Ahora es un fundido corto y nada mas se mueve.
-                */
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: Math.min(i, 10) * 0.03, duration: 0.3 }}
-                whileHover={{ y: -6 }}
-                /* La inclinacion se hace escribiendo dos variables CSS
-                   directamente en el nodo, NO con estado de React: un
-                   setState por cada movimiento del raton repintaria el
-                   componente decenas de veces por segundo. Asi solo cambia
-                   una propiedad que resuelve el compositor. */
-                onMouseMove={INTENSIDAD_ROL[role] == null ? undefined : (e) => {
-                  const c = e.currentTarget
-                  const r = c.getBoundingClientRect()
-                  const x = (e.clientX - r.left) / r.width - 0.5
-                  const y = (e.clientY - r.top) / r.height - 0.5
-                  // 7 grados de tope: mas y la tarjeta se deforma tanto que
-                  // las cifras cuestan de leer.
-                  c.style.setProperty('--ry', String(x * 14))
-                  c.style.setProperty('--rx', String(-y * 14))
-                }}
-                onMouseLeave={INTENSIDAD_ROL[role] == null ? undefined : (e) => {
-                  e.currentTarget.style.setProperty('--rx', '0')
-                  e.currentTarget.style.setProperty('--ry', '0')
-                }}
-              >
-                {/* El galon del rango. Es un elemento hijo de verdad y no un
-                    pseudoelemento a proposito: `.ff-panel` ya usa ::before y
-                    ::after para su borde y su relleno, y declarar otros encima
-                    dejaba la tarjeta del lider sin chaflan y sin fondo. */}
-                {INTENSIDAD_ROL[role] != null && (
-                  <>
-                    <div className="galon-rango" />
-                    {/* La corriente: un destello que cruza el canto superior.
-                        Cuanta mas corriente (lider 100%, interino 40%, decano
-                        20%), mas rapido y mas vivo. Las reglas viven en
-                        globals.css junto al resto del sistema de rangos. */}
-                    <div className="corriente-rango" />
-                  </>
-                )}
-
-                {/* El aura del lider: cuatro arcos de corriente, uno por borde,
-                    con ritmos desfasados para que los chispazos no coincidan
-                    nunca. Solo la placa del que manda: si el aura la tuvieran
-                    todos, la corriente no diria nada. */}
-                {role === 'leader' && (
-                  <>
-                    <span className="rayo-aura hora top" />
-                    <span className="rayo-aura hora bottom" />
-                    <span className="rayo-aura vert left" />
-                    <span className="rayo-aura vert right" />
-                  </>
-                )}
-
-                {/* El rango NO se pinta por encima de la tarjeta.
-                    Los rayos se salian por los bordes y se metian sobre las
-                    vecinas; quietos parecian garabatos sueltos. Ahora lo
-                    marcan el marco, el galon del canto izquierdo y la chapa
-                    del cargo, todo dentro del rectangulo. Ver globals.css. */}
-
-                {/* Halo del rango */}
-                <div
-                  className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-25 pointer-events-none"
-                  style={{ background: `radial-gradient(closest-side, ${color} 0%, transparent 100%)` }}
-                />
-
-                {/* La marca de agua del cargo: el icono del rango impreso
-                    gigante y tenue en la esquina, como el sello en el dorso de
-                    una placa de identificacion. Solo mandos: la tarjeta de un
-                    miembro de a pie va limpia. */}
-                {esMando && (
-                  <RoleIcon
-                    aria-hidden
-                    className="absolute -bottom-4 -right-4 w-28 h-28 rotate-12 pointer-events-none"
-                    style={{ color, opacity: 0.055 }}
-                  />
-                )}
-
-                {/* Cinta superior: la pestaña diagonal del juego. */}
-                <div
-                  className="-mx-5 -mt-5 mb-4 h-1.5 ff-tab"
-                  style={{ background: `linear-gradient(90deg, ${color}, transparent 78%)` }}
-                />
-
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="relative">
-                    <IconoJugador
-                      src={member.avatar_url}
-                      nombre={member.nickname}
-                      size={62}
-                      aura={aura}
-                      prioritaria={i < 8}
-                    />
-                    {/* Icono de rol: el líder muestra el águila real */}
-                    <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 ff-cut-sm bg-elite-dark
-                                    border border-elite-primary/40 flex items-center justify-center overflow-hidden">
-                      {role === 'leader' ? (
-                        <img src="/icon-192.png" alt="Líder" className="w-full h-full object-cover" />
-                      ) : (
-                        <RoleIcon className="w-3.5 h-3.5 text-elite-gold" />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-display font-bold text-lg leading-tight truncate uppercase text-elite-ice">
-                      {member.nickname}
-                    </h3>
-                    {/* El cargo de un mando va en CHAPA, no en el mismo gris
-                        que el nivel: si "Lider" y "Miembro" se escriben igual,
-                        hay que leerlos para distinguirlos, y la idea es que se
-                        vea de un vistazo. Los miembros de a pie siguen en
-                        texto plano: si todo llevara chapa, la chapa no
-                        significaria nada. */}
-                    {INTENSIDAD_ROL[role] != null ? (
-                      <p className="text-xs tracking-wide flex items-center gap-1.5 mt-0.5">
-                        <span className="chapa-rango">
-                          <RoleIcon className="w-2.5 h-2.5" />
-                          {ROLE_LABELS[role]}
-                        </span>
-                        {member.level ? <span className="text-white/25">Nvl {member.level}</span> : null}
-                      </p>
-                    ) : (
-                      <p className="text-white/40 text-xs capitalize tracking-wide">
-                        {ROLE_LABELS[role] || 'Miembro'}
-                        {member.level ? <span className="text-white/25"> · Nvl {member.level}</span> : null}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* EL EMBLEMA REAL, arriba a la derecha y a tamaño de verdad.
-                      Es lo que el jugador se gano en el juego: merece sitio.
-                      Mientras no haya imagen se enseñan sus PUNTOS de
-                      temporada, que ya viajan en stats_json y son un dato de
-                      verdad -al contrario que `rank`, que dice "Heroic" para
-                      los 44 y no distingue a nadie-. */}
-                  <EmblemaRango
-                    imagen={member.emblema_br_url}
-                    puntos={puntosBR}
-                    temporada={member.temporada_br}
-                    size={54}
-                    className="shrink-0"
-                    prioritaria={i < 8}
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {badges.map((b) => {
-                    const Icon = b.icon
-                    return (
-                      <span
-                        key={b.key}
-                        title={b.label}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 ff-cut-sm text-[10px]
-                                   font-semibold uppercase tracking-wider border"
-                        style={{ color: b.color, borderColor: `${b.color}44`, background: `${b.color}12` }}
-                      >
-                        <Icon className="w-3 h-3" />
-                        {b.label}
-                      </span>
-                    )
-                  })}
-                </div>
-
-                {/* Las seis cifras en UNA tabla: antes eran dos bloques con
-                    logica duplicada y la segunda fila llevaba iconos y la
-                    primera no. El K/D va encendido porque es la cifra que
-                    resume al jugador; el resto manda la lectura. */}
-                <div className="grid grid-cols-3 gap-2 text-sm">
-                  {(['kd', 'kills', 'winrate', 'headshots', 'wins', 'booyahs'] as const).map((k) => {
-                    const s = STAT_CATEGORIES.find((x) => x.key === k)!
-                    const IconoStat = STAT_ICONO[k]
-                    return (
-                      <div
-                        key={k}
-                        className="ff-cut-sm p-2.5 bg-white/[0.04] border border-white/10
-                                   group-hover:border-elite-primary/30 transition-colors"
-                      >
-                        <p className="text-white/40 text-[10px] uppercase tracking-wider flex items-center gap-1">
-                          <IconoStat className="w-3 h-3 shrink-0" />
-                          {ETIQUETA_CORTA[k] ?? s.label}
-                        </p>
-                        <p className={`font-bold text-base tabular-nums ${k === 'kd' ? 'neon-celeste' : 'text-elite-ice'}`}>
-                          {formatStat(s.get(member), s)}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-              </motion.div>
-            )
-          })}
+          {miembrosFiltrados.map((member, i) => (
+            <MemberCard
+              key={member.id}
+              member={member}
+              index={i}
+              onClick={setVerOutfit}
+            />
+          ))}
           </div>
         )}
       </div>

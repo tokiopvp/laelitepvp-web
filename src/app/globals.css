@@ -157,6 +157,45 @@
   .section-subtitle {
     @apply text-elite-primary/80 text-lg mb-10;
   }
+
+  .card-member {
+    @apply relative overflow-hidden;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .weapon-card {
+    @apply relative overflow-hidden rounded-xl border transition-all duration-300;
+    background: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.055) 0%,
+      rgba(255, 255, 255, 0.018) 42%,
+      rgba(4, 7, 12, 0.55) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.09);
+    backdrop-filter: var(--cristal-tarjeta);
+    -webkit-backdrop-filter: var(--cristal-tarjeta);
+  }
+  .weapon-card:hover {
+    border-color: rgba(91, 157, 255, 0.45);
+  }
+
+  .weapon-placeholder {
+    background: linear-gradient(135deg, rgba(91,157,255,0.08), rgba(167,139,250,0.05));
+    border: 1px dashed rgba(255,255,255,0.12);
+  }
+
+  .step-neon {
+    @apply relative overflow-hidden rounded-xl border transition-all duration-300;
+    background: rgba(14, 16, 20, 0.8);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .step-neon:hover {
+    border-color: var(--step-color, rgba(91, 157, 255, 0.5));
+    box-shadow: 0 0 20px color-mix(in srgb, var(--step-color, #5b9dff) 25%, transparent);
+  }
 }
 
 @layer utilities {
@@ -1128,4 +1167,25 @@ h2.font-display {
     opacity: 0.45;
     left: auto;
   }
+}
+
+/* La moneda de Elite Coins de la tarjeta de miembro. Es un disco pintado con
+   un degradado radial -no una imagen- para que no cueste una peticion mas por
+   tarjeta, y gira sobre si misma de vez en cuando. */
+.moneda-elite {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff2c4, #f0b429 42%, #a86a12);
+  box-shadow: 0 0 9px rgba(240, 180, 41, 0.45), inset 0 -2px 3px rgba(0, 0, 0, 0.35);
+  animation: moneda-gira 6s linear infinite;
+}
+@keyframes moneda-gira {
+  0%, 72% { transform: rotateY(0); }
+  86%     { transform: rotateY(180deg); }
+  100%    { transform: rotateY(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moneda-elite { animation: none; }
 }

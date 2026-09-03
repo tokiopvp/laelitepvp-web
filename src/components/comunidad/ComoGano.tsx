@@ -26,30 +26,10 @@ import { MessagesSquare, Mic, Swords, Gift } from 'lucide-react'
  */
 
 const PASOS = [
-  {
-    icono: MessagesSquare,
-    titulo: 'Entra al Discord',
-    texto: 'Con tu cuenta enlazada, todo lo que hagas ahí empieza a contar.',
-    color: '#5865F2',
-  },
-  {
-    icono: Mic,
-    titulo: 'Habla y conéctate',
-    texto: 'Cada minuto en voz y cada mensaje suman Elite Coin. Sin hacer nada raro.',
-    color: '#00d4ff',
-  },
-  {
-    icono: Swords,
-    titulo: 'Juega PvP',
-    texto: 'Tus kills, headshots y Booyahs reales desbloquean las tareas grandes.',
-    color: '#5b9dff',
-  },
-  {
-    icono: Gift,
-    titulo: 'Canjea diamantes',
-    texto: 'Cambia tus coins por recargas de verdad. Lo paga el clan.',
-    color: '#f0b429',
-  },
+  { icono: MessagesSquare, titulo: 'Entra al Discord', texto: 'Con tu cuenta enlazada, todo lo que hagas ahí empieza a contar.', color: '#5865F2' },
+  { icono: Mic, titulo: 'Habla y conéctate', texto: 'Cada minuto en voz y cada mensaje suman Elite Coin. Sin hacer nada raro.', color: '#5b9dff' },
+  { icono: Swords, titulo: 'Juega PvP', texto: 'Tus kills, headshots y Booyahs reales desbloquean las tareas grandes.', color: '#f0b429' },
+  { icono: Gift, titulo: 'Canjea diamantes', texto: 'Cambia tus coins por recargas de verdad. Lo paga el clan.', color: '#4ade80' },
 ]
 
 export default function ComoGano() {
@@ -67,7 +47,7 @@ export default function ComoGano() {
 
       <div className="relative">
         <h2 className="font-display font-bold text-lg sm:text-xl text-center mb-5">
-          ¿Cómo gano <span className="text-elite-gold">Elite Coin</span>?
+          <span className="gradient-text">¿Cómo gano Elite Coin?</span>
           <span className="text-white/35 font-normal text-sm ml-2">Cuatro pasos.</span>
         </h2>
 
@@ -89,14 +69,21 @@ export default function ComoGano() {
             return (
               <motion.div
                 key={p.titulo}
-                className="relative text-center"
+                className="step-neon relative text-center p-4"
+                style={{ '--step-color': p.color } as React.CSSProperties}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-60px' }}
-                // El retardo escalonado es lo que convierte cuatro iconos en
-                // una secuencia: se leen en orden porque aparecen en orden.
                 transition={{ delay: i * 0.16, duration: 0.45, ease: 'easeOut' }}
               >
+                {/* Step number - large display */}
+                <span
+                  className="font-display font-extrabold text-3xl sm:text-4xl block mb-2 opacity-15"
+                  style={{ color: p.color }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+
                 <div
                   className="mx-auto w-10 h-10 rounded-xl grid place-items-center mb-2 border"
                   style={{
@@ -108,13 +95,9 @@ export default function ComoGano() {
                   <Icono className="w-5 h-5" style={{ color: p.color }} />
                 </div>
 
-                <h3 className="font-display font-bold text-xs sm:text-sm mb-0.5">
-                  <span className="text-white/25 font-mono mr-1">{i + 1}.</span>
+                <h3 className="font-display font-bold text-xs sm:text-sm mb-0.5" style={{ color: p.color }}>
                   {p.titulo}
                 </h3>
-                {/* El detalle solo en pantalla grande: en movil, cuatro parrafos
-                    seguidos ocupan media pantalla y nadie los lee. El titulo
-                    con su icono ya cuenta la secuencia. */}
                 <p className="hidden sm:block text-white/40 text-[11px] leading-snug px-1">
                   {p.texto}
                 </p>
