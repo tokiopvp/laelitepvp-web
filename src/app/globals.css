@@ -1193,3 +1193,21 @@ h2.font-display {
 @media (prefers-reduced-motion: reduce) {
   .moneda-elite { animation: none; }
 }
+
+/* Titulo premium con brillo animado */
+.title-premium {
+  background: linear-gradient(135deg, #5b9dff 0%, #ffffff 40%, #a78bfa 60%, #5b9dff 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: title-shimmer 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(91, 157, 255, 0.3));
+}
+@keyframes title-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .title-premium { animation: none; }
+}

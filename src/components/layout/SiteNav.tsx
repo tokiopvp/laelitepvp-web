@@ -9,15 +9,11 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { useGama } from '@/components/layout/Resplandor'
 
 const links = [
-  // ORDEN: segun la jerarquia que pide el dueño:
-  // INICIO, ELITE COIN, MIEMBROS, RANKING, TIENDA, TOKIO IA, NOTICIAS
-  // Comunidad es ELITE COIN y pagostore es TIENDA: las URLs se quedan como
-  // estan para no romper enlaces viejos que ya circulan.
+  // ORDEN: INICIO, MIEMBROS, ELITE COIN, RANKING, TIENDA, TOKIO IA, NOTICIAS
   { href: '/', label: 'INICIO' },
-  // Elite Coin va el segundo: es lo unico del menu que el visitante puede
-  // GANAR, y por eso lleva el unico tratamiento dorado de la barra.
-  { href: '/comunidad', label: 'ELITE COIN', electrico: true },
   { href: '/miembros', label: 'MIEMBROS' },
+  // Elite Coin va despues de MIEMBROS: es lo unico que el visitante puede GANAR.
+  { href: '/comunidad', label: 'ELITE COIN', electrico: true },
   { href: '/tops', label: 'RANKING' },
   { href: '/pagostore', label: 'TIENDA' },
   { href: '/ia', label: 'TOKIO IA', destacado: true },

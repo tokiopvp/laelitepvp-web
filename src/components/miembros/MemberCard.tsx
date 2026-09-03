@@ -305,22 +305,18 @@ export default function MemberCard({ member, index, onClick }: Props) {
         )}
       </div>
 
-      {/* Arma más letal */}
+      {/* Arma favorita */}
       {(() => {
         const topWeapon = getTopWeapon(member)
         if (!topWeapon) return null
         return (
-          <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5
+          <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1.5
                           bg-white/[0.03] border border-white/[0.06]">
-            <Swords className="w-3 h-3 text-elite-primary shrink-0" />
             <span className="text-[8px] uppercase tracking-[0.12em] text-white/30 shrink-0">
-              Más letal
+              Arma favorita
             </span>
-            <span className="font-display font-bold text-[10px] text-elite-ice ml-auto truncate">
+            <span className="font-display font-bold text-[10px] text-elite-primary ml-auto truncate">
               {topWeapon.name}
-            </span>
-            <span className="font-mono text-[9px] text-white/40 shrink-0">
-              {topWeapon.kills.toLocaleString('es')} kills
             </span>
           </div>
         )

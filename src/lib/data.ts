@@ -20,28 +20,35 @@ function client() {
 export async function getMembers(): Promise<Member[]> {
   const sb = client()
   if (!sb) return demoMembers
-  // `consultar` devuelve null SOLO si no se pudo hablar con el servidor. Antes
-  // esto era `if (error) return []`, y un fallo de red se veia igual que un
-  // clan vacio: la pagina decia "0 MIEMBROS OFICIALES" con los datos intactos.
   const bruto = await consultar<Member[]>(
     sb.from('members').select('*').eq('is_active', true),
   )
   if (bruto === null) return []
   if (bruto.length === 0) return []
-  // Las imagenes se guardan con la direccion completa de Supabase. Sin esto,
-  // un `<img src>` va directo a ese dominio y se salta el proxy: la web
-  // cargaria entera pero sin una sola foto para quien no lo resuelve.
   const data = conMediaLista(bruto as unknown as Record<string, unknown>[]) as unknown as Member[]
-  // Orden: líder primero, luego interino, luego decanos, luego por kills
-  const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
-  const sorted = [...(data as Member[])].sort((a, b) => {
-    const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
-    const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
-    if (ra !== rb) return ra - rb
-    return (b.kills ?? 0) - (a.kills ?? 0)
-  })
-  // Las fotos, por el mismo camino que los datos.
-  return conMediaLista(sorted as unknown as Record<string, unknown>[]) as unknown as Member[]
+
+  // Fetch Elite Coins from profiles (points column)
+  const { data: profiles } = await sb
+    .from('profiles')
+    .select('member_id, points')
+    .not('member_id', 'is', null)
+
+  const coinsByMember = new Map<string, number>()
+  if (profiles) {
+    for (const p of profiles) {
+      if (p.member_id && p.points != null) {
+        coinsByMember.set(p.member_id, p.points)
+      }
+    }
+  }
+
+  // Merge coins into members
+  const withCoins = (data as Member[]).map((m) => ({
+    ...m,
+    coins: coinsByMember.get(m.id) ?? m.coins ?? null,
+  }))
+
+  return conMediaLista(withCoins as unknown as Record<string, unknown>[]) as unknown as Member[]
 }
 
 export async function getTournaments(): Promise<Tournament[]> {

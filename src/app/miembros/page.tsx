@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Users } from 'lucide-react'
+import { Users, Swords } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
 import MemberCard from '@/components/miembros/MemberCard'
@@ -10,50 +10,34 @@ import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
 import Resplandor from '@/components/layout/Resplandor'
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
+
 export default function MiembrosPage() {
   const { members, loading } = useMembers()
   const [verOutfit, setVerOutfit] = useState<Member | null>(null)
-  const [filtroRango, setFiltroRango] = useState<string>('todos')
-  const [ordenarPor, setOrdenarPor] = useState<string>('honor')
 
-  const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
-
-  function honorDe(m: Member): number {
-    return m.stats_json?.clan_honor_hoy ?? m.stats_json?.clan_honor_semana ?? 0
-  }
-
-  function scoreCompuesto(m: Member): number {
-    return (m.kills ?? 0) * 0.35
-      + (m.headshot_tasa ?? 0) * 2.5
-      + (m.kd_ratio ?? 0) * 80
-      + (m.booyahs ?? 0) * 1.5
-      + (m.winrate ?? 0) * 3
-  }
-
-  const miembrosFiltrados = members
-    .filter((m) => {
-      if (filtroRango !== 'todos' && m.role_in_clan !== filtroRango) return false
-      return true
-    })
-    .sort((a, b) => {
-      const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
-      const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
-      if (ra !== rb) return ra - rb
-
-      switch (ordenarPor) {
-        case 'honor': {
-          const ha = honorDe(a), hb = honorDe(b)
-          if (ha !== hb) return hb - ha
-          return scoreCompuesto(b) - scoreCompuesto(a)
-        }
-        case 'coins': return (b.coins ?? 0) - (a.coins ?? 0)
-        case 'nivel': return (b.level || 0) - (a.level || 0)
-        case 'kd': return (b.kd_ratio || 0) - (a.kd_ratio || 0)
-        case 'kills': return (b.kills ?? 0) - (a.kills ?? 0)
-        case 'headshot': return (b.headshot_tasa ?? 0) - (a.headshot_tasa ?? 0)
-        default: return scoreCompuesto(b) - scoreCompuesto(a)
-      }
-    })
+  const miembrosOrdenados = useMemo(() => {
+    const byRole: Record<string, Member[]> = { leader: [], interim_leader: [], elder: [], member: [] }
+    for (const m of members) {
+      const r = m.role_in_clan || 'member'
+      ;(byRole[r] || byRole.member).push(m)
+    }
+    return [
+      ...shuffleArray(byRole.leader),
+      ...shuffleArray(byRole.interim_leader),
+      ...shuffleArray(byRole.elder),
+      ...shuffleArray(byRole.member),
+    ]
+  }, [members])
 
   return (
     <div className="min-h-screen pt-24 pb-16">
@@ -74,51 +58,28 @@ export default function MiembrosPage() {
               {members.length} miembros oficiales
             </span>
           </div>
-          <h1 className="font-display font-bold text-4xl sm:text-6xl gradient-text mb-2 uppercase">
-            Miembros Elite
-          </h1>
-          <p className="text-white/50">El squad más letal de Free Fire. Cada uno una leyenda.</p>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-70" />
+            <h1 className="font-display font-black text-5xl sm:text-7xl uppercase title-premium">
+              Miembros Elite
+            </h1>
+            <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-70" />
+          </div>
+          <p className="text-white/50 text-lg">El squad más letal de Free Fire. Cada uno una leyenda.</p>
         </motion.div>
-
-        {/* Barra de búsqueda y filtros */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-3 items-center justify-center">
-          <select
-            value={filtroRango}
-            onChange={(e) => setFiltroRango(e.target.value)}
-            className="input w-auto"
-          >
-            <option value="todos">Todos los rangos</option>
-            <option value="leader">Líder</option>
-            <option value="interim_leader">Interino</option>
-            <option value="elder">Decano</option>
-            <option value="member">Miembro</option>
-          </select>
-          <select
-            value={ordenarPor}
-            onChange={(e) => setOrdenarPor(e.target.value)}
-            className="input w-auto"
-          >
-            <option value="honor">Honor</option>
-            <option value="coins">Elite Coins</option>
-            <option value="nivel">Nivel</option>
-            <option value="kd">K/D</option>
-            <option value="kills">Kills</option>
-            <option value="headshot">Headshot %</option>
-          </select>
-        </div>
 
         {loading && members.length === 0 ? (
           <MemberGridSkeleton />
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {miembrosFiltrados.map((member, i) => (
-            <MemberCard
-              key={member.id}
-              member={member}
-              index={i}
-              onClick={setVerOutfit}
-            />
-          ))}
+            {miembrosOrdenados.map((member, i) => (
+              <MemberCard
+                key={member.id}
+                member={member}
+                index={i}
+                onClick={setVerOutfit}
+              />
+            ))}
           </div>
         )}
       </div>
