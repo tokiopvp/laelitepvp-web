@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
-  Trophy, Users, Zap, Flame, Crown,
+  Trophy, Users, Zap, Flame,
   MousePointer2, ArrowRight,
   Sparkles, Shield, Sword, Star, Target,
   Crosshair,
@@ -43,7 +43,7 @@ export default function Home() {
   const [stats, setStats] = useState([
     { value: '—', label: 'Miembros Activos', icon: Users, color: '#5b9dff' },
     { value: '—', label: 'Torneos', icon: Trophy, color: '#f0b429' },
-    { value: '—', label: 'Mejor K/D', icon: Crown, color: '#a78bfa' },
+    { value: '—', label: 'Mejor K/D', icon: Target, color: '#a78bfa' },
     { value: '—', label: 'Kills Totales', icon: Flame, color: '#f0b429' },
   ])
   const [todos, setTodos] = useState<Member[]>([])
@@ -66,7 +66,7 @@ export default function Home() {
         torneosGanados > 0
           ? { value: String(torneosGanados), label: 'Torneos Ganados', icon: Trophy, color: '#f0b429' }
           : { value: String(torneosTotales), label: 'Torneos Jugados', icon: Trophy, color: '#f0b429' },
-        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Crown, color: '#a78bfa' },
+        { value: topKd ? topKd.toFixed(1) : '0', label: 'Mejor K/D', icon: Target, color: '#a78bfa' },
         { value: totalKills.toLocaleString('es'), label: 'Kills Totales', icon: Flame, color: '#f0b429' },
       ])
       setTodos(members)
@@ -104,12 +104,14 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-               <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6 mt-8">
-                 <span className="gradient-text-shimmer">La Elite PvP</span>
-               </h1>
+              <div className="flex items-center gap-3 mb-4">
+                <img src="/free-fire-logo.png" alt="Free Fire" className="h-8 w-auto" />
+              </div>
+              <h1 className="font-display font-black text-5xl sm:text-6xl lg:text-7xl leading-[1.1] mb-6 uppercase title-premium">
+                LA ELITE PVP
+              </h1>
               <p className="text-xl sm:text-2xl text-white/70 mb-8 max-w-xl leading-relaxed">
-                El clan más letal de Free Fire. Dominamos ranked y arrasamos torneos.
-                ¿Te atreves a entrar?
+                El 1% de Free Fire. Poder silencioso, Control absoluto.
               </p>
 
               <div className="flex flex-wrap items-center gap-4 mb-12">
@@ -179,7 +181,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="section-title">Por qué La Elite</h2>
+            <h2 className="section-title uppercase">Por qué La Elite</h2>
             <p className="section-subtitle">No somos un clan más. Somos la élite competitiva.</p>
           </motion.div>
 
@@ -215,9 +217,11 @@ export default function Home() {
             viewport={{ once: true }}
           >
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Sparkles className="w-8 h-8 text-elite-gold animate-spin" />
-              <h2 className="font-display font-bold text-3xl sm:text-4xl gradient-text">¿Listo para ser Elite?</h2>
-              <Sparkles className="w-8 h-8 text-elite-gold animate-spin" style={{ animationDirection: 'reverse' }} />
+              <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-80" />
+              <h2 className="font-display font-black text-3xl sm:text-4xl uppercase title-premium">
+                ¿Listo para ser Elite?
+              </h2>
+              <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-80" />
             </div>
             <p className="text-xl text-white/70 mb-8 max-w-2xl mx-auto">
               Únete a la comunidad, gana Elite Coin con check-in diario y retos, y desbloquea
@@ -230,7 +234,7 @@ export default function Home() {
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link href="/mi" className="btn-secondary group inline-flex items-center gap-2 text-lg px-10 py-4">
-                <Crown className="w-5 h-5" />
+                <Star className="w-5 h-5" />
                 Mi Cuenta
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Link>

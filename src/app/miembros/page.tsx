@@ -2,22 +2,13 @@
 
 import { useState, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { Users, Swords } from 'lucide-react'
+import { Users } from 'lucide-react'
 import { Member } from '@/lib/types'
 import { useMembers } from '@/lib/hooks'
 import MemberCard from '@/components/miembros/MemberCard'
 import OutfitModal from '@/components/OutfitModal'
 import { MemberGridSkeleton } from '@/components/Skeletons'
 import Resplandor from '@/components/layout/Resplandor'
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
 
@@ -31,11 +22,20 @@ export default function MiembrosPage() {
       const r = m.role_in_clan || 'member'
       ;(byRole[r] || byRole.member).push(m)
     }
+    const sortMembers = (list: Member[]) =>
+      [...list].sort((a, b) => {
+        const coinsA = a.coins ?? 0
+        const coinsB = b.coins ?? 0
+        const hasEliteA = coinsA >= 50000 ? 1 : 0
+        const hasEliteB = coinsB >= 50000 ? 1 : 0
+        if (hasEliteA !== hasEliteB) return hasEliteB - hasEliteA
+        return (b.kills ?? 0) - (a.kills ?? 0)
+      })
     return [
-      ...shuffleArray(byRole.leader),
-      ...shuffleArray(byRole.interim_leader),
-      ...shuffleArray(byRole.elder),
-      ...shuffleArray(byRole.member),
+      ...sortMembers(byRole.leader),
+      ...sortMembers(byRole.interim_leader),
+      ...sortMembers(byRole.elder),
+      ...sortMembers(byRole.member),
     ]
   }, [members])
 
@@ -58,14 +58,18 @@ export default function MiembrosPage() {
               {members.length} miembros oficiales
             </span>
           </div>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-70" />
-            <h1 className="font-display font-black text-5xl sm:text-7xl uppercase title-premium">
-              Miembros Elite
-            </h1>
-            <img src="/free-fire-logo.png" alt="" className="h-6 w-auto opacity-70" />
-          </div>
-          <p className="text-white/50 text-lg">El squad más letal de Free Fire. Cada uno una leyenda.</p>
+          <img src="/free-fire-logo.png" alt="" className="h-7 w-auto opacity-80 mx-auto mb-3" />
+          <h1 className="font-display font-black text-5xl sm:text-7xl uppercase title-premium mb-3">
+            Miembros Elite
+          </h1>
+          <motion.p
+            className="text-white/60 text-lg font-medium tracking-wide"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+          >
+            El 1% de Free Fire. <span className="text-elite-primary">Poder silencioso</span>, <span className="text-elite-gold">Control absoluto.</span>
+          </motion.p>
         </motion.div>
 
         {loading && members.length === 0 ? (

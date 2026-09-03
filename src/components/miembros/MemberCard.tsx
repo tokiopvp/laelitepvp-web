@@ -310,12 +310,14 @@ export default function MemberCard({ member, index, onClick }: Props) {
         const topWeapon = getTopWeapon(member)
         if (!topWeapon) return null
         return (
-          <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1.5
-                          bg-white/[0.03] border border-white/[0.06]">
-            <span className="text-[8px] uppercase tracking-[0.12em] text-white/30 shrink-0">
+          <div className="flex items-center gap-2 mt-2 px-3 py-2
+                          bg-gradient-to-r from-elite-primary/5 to-transparent
+                          border border-elite-primary/15 relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-elite-primary/40" />
+            <span className="text-[8px] uppercase tracking-[0.14em] text-elite-primary/60 font-semibold shrink-0">
               Arma favorita
             </span>
-            <span className="font-display font-bold text-[10px] text-elite-primary ml-auto truncate">
+            <span className="font-display font-bold text-[11px] text-elite-ice ml-auto truncate">
               {topWeapon.name}
             </span>
           </div>
