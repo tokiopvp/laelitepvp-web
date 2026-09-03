@@ -10,7 +10,7 @@
      pagina -el degradado, la rejilla, el personaje- se ve A TRAVES del panel,
      que es lo que separa un cristal de un rectangulo gris.
      La saturacion sube un punto porque al desenfocar el color se apaga. */
-  --cristal-tarjeta: blur(16px) saturate(1.18);
+  --cristal-tarjeta: blur(20px) saturate(1.22);
   --cristal-premium: blur(26px) saturate(1.28);
 
     --font-body: 'Barlow', system-ui, sans-serif;
@@ -976,7 +976,7 @@ h2.font-display {
   inset: 1px;
   z-index: -1;
   background:
-    linear-gradient(160deg, rgba(91, 157, 255, 0.10) 0%, rgba(10, 16, 23, 0.58) 55%, rgba(4, 7, 12, 0.66) 100%);
+    linear-gradient(160deg, rgba(91, 157, 255, 0.10) 0%, rgba(10, 16, 23, 0.44) 55%, rgba(4, 7, 12, 0.52) 100%);
 }
 .ff-panel:hover::before {
   background: rgba(91, 157, 255, 0.6);

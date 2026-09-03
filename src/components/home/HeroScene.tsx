@@ -202,7 +202,17 @@ export default function HeroScene({ members }: { members: Member[] }) {
             tambien. */}
         <motion.div className="relative" style={{ z: 50 }}>
           <div
-            className="ff-panel member-leader relative h-full bg-elite-card/40 cristal p-5 pt-0"
+            className="ff-panel member-interim relative h-full bg-elite-card/25 cristal p-5 pt-0"
+            /* El marco va en el AZUL de la marca, no en oro.
+               El oro es el acento de "lo ganado" -el primer puesto, las
+               monedas- y en la portada, rodeando el panel entero, competia con
+               los botones y con el titular: dos acentos peleando en la primera
+               pantalla. Se aprovecha el mecanismo del rango interino, que ya es
+               frio, y se le fijan los tonos de la marca. */
+            style={{
+              ['--luz' as string]: 'rgba(198, 220, 255, 0.92)',
+              ['--tono' as string]: 'rgba(91, 157, 255, 0.55)',
+            }}
             onMouseEnter={() => setPausa(true)}
             onMouseLeave={() => setPausa(false)}
           >
@@ -219,7 +229,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
               />
               <span className="font-display text-[10px] font-bold uppercase
                                tracking-[0.17em] text-white/30">
-                LA ELITE <b className="text-elite-gold">PVP</b>
+                LA ELITE <b className="text-elite-primary">PVP</b>
               </span>
             </div>
             {/* Ficha del nombre: translucida, como la del jugador. El oro va
@@ -227,7 +237,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
             <div className="flex items-center gap-3 mb-4 p-2.5 ff-cut-sm
                             border border-white/20 bg-white/[0.07] backdrop-blur-md">
               <div className="w-11 h-11 shrink-0 ff-cut-sm flex items-center justify-center"
-                   style={{ background: 'linear-gradient(145deg,#3a2f12,#f0b429 55%,#a8701a)' }}>
+                   style={{ background: 'linear-gradient(145deg,#1e2a44,#5b9dff 55%,#a78bfa)' }}>
                 <Crown className="w-6 h-6 text-elite-dark" />
               </div>
               <div className="min-w-0 flex-1">
@@ -236,7 +246,7 @@ export default function HeroScene({ members }: { members: Member[] }) {
                 </p>
                 <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-px
                                  text-[9px] font-bold uppercase tracking-[0.13em]
-                                 bg-black/55 text-elite-gold">
+                                 bg-black/55 text-elite-primary">
                   Clan Oficial · Verificado
                 </span>
               </div>
@@ -250,8 +260,8 @@ export default function HeroScene({ members }: { members: Member[] }) {
               <p className="flex items-center px-2.5 py-1 font-display text-[10px]
                             font-bold uppercase tracking-[0.13em] text-white/65"
                  style={{
-                   borderLeft: '2px solid #f0b429',
-                   background: 'linear-gradient(90deg, rgba(240,180,41,0.12), transparent)',
+                   borderLeft: '2px solid #5b9dff',
+                   background: 'linear-gradient(90deg, rgba(91,157,255,0.12), transparent)',
                  }}>
                 {top.titulo}
               </p>
@@ -299,8 +309,8 @@ export default function HeroScene({ members }: { members: Member[] }) {
               {filas.map((row, i) => (
                 <div
                   key={row.nombre}
-                  className="flex items-center justify-between bg-elite-dark/25 ff-cut-sm p-2.5
-                             border border-white/[0.06] hover:border-elite-gold/30
+                  className="flex items-center justify-between bg-elite-dark/15 ff-cut-sm p-2.5
+                             border border-white/[0.06] hover:border-elite-primary/30
                              hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
