@@ -38,6 +38,9 @@ export interface Member {
   puntos_br?: number | null
   puntos_cs?: number | null
   temporada_br?: string | null
+  // Saldo de Elite Coins. Opcional: hasta que el sync lo traiga, la tarjeta
+  // simplemente no enseña la chapa de monedas en vez de enseñar un cero.
+  coins?: number | null
   is_active: boolean
   joined_at: string
   last_sync: string | null
