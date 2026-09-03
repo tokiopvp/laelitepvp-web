@@ -15,7 +15,21 @@ export default function MiembrosPage() {
   const [verOutfit, setVerOutfit] = useState<Member | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroRango, setFiltroRango] = useState<string>('todos')
-  const [ordenarPor, setOrdenarPor] = useState<string>('nombre')
+  const [ordenarPor, setOrdenarPor] = useState<string>('honor')
+
+  const ROLE_ORDER: Record<string, number> = { leader: 0, interim_leader: 1, elder: 2, member: 3 }
+
+  function honorDe(m: Member): number {
+    return m.stats_json?.clan_honor_hoy ?? m.stats_json?.clan_honor_semana ?? 0
+  }
+
+  function scoreCompuesto(m: Member): number {
+    return (m.kills ?? 0) * 0.35
+      + (m.headshot_tasa ?? 0) * 2.5
+      + (m.kd_ratio ?? 0) * 80
+      + (m.booyahs ?? 0) * 1.5
+      + (m.winrate ?? 0) * 3
+  }
 
   const miembrosFiltrados = members
     .filter((m) => {
@@ -24,12 +38,22 @@ export default function MiembrosPage() {
       return true
     })
     .sort((a, b) => {
+      const ra = ROLE_ORDER[a.role_in_clan || 'member'] ?? 3
+      const rb = ROLE_ORDER[b.role_in_clan || 'member'] ?? 3
+      if (ra !== rb) return ra - rb
+
       switch (ordenarPor) {
+        case 'honor': {
+          const ha = honorDe(a), hb = honorDe(b)
+          if (ha !== hb) return hb - ha
+          return scoreCompuesto(b) - scoreCompuesto(a)
+        }
+        case 'coins': return (b.coins ?? 0) - (a.coins ?? 0)
         case 'nivel': return (b.level || 0) - (a.level || 0)
         case 'kd': return (b.kd_ratio || 0) - (a.kd_ratio || 0)
         case 'kills': return (b.kills ?? 0) - (a.kills ?? 0)
         case 'headshot': return (b.headshot_tasa ?? 0) - (a.headshot_tasa ?? 0)
-        default: return a.nickname.localeCompare(b.nickname)
+        default: return scoreCompuesto(b) - scoreCompuesto(a)
       }
     })
 
@@ -88,7 +112,8 @@ export default function MiembrosPage() {
             onChange={(e) => setOrdenarPor(e.target.value)}
             className="input w-auto"
           >
-            <option value="nombre">Nombre</option>
+            <option value="honor">Honor</option>
+            <option value="coins">Elite Coins</option>
             <option value="nivel">Nivel</option>
             <option value="kd">K/D</option>
             <option value="kills">Kills</option>

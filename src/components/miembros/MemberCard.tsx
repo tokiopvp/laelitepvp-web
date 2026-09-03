@@ -275,11 +275,15 @@ export default function MemberCard({ member, index, onClick }: Props) {
             </p>
           ) : null}
         </div>
-        {member.coins != null && (
+        {member.coins != null && member.coins > 0 && (
           <div className="ml-auto flex items-center gap-1.5 pl-1.5 pr-2.5 py-1
-                          border border-elite-gold/30 bg-elite-gold/[0.08]">
-            <span className="moneda-elite" aria-hidden />
-            <span>
+                          border border-elite-gold/30 bg-elite-gold/[0.08]
+                          relative overflow-hidden group/coins">
+            <div className="absolute inset-0 bg-gradient-to-r from-elite-gold/0 via-elite-gold/10 to-elite-gold/0
+                            translate-x-[-100%] group-hover/coins:translate-x-[100%]
+                            transition-transform duration-700 ease-out pointer-events-none" />
+            <span className="moneda-elite shrink-0 relative z-10" aria-hidden />
+            <span className="relative z-10">
               <span className="block font-mono font-bold text-[12px] leading-none text-elite-gold">
                 {member.coins.toLocaleString('es')}
               </span>

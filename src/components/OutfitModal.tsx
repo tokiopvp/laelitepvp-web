@@ -84,7 +84,7 @@ export default function OutfitModal({
                 CENTRADO: con items-end y un alto fijo mayor que el hueco, la
                 imagen se recortaba por arriba y solo se veian las piernas.
                 En escritorio se mantiene apoyado abajo, que es como luce. */}
-            <div className="relative shrink-0 sm:flex-1 h-[42vh] sm:h-auto sm:min-h-[520px] flex items-center sm:items-end justify-center overflow-hidden">
+            <div className="relative shrink-0 sm:flex-1 h-[42vh] sm:h-auto flex items-center sm:items-end justify-center overflow-hidden bg-gradient-to-t from-black/40 to-transparent">
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -99,7 +99,7 @@ export default function OutfitModal({
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.08, duration: 0.5 }}
-                  className="relative max-h-full sm:max-h-[520px] max-w-full w-auto object-contain drop-shadow-2xl"
+                  className="relative h-full sm:h-[520px] max-w-full w-auto object-cover sm:object-contain object-bottom drop-shadow-2xl"
                 />
               ) : (
                 <p className="relative text-white/40 text-sm p-8 text-center">
