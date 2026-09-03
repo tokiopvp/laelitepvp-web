@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Member } from '@/lib/types'
 import IconoJugador from '@/components/miembros/IconoJugador'
 import EmblemaRango from '@/components/miembros/EmblemaRango'
+import { armasDe, nombreArma } from '@/lib/armas'
 
 const ROLE_ICONS: Record<string, any> = {
   leader: Crown,
@@ -64,6 +65,15 @@ function getBadges(m: Member): BadgeDef[] {
     return [{ key: 'novato', label: 'Recién llegado', icon: Medal, color: '#7f93a6', test: () => true }]
   }
   return found.slice(0, 3)
+}
+
+function getTopWeapon(m: Member): { name: string; kills: number } | null {
+  const br = armasDe(m, 'br', 'temp')
+  const cs = armasDe(m, 'cs', 'temp')
+  const all = [...br, ...cs].sort((a, b) => b.kills - a.kills)
+  const top = all[0]
+  if (!top || top.kills <= 0) return null
+  return { name: nombreArma(top.arma), kills: top.kills }
 }
 
 interface Props {
@@ -255,7 +265,7 @@ export default function MemberCard({ member, index, onClick }: Props) {
         ))}
       </div>
 
-      {/* Emblems + Elite Coins */}
+      {/* Emblems + Elite Coins + Top Weapon */}
       <div className="flex items-center gap-2.5">
         <EmblemaRango
           imagen={member.emblema_br_url}
@@ -265,7 +275,7 @@ export default function MemberCard({ member, index, onClick }: Props) {
           className="shrink-0"
           prioritaria={index < 8}
         />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-display font-bold text-[12px] text-elite-ice leading-tight">
             {member.rank || 'Heroico'}
           </p>
@@ -276,24 +286,45 @@ export default function MemberCard({ member, index, onClick }: Props) {
           ) : null}
         </div>
         {member.coins != null && member.coins > 0 && (
-          <div className="ml-auto flex items-center gap-1.5 pl-1.5 pr-2.5 py-1
+          <div className="flex items-center gap-1.5 pl-1.5 pr-2 py-1
                           border border-elite-gold/30 bg-elite-gold/[0.08]
-                          relative overflow-hidden group/coins">
+                          relative overflow-hidden group/coins shrink-0">
             <div className="absolute inset-0 bg-gradient-to-r from-elite-gold/0 via-elite-gold/10 to-elite-gold/0
                             translate-x-[-100%] group-hover/coins:translate-x-[100%]
                             transition-transform duration-700 ease-out pointer-events-none" />
             <span className="moneda-elite shrink-0 relative z-10" aria-hidden />
             <span className="relative z-10">
-              <span className="block font-mono font-bold text-[12px] leading-none text-elite-gold">
+              <span className="block font-mono font-bold text-[11px] leading-none text-elite-gold">
                 {member.coins.toLocaleString('es')}
               </span>
-              <span className="block text-[7px] font-semibold tracking-[0.12em] text-elite-gold/60">
-                ELITE COINS
+              <span className="block text-[6px] font-semibold tracking-[0.1em] text-elite-gold/50">
+                COINS
               </span>
             </span>
           </div>
         )}
       </div>
+
+      {/* Arma más letal */}
+      {(() => {
+        const topWeapon = getTopWeapon(member)
+        if (!topWeapon) return null
+        return (
+          <div className="flex items-center gap-2 mt-1.5 px-2 py-1.5
+                          bg-white/[0.03] border border-white/[0.06]">
+            <Swords className="w-3 h-3 text-elite-primary shrink-0" />
+            <span className="text-[8px] uppercase tracking-[0.12em] text-white/30 shrink-0">
+              Más letal
+            </span>
+            <span className="font-display font-bold text-[10px] text-elite-ice ml-auto truncate">
+              {topWeapon.name}
+            </span>
+            <span className="font-mono text-[9px] text-white/40 shrink-0">
+              {topWeapon.kills.toLocaleString('es')} kills
+            </span>
+          </div>
+        )
+      })()}
     </motion.div>
   )
 }
