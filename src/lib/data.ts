@@ -345,11 +345,46 @@ export async function setSetting(key: string, value: string): Promise<{ error: s
 }
 
 // ---- Perfil de miembro + puntos virtuales (Elite Coin) ----
+/**
+ * El id del usuario que tiene la sesion abierta.
+ *
+ * POR QUE NO SE USA `auth.getUser()`
+ * ----------------------------------
+ * `getUser()` va A LA RED a validar el token contra Supabase. Si esa peticion
+ * falla -movil con mala cobertura, token que justo toca refrescar, un 500
+ * pasajero- devuelve `user: null`, y las funciones que dependian de el
+ * retornaban `null` EN SILENCIO.
+ *
+ * El problema es que `AuthProvider` decide `isAuthed` con `getSession()`, que
+ * es LOCAL. Asi que la pagina creia que habias entrado -y pintaba tu panel-
+ * mientras los datos venian vacios: "Bienvenido," sin nombre, "Jugador" y 0
+ * Elite Coin. Eso es justo lo que veian algunos miembros, incluidos los que ya
+ * habian entrado otras veces. Y por "Acceso Staff" si funcionaba porque el
+ * area de admin se apoya en la sesion local, no en estas consultas.
+ *
+ * Ahora se pregunta primero a la sesion guardada (sin red, la misma fuente que
+ * usa el proveedor) y solo se cae a `getUser()` si no hubiera ninguna. Con eso
+ * las dos partes de la web responden siempre lo mismo.
+ */
+async function uidActual(sb: NonNullable<ReturnType<typeof client>>): Promise<string | null> {
+  try {
+    const { data: s } = await sb.auth.getSession()
+    if (s.session?.user?.id) return s.session.user.id
+  } catch {
+    /* almacenamiento bloqueado (iOS en privado): se prueba por red */
+  }
+  try {
+    const { data: u } = await sb.auth.getUser()
+    return u.user?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function getMyProfile(): Promise<Profile | null> {
   const sb = client()
   if (!sb) return null
-  const { data: u } = await sb.auth.getUser()
-  const uid = u.user?.id
+  const uid = await uidActual(sb)
   if (!uid) return null
   try {
     const { data, error } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle()
@@ -367,8 +402,7 @@ export async function getMyProfile(): Promise<Profile | null> {
 export async function dailyCheckin(): Promise<number | null> {
   const sb = client()
   if (!sb) return null
-  const { data: u } = await sb.auth.getUser()
-  const uid = u.user?.id
+  const uid = await uidActual(sb)
   if (!uid) return null
   const { data, error } = await sb.rpc('award_points', { p_profile_id: uid, p_type: 'checkin' })
   if (error) return null
@@ -419,8 +453,7 @@ export async function linkMember(ffid: string): Promise<boolean> {
 export async function getPointEvents(): Promise<PointEvent[]> {
   const sb = client()
   if (!sb) return []
-  const { data: u } = await sb.auth.getUser()
-  const uid = u.user?.id
+  const uid = await uidActual(sb)
   if (!uid) return []
   const { data, error } = await sb
     .from('point_events')
@@ -474,8 +507,7 @@ export async function getChallenges(): Promise<Challenge[]> {
 export async function checkChallenges(): Promise<number | null> {
   const sb = client()
   if (!sb) return null
-  const { data: u } = await sb.auth.getUser()
-  const uid = u.user?.id
+  const uid = await uidActual(sb)
   if (!uid) return null
   const { data, error } = await sb.rpc('check_challenges', { p_profile_id: uid })
   if (error) return null
@@ -486,8 +518,7 @@ export async function getMyChallengeCompletions(): Promise<Set<string>> {
   const sb = client()
   const set = new Set<string>()
   if (!sb) return set
-  const { data: u } = await sb.auth.getUser()
-  const uid = u.user?.id
+  const uid = await uidActual(sb)
   if (!uid) return set
   const { data, error } = await sb
     .from('challenge_completions')

@@ -39,7 +39,7 @@ const MODOS_ETIQUETAS: Record<string, string> = {
 const MODOS_RANKED = ['solo', 'duo', 'escuadra'] as const
 
 export default function MiPage() {
-  const { user, loading, isAuthed, signIn } = useAuth()
+  const { user, loading, isAuthed, signIn, signOut } = useAuth()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [events, setEvents] = useState<PointEvent[]>([])
   const [miembro, setMiembro] = useState<Member | null>(null)
@@ -50,6 +50,8 @@ export default function MiPage() {
   const [checkingCh, setCheckingCh] = useState(false)
   const [chMsg, setChMsg] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  // Sesion abierta pero sin perfil: hay que decirlo, no disimularlo.
+  const [sinPerfil, setSinPerfil] = useState(false)
   const [modoActual, setModoActual] = useState<'solo' | 'duo' | 'escuadra'>('solo')
 
   useEffect(() => {
@@ -80,7 +82,23 @@ export default function MiPage() {
       const valor = <T,>(i: number, porDefecto: T): T =>
         r[i].status === 'fulfilled' ? ((r[i] as PromiseFulfilledResult<T>).value ?? porDefecto) : porDefecto
 
-      const p = valor<Profile | null>(0, null)
+      let p = valor<Profile | null>(0, null)
+
+      // REINTENTO. Si hay sesion pero el perfil llega vacio, casi siempre es
+      // que el token estaba refrescandose justo en ese momento. Antes se daba
+      // por bueno el vacio y la pagina se pintaba como si fueras un jugador
+      // sin nada: "Bienvenido," sin nombre y 0 Elite Coin, teniendo saldo.
+      // Un segundo intento lo resuelve en la practica totalidad de los casos.
+      if (!p) {
+        await new Promise((r) => setTimeout(r, 1200))
+        if (!alive) return
+        try {
+          p = await getMyProfile()
+        } catch {
+          /* si tampoco, se avisa abajo */
+        }
+      }
+      setSinPerfil(!p)
       setProfile(p)
       setEvents(valor(1, []))
       setChallenges(valor(2, []))
@@ -165,8 +183,34 @@ export default function MiPage() {
       <div className="section-container max-w-4xl">
         <motion.div initial={{ y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <h1 className="font-display font-bold text-4xl gradient-text mb-1">Mi Cuenta</h1>
-          <p className="text-white/50">Bienvenido, {profile?.display_name || user?.email}</p>
+          <p className="text-white/50">
+            Bienvenido{profile?.display_name ? `, ${profile.display_name}` : ''}
+          </p>
         </motion.div>
+
+        {/* No se pudo leer el perfil aunque la sesion este abierta. Se dice
+            claro y se ofrece salida: enseñar 0 Elite Coin a quien tiene saldo
+            es peor que admitir que no se ha podido cargar. */}
+        {sinPerfil && (
+          <div className="mb-6 p-4 ff-cut-sm border border-elite-gold/40 bg-elite-gold/[0.08]">
+            <p className="font-display font-bold text-sm text-elite-gold mb-1">
+              No pudimos cargar tu perfil
+            </p>
+            <p className="text-white/60 text-sm mb-3">
+              Tu sesión está abierta, pero no llegaron tus datos. Suele ser cosa
+              de la conexión. Vuelve a cargar la página; si sigue igual, cierra
+              sesión y entra otra vez con Discord.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => location.reload()} className="btn-primary">
+                Reintentar
+              </button>
+              <button onClick={() => signOut()} className="btn-secondary">
+                Cerrar sesión
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Selector de modo BR - Solo/Duo/Escuadra con slide up/down */}
         <div className="relative mb-6">
