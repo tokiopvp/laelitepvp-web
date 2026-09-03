@@ -50,3 +50,8 @@ scripts/*.log
 
 # Scratch del CLI de Supabase: no es codigo del proyecto.
 supabase/.temp/
+
+# Cache local del sync de retratos: cambia en cada sincronizacion y solo
+# sirve para no repetir subidas. Estaba versionado y provocaba conflictos
+# cada vez que dos personas (o dos agentes) sincronizaban.
+scripts/.retratos_subidos.json

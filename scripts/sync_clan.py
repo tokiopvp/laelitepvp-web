@@ -825,6 +825,14 @@ def sync_retratos():
         url = _subir_archivo(bucket, nombre, ruta)
         if not url:
             continue
+        # VERSION EN LA URL. El archivo en Storage se llama siempre igual
+        # ({uid}.png), asi que al reemplazarlo la URL no cambia y el navegador
+        # -y el CDN- siguen sirviendo el recorte VIEJO de su cache durante
+        # horas. Paso: cuando se arreglo el encuadre de avatares y emblemas,
+        # los archivos nuevos estaban subidos pero la web seguia enseñando los
+        # descuadrados. Con la marca de tiempo dentro de la URL, cada recorte
+        # nuevo es una direccion nueva y se recarga solo.
+        url = f"{url}{'&' if '?' in url else '?'}v={int(os.path.getmtime(ruta))}"
         nuevas[archivo] = firma
         filas.setdefault(uid, {})[columna] = url
         subidos += 1

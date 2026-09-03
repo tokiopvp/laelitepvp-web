@@ -194,28 +194,67 @@ export default function HeroScene({ members }: { members: Member[] }) {
         />
 
         {/* HUD principal (datos reales) */}
-        <motion.div className="relative card-glow p-1" style={{ z: 50 }}>
+        {/* La MISMA placa que la tarjeta del lider en /miembros: marco dorado
+            del sistema de rangos (`member-leader` con su galon y su corriente),
+            barra del juego arriba y ficha translucida para el nombre. Se
+            reutilizan las clases que ya existen en globals.css en vez de
+            copiar el aspecto: si un dia cambia el oro del lider, cambia aqui
+            tambien. */}
+        <motion.div className="relative" style={{ z: 50 }}>
           <div
-            className="relative h-full bg-elite-card/95 cristal border border-elite-border rounded-2xl p-6 overflow-hidden"
+            className="ff-panel member-leader relative h-full bg-elite-card/40 cristal p-5 pt-0"
             onMouseEnter={() => setPausa(true)}
             onMouseLeave={() => setPausa(false)}
           >
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-elite-primary to-elite-secondary flex items-center justify-center">
-                  <Crown className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <p className="font-display font-bold text-xl gradient-text">La Elite PvP</p>
-                  <p className="text-sm text-white/50">Clan Oficial • Verificado</p>
-                </div>
+            <div className="galon-rango" />
+            <div className="corriente-rango" />
+
+            {/* Barra del juego, igual que en la tarjeta de miembro. */}
+            <div className="-mx-5 mb-4 flex items-center justify-between px-4 py-2
+                            bg-black/40 backdrop-blur-sm border-b border-white/[0.07]">
+              <img
+                src="/free-fire-logo.png"
+                alt="Free Fire"
+                className="h-[15px] w-auto opacity-90"
+              />
+              <span className="font-display text-[10px] font-bold uppercase
+                               tracking-[0.17em] text-white/30">
+                LA ELITE <b className="text-elite-gold">PVP</b>
+              </span>
+            </div>
+            {/* Ficha del nombre: translucida, como la del jugador. El oro va
+                en la corona porque el clan es "lo ganado"; el resto en gris. */}
+            <div className="flex items-center gap-3 mb-4 p-2.5 ff-cut-sm
+                            border border-white/20 bg-white/[0.07] backdrop-blur-md">
+              <div className="w-11 h-11 shrink-0 ff-cut-sm flex items-center justify-center"
+                   style={{ background: 'linear-gradient(145deg,#3a2f12,#f0b429 55%,#a8701a)' }}>
+                <Crown className="w-6 h-6 text-elite-dark" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-display font-bold text-lg leading-tight text-elite-ice">
+                  La Elite PvP
+                </p>
+                <span className="inline-flex items-center gap-1 mt-0.5 px-1.5 py-px
+                                 text-[9px] font-bold uppercase tracking-[0.13em]
+                                 bg-black/55 text-elite-gold">
+                  Clan Oficial · Verificado
+                </span>
               </div>
               {/* Respaldado por el last_sync real, no un puntito decorativo. */}
               <LiveBadge />
             </div>
 
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-widest text-white/40">{top.titulo}</p>
+              {/* Franja del apartado, con el filo del rango: es el mismo
+                  recurso que marca "BATTLE ROYALE" en la tarjeta del jugador. */}
+              <p className="flex items-center px-2.5 py-1 font-display text-[10px]
+                            font-bold uppercase tracking-[0.13em] text-white/65"
+                 style={{
+                   borderLeft: '2px solid #f0b429',
+                   background: 'linear-gradient(90deg, rgba(240,180,41,0.12), transparent)',
+                 }}>
+                {top.titulo}
+              </p>
               {/* Puntitos: se ve que hay mas tops y cual toca. */}
               {/* Con diez tops, diez puntitos no caben ni se leen: una barra
                   que avanza dice lo mismo y ocupa lo mismo siempre. */}
@@ -260,13 +299,15 @@ export default function HeroScene({ members }: { members: Member[] }) {
               {filas.map((row, i) => (
                 <div
                   key={row.nombre}
-                  className="flex items-center justify-between bg-elite-dark/30 rounded-lg p-3 hover:bg-elite-primary/10 transition-colors"
+                  className="flex items-center justify-between bg-elite-dark/25 ff-cut-sm p-2.5
+                             border border-white/[0.06] hover:border-elite-gold/30
+                             hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {/* El oro solo para lo ganado: el primer puesto. Del 2 al 5
                         van en ceniza, para que el podio se lea de un vistazo. */}
                     <div
-                      className="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold tabular-nums"
+                      className="w-8 h-8 shrink-0 ff-cut-sm flex items-center justify-center font-mono text-xs font-bold tabular-nums"
                       style={
                         i === 0
                           ? { background: 'linear-gradient(135deg,#f0b429,#a78bfa)', color: '#17130f' }

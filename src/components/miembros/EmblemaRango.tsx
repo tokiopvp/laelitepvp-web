@@ -79,27 +79,31 @@ export default function EmblemaRango({
             alt="Rango del jugador"
             loading={prioritaria ? 'eager' : 'lazy'}
             decoding={prioritaria ? 'sync' : 'async'}
-            className="absolute object-cover"
+            className="absolute inset-0 w-full h-full object-contain"
             style={{
-              // ENCUADRE MEDIDO, no estimado. Se analizaron cuatro recortes de
-              // rangos distintos y los cuatro dan lo mismo: la imagen es
-              // 232x130 y el emblema ocupa x=[65,165], y=[0,60], con su centro
-              // en (116,30). Debajo van los puntos y la temporada, que aqui
-              // sobran porque ya se enseñan como texto.
+              // `object-contain` y no `object-cover` A PROPOSITO: conviven
+              // dos formatos de recorte. Los viejos son apaisados y llevan los
+              // puntos dentro; los nuevos, cuadrados y solo con el emblema
+              // (el bot los centra en `escaner.perfil.centrar_emblema`).
+              // `cover` recortaria la franja central de un apaisado y se
+              // comeria el emblema, que va arriba; `contain` los enseña
+              // enteros en los dos casos.
               //
-              // De ahi salen estos numeros: la imagen se dibuja al 240% de
-              // ancho y se corre hasta dejar ese centro en el centro del
-              // circulo. Ajustandolo "a ojo" se colaba el numero dentro de la
-              // medalla y el emblema quedaba cortado.
-              width: '240%',
-              height: '135%',
-              left: '-70%',
-              top: '19%',
-              // OBLIGATORIO. El preflight de Tailwind trae
-              // `img { max-width: 100% }`, que recortaba este 240% a 100% del
-              // circulo: la imagen salia a tamaño 1:1 y el emblema quedaba
-              // fuera de cuadro, con solo una esquina asomando.
+              // El BOT entrega el emblema ya CUADRADO y centrado en el dibujo
+              // (`escaner.perfil.centrar_emblema`), asi que aqui basta con
+              // llenar el circulo: no hacen falta porcentajes.
+              //
+              // Antes esto era un encuadre calculado (240% de ancho, -70% a la
+              // izquierda...) pensado para un recorte apaisado de 232x130 con
+              // los puntos debajo. Funcionaba solo mientras TODOS los emblemas
+              // ocuparan lo mismo dentro de la caja, y no lo hacen: el de
+              // Heroico lleva alas y corona y el de Bronce no. De ahi que unos
+              // salieran centrados y otros colgando.
+              //
+              // `maxWidth` sigue haciendo falta: el preflight de Tailwind trae
+              // `img { max-width: 100% }` y se come el encuadre.
               maxWidth: 'none',
+              objectPosition: 'center',
             }}
           />
           {/* Brillo de chapa arriba. */}

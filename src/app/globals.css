@@ -4,6 +4,15 @@
 
 @layer base {
   :root {
+  /* CRISTAL. Estas dos variables se usaban en `.cristal`, en el panel del home
+     y en las tarjetas premium, pero no estaban definidas: el `backdrop-filter`
+     quedaba invalido y el efecto no existia. Con valores reales, el fondo de la
+     pagina -el degradado, la rejilla, el personaje- se ve A TRAVES del panel,
+     que es lo que separa un cristal de un rectangulo gris.
+     La saturacion sube un punto porque al desenfocar el color se apaga. */
+  --cristal-tarjeta: blur(16px) saturate(1.18);
+  --cristal-premium: blur(26px) saturate(1.28);
+
     --font-body: 'Barlow', system-ui, sans-serif;
     --font-display: 'Oswald', 'Arial Narrow', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -925,6 +934,8 @@ h2.font-display {
   background: transparent;
   border: 0;
   transition: filter 0.3s ease;
+  backdrop-filter: var(--cristal-tarjeta);
+  -webkit-backdrop-filter: var(--cristal-tarjeta);
   /*
     OJO CON PONER overflow:hidden AQUI.
 
@@ -965,7 +976,7 @@ h2.font-display {
   inset: 1px;
   z-index: -1;
   background:
-    linear-gradient(160deg, rgba(91, 157, 255, 0.07) 0%, rgba(10, 16, 23, 0.92) 55%, rgba(4, 7, 12, 0.96) 100%);
+    linear-gradient(160deg, rgba(91, 157, 255, 0.10) 0%, rgba(10, 16, 23, 0.58) 55%, rgba(4, 7, 12, 0.66) 100%);
 }
 .ff-panel:hover::before {
   background: rgba(91, 157, 255, 0.6);
@@ -1210,4 +1221,16 @@ h2.font-display {
 }
 @media (prefers-reduced-motion: reduce) {
   .title-premium { animation: none; }
+}
+
+
+/* El cristal es caro en moviles modestos: en gama baja se apaga y el panel se
+   queda opaco, que se ve peor pero va fluido. */
+:root[data-gama="bajo"] {
+  --cristal-tarjeta: none;
+  --cristal-premium: none;
+}
+:root[data-gama="bajo"] .ff-panel::after {
+  background: linear-gradient(160deg, rgba(91, 157, 255, 0.07) 0%,
+              rgba(10, 16, 23, 0.94) 55%, rgba(4, 7, 12, 0.97) 100%);
 }
