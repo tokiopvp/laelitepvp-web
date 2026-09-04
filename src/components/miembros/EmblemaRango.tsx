@@ -81,29 +81,9 @@ export default function EmblemaRango({
             decoding={prioritaria ? 'sync' : 'async'}
             className="absolute inset-0 w-full h-full object-contain"
             style={{
-              // `object-contain` y no `object-cover` A PROPOSITO: conviven
-              // dos formatos de recorte. Los viejos son apaisados y llevan los
-              // puntos dentro; los nuevos, cuadrados y solo con el emblema
-              // (el bot los centra en `escaner.perfil.centrar_emblema`).
-              // `cover` recortaria la franja central de un apaisado y se
-              // comeria el emblema, que va arriba; `contain` los enseña
-              // enteros en los dos casos.
-              //
-              // El BOT entrega el emblema ya CUADRADO y centrado en el dibujo
-              // (`escaner.perfil.centrar_emblema`), asi que aqui basta con
-              // llenar el circulo: no hacen falta porcentajes.
-              //
-              // Antes esto era un encuadre calculado (240% de ancho, -70% a la
-              // izquierda...) pensado para un recorte apaisado de 232x130 con
-              // los puntos debajo. Funcionaba solo mientras TODOS los emblemas
-              // ocuparan lo mismo dentro de la caja, y no lo hacen: el de
-              // Heroico lleva alas y corona y el de Bronce no. De ahi que unos
-              // salieran centrados y otros colgando.
-              //
-              // `maxWidth` sigue haciendo falta: el preflight de Tailwind trae
-              // `img { max-width: 100% }` y se come el encuadre.
               maxWidth: 'none',
               objectPosition: 'center',
+              transform: 'scale(1.35)',
             }}
           />
           {/* Brillo de chapa arriba. */}
